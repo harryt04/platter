@@ -1,5 +1,7 @@
 import Decimal from 'decimal.js'
 
+const CalculationDecimal = Decimal.clone({ precision: 40 })
+
 export type IngredientDimension = 'count' | 'mass' | 'volume' | 'unknown'
 
 export type ParsedIngredientUnit = {
@@ -550,7 +552,10 @@ export function convertIngredientQuantity(
   if (!fromFactor || !toFactor) return null
 
   const convert = (value: string) =>
-    new Decimal(value).times(fromFactor).dividedBy(toFactor).toString()
+    new CalculationDecimal(value)
+      .times(fromFactor)
+      .dividedBy(toFactor)
+      .toString()
 
   return {
     min: convert(quantity.min),

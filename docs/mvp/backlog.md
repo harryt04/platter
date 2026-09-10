@@ -194,7 +194,7 @@ without losing their original wording or pretending uncertain data is exact.
       shopping intent.
 - [x] A parsing failure produces a separate readable ingredient rather than
       blocking recipe use or fabricating an amount.
-- [ ] Table-driven and property-based tests cover supported forms, precision,
+- [x] Table-driven and property-based tests cover supported forms, precision,
       deterministic conversion, and failure degradation.
 
 ## 08: Version recipes and control visibility

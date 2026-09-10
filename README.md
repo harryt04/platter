@@ -19,9 +19,9 @@ text, records qualitative confidence and a stable normalized identity when the
 parse is sufficient, resolves a bounded set of high-confidence ingredient
 aliases without collapsing meaningful varieties, classifies units by dimension,
 degrades incomplete lines to readable unknown ingredients without a fabricated
-amount, and performs exact locale-aware mass and volume conversions; grocery
-calculations, collaboration, and moderation remain intentionally deferred to
-the feature lanes described in the
+amount, and performs high-precision locale-aware mass and volume conversions
+with round-trip test coverage; grocery calculations, collaboration, and
+moderation remain intentionally deferred to the feature lanes described in the
 [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
 
 ## Documentation

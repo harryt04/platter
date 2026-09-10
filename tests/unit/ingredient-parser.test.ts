@@ -1,3 +1,5 @@
+import fc from 'fast-check'
+import Decimal from 'decimal.js'
 import { describe, expect, it } from 'vitest'
 import {
   convertIngredientQuantity,
@@ -229,5 +231,130 @@ describe('ingredient line parser', () => {
         { name: 'each', dimension: 'count' },
       ),
     ).toBeNull()
+  })
+
+  it.each([
+    ['gram', 'g', 'mass'],
+    ['kilograms', 'kg', 'mass'],
+    ['ounces', 'oz', 'mass'],
+    ['pounds', 'lb', 'mass'],
+    ['milliliters', 'ml', 'volume'],
+    ['litres', 'l', 'volume'],
+    ['teaspoons', 'tsp', 'volume'],
+    ['tablespoons', 'tbsp', 'volume'],
+    ['cups', 'cup', 'volume'],
+    ['fluid ounces', 'fl oz', 'volume'],
+    ['pieces', 'each', 'count'],
+    ['pinches', 'pinch', 'unknown'],
+  ] as const)(
+    'normalizes the supported unit alias %s',
+    (alias, name, dimension) => {
+      expect(parseIngredientLine(`2 ${alias} sugar`)).toMatchObject({
+        quantity: { min: '2' },
+        unit: { name, dimension },
+        ingredientName: 'sugar',
+      })
+    },
+  )
+
+  it('keeps fraction precision across a table of supported denominators', () => {
+    const cases = [
+      ['1/3 cup sugar', '0.33333333333333333333'],
+      ['1/7 cup sugar', '0.14285714285714285714'],
+      ['2 5/8 cups flour', '2.625'],
+      ['1½ cups milk', '1.5'],
+    ] as const
+
+    for (const [line, expected] of cases) {
+      expect(parseIngredientLine(line).quantity).toEqual({ min: expected })
+    }
+  })
+
+  it('parses generated positive fraction quantities without display rounding', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 1000 }),
+        fc.integer({ min: 2, max: 1000 }),
+        (numerator, denominator) => {
+          const parsed = parseIngredientLine(
+            `${numerator}/${denominator} cups flour`,
+          )
+          const expected = new Decimal(numerator)
+            .dividedBy(denominator)
+            .toString()
+
+          expect(parsed.quantity).toEqual({ min: expected })
+          expect(parsed.ingredientName).toBe('flour')
+        },
+      ),
+    )
+  })
+
+  it('preserves mass and volume conversion round trips for generated amounts', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 100000 }), (amount) => {
+        const quantity = { min: String(amount), max: String(amount + 1) }
+        const massInKilograms = convertIngredientQuantity(
+          quantity,
+          { name: 'g', dimension: 'mass' },
+          { name: 'kg', dimension: 'mass' },
+        )
+        const volumeInUsCups = convertIngredientQuantity(
+          quantity,
+          { name: 'ml', dimension: 'volume' },
+          { name: 'cup', dimension: 'volume' },
+          'en-US',
+        )
+
+        expect(
+          massInKilograms &&
+            convertIngredientQuantity(
+              massInKilograms,
+              { name: 'kg', dimension: 'mass' },
+              { name: 'g', dimension: 'mass' },
+            ),
+        ).toEqual(quantity)
+        const volumeRoundTrip = volumeInUsCups
+          ? convertIngredientQuantity(
+              volumeInUsCups,
+              { name: 'cup', dimension: 'volume' },
+              { name: 'ml', dimension: 'volume' },
+              'en-US',
+            )
+          : null
+        expect(volumeRoundTrip).not.toBeNull()
+        expect(
+          new Decimal(volumeRoundTrip!.min)
+            .minus(amount)
+            .abs()
+            .lessThan('1e-30'),
+        ).toBe(true)
+        expect(
+          new Decimal(volumeRoundTrip!.max!)
+            .minus(amount + 1)
+            .abs()
+            .lessThan('1e-30'),
+        ).toBe(true)
+      }),
+    )
+  })
+
+  it('never throws while degrading arbitrary source lines', () => {
+    fc.assert(
+      fc.property(fc.string(), (line) => {
+        const parsed = parseIngredientLine(line)
+
+        expect(parsed.originalText).toBe(
+          line
+            .replace(/[\u0000-\u001F\u007F]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim(),
+        )
+        expect(parsed.parserConfidence).toMatch(/^(high|medium|low)$/)
+        if (parsed.quantity === null) {
+          expect(parsed.unit).toEqual({ name: 'unknown', dimension: 'unknown' })
+        }
+      }),
+    )
   })
 })

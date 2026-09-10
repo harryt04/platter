@@ -139,11 +139,14 @@ them to a shopping run, then remove only their own saved reference.
 Signed-in users can now submit public HTTP(S) recipe URLs into a durable,
 owner-scoped import queue. Each submission carries a bounded per-user
 `Idempotency-Key`; retried requests reuse the original import and Agenda job,
-while the job stores only the import owner, import ID, and idempotency key. The
-connected import screen shows queued, processing, retrying, failed, and
-preview-ready status vocabulary and never queues URL work while offline. The
-background worker claims queued imports for the later extraction and review
-lanes; no URL content is treated as approved or public before that review.
+while the job stores only the import owner, import ID, and idempotency key.
+Import submission and status reads are authenticated and rate-limited per user;
+a queue outage marks only the import as failed and does not cross into saved
+recipes, discovery, or shopping. The connected import screen shows queued,
+processing, retrying, failed, and preview-ready status vocabulary and never
+queues URL work while offline. The background worker claims queued imports for
+the later extraction and review lanes; no URL content is treated as approved or
+public before that review.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

@@ -616,7 +616,7 @@ giving the importer access to private networks, credentials, or unbounded data.
 - [ ] Requests forward no user credentials and enforce redirect, byte, duration,
       and content-type limits without bypassing authentication, paywalls, or
       explicit technical blocks.
-- [ ] Import submission and status reads are authorized and rate-limited, and a
+- [x] Import submission and status reads are authorized and rate-limited, and a
       failed worker cannot impair saved recipes, discovery, or shopping.
 - [ ] Security tests cover DNS rebinding, redirects to blocked targets, oversized
       responses, timeouts, unsupported content types, and retry exhaustion.

@@ -212,6 +212,73 @@ describe('/api/v1/imports', () => {
     })
     expect(collection.find).toHaveBeenCalledWith({ userId: 'user-1' })
   })
+
+  it('rate-limits import submissions per authenticated user', async () => {
+    const collection = setup()
+    const responses = await Promise.all(
+      Array.from({ length: 11 }, (_, index) =>
+        POST(
+          new Request('http://localhost/api/v1/imports', {
+            method: 'POST',
+            headers: { 'idempotency-key': `rate-limit-key-${index}` },
+            body: JSON.stringify({ sourceUrl: importDocument.sourceUrl }),
+          }),
+        ),
+      ),
+    )
+
+    expect(
+      responses.slice(0, 10).every((response) => response.status === 202),
+    ).toBe(true)
+    expect(responses[10]?.status).toBe(429)
+    expect(responses[10]?.headers.get('Retry-After')).toMatch(/^\d+$/)
+    expect(collection.insertOne).toHaveBeenCalledTimes(10)
+    expect(enqueueRecipeImport).toHaveBeenCalledTimes(10)
+  })
+
+  it('rate-limits import status listing per authenticated user', async () => {
+    const collection = setup()
+    const responses = await Promise.all(
+      Array.from({ length: 121 }, () => GET()),
+    )
+
+    expect(
+      responses.slice(0, 120).every((response) => response.status === 200),
+    ).toBe(true)
+    expect(responses[120]?.status).toBe(429)
+    expect(responses[120]?.headers.get('Retry-After')).toMatch(/^\d+$/)
+    expect(collection.find).toHaveBeenCalledTimes(120)
+  })
+
+  it('records queue failure without exposing or mutating other product data', async () => {
+    const collection = setup()
+    enqueueRecipeImport.mockRejectedValueOnce(new Error('worker unavailable'))
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/imports', {
+        method: 'POST',
+        headers: { 'idempotency-key': 'queue-failure-key' },
+        body: JSON.stringify({ sourceUrl: importDocument.sourceUrl }),
+      }),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('IMPORT_QUEUE_UNAVAILABLE')
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      {
+        _id: expect.any(String),
+        userId: 'user-1',
+      },
+      {
+        $set: {
+          status: 'failed',
+          failureCode: 'IMPORT_QUEUE_UNAVAILABLE',
+          updatedAt: expect.any(String),
+        },
+      },
+    )
+    expect(collection.updateOne).toHaveBeenCalledOnce()
+  })
 })
 
 describe('GET /api/v1/imports/[importId]', () => {
@@ -240,5 +307,26 @@ describe('GET /api/v1/imports/[importId]', () => {
     )
     expect(malformed.status).toBe(404)
     expect(collection.findOne).toHaveBeenCalledTimes(1)
+  })
+
+  it('rate-limits detail status reads per authenticated user', async () => {
+    const collection = setup()
+    const responses = await Promise.all(
+      Array.from({ length: 121 }, () =>
+        getStatus(
+          new Request(
+            'http://localhost/api/v1/imports/b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7',
+          ),
+          { params: Promise.resolve({ importId: importDocument._id }) },
+        ),
+      ),
+    )
+
+    expect(
+      responses.slice(0, 120).every((response) => response.status === 200),
+    ).toBe(true)
+    expect(responses[120]?.status).toBe(429)
+    expect(responses[120]?.headers.get('Retry-After')).toMatch(/^\d+$/)
+    expect(collection.findOne).toHaveBeenCalledTimes(120)
   })
 })

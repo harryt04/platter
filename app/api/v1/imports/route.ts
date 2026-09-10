@@ -78,6 +78,17 @@ export async function GET() {
   const session = await getSession()
   if (!session) return authenticationRequired()
 
+  const limit = checkRateLimit(`recipe-import-status:${session.user.id}`, {
+    limit: 120,
+    windowMs: 60 * 60 * 1000,
+  })
+  if (!limit.allowed) {
+    return new Response(null, {
+      status: 429,
+      headers: { 'retry-after': String(limit.retryAfterSeconds) },
+    })
+  }
+
   const db = await getConnectedDatabase()
   const imports = await recipeImports(
     db.collection<RecipeImportDocument>('recipe_imports'),

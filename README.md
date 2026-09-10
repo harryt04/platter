@@ -205,6 +205,11 @@ and `E2E_USER_PASSWORD` in `.env` or `.env.local`, then run
 `.env`; a fresh clone will not contain them and must be provisioned locally.
 The seed never prints the password.
 
+Public recipe detail browser coverage also runs when `E2E_PUBLIC_RECIPE_ID` is
+set to a public usable recipe. Set `E2E_PUBLIC_RECIPE_UNAVAILABLE_IMAGE_ID`
+and `E2E_PUBLIC_RECIPE_MINIMAL_ID` to exercise the unavailable-image and
+missing-optional-metadata states.
+
 ## Commands
 
 | Command | Purpose |

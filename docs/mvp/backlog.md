@@ -283,7 +283,7 @@ resource and provide signed-in users a clear path to save or use it.
       before saving or adding one to a list.
 - [x] Suppressed and non-public versions do not render publicly, while an
       authorized owner can still access permitted private management paths.
-- [ ] Mobile, desktop, loading, unavailable-image, and missing-optional-metadata
+- [x] Mobile, desktop, loading, unavailable-image, and missing-optional-metadata
       states have browser and accessibility coverage.
 
 ## 12: Select and scale one recipe

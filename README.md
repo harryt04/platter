@@ -183,6 +183,11 @@ keep concurrent or retried saves from creating duplicate identities or
 versions. Mongo-backed integration coverage now verifies this workflow's
 deduplication, source-version coexistence, discovery visibility, private
 boundaries, and complete provenance.
+The import extraction stage now runs through a typed replaceable adapter
+contract: bounded fetched HTML can produce a normalized candidate, a partial
+candidate with warnings, or an isolated typed failure. The Schema.org adapter
+is the first implementation, leaving site-specific and generic adapters to be
+added behind the same boundary.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

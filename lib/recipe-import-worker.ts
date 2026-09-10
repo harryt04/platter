@@ -3,14 +3,15 @@ import type { Db } from 'mongodb'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { validateJobPayload } from '@/lib/jobs/registry'
 import {
+  runRecipeImportAdapter,
+  schemaOrgRecipeAdapter,
+} from '@/lib/recipe-import-adapters'
+import {
   fetchRecipeSource,
   isRecipeImportFetchError,
   type RecipeImportFetchResult,
 } from '@/lib/recipe-import-fetcher'
-import {
-  extractCanonicalUrl,
-  extractSchemaOrgRecipe,
-} from '@/lib/recipe-import-schema-org'
+import { extractCanonicalUrl } from '@/lib/recipe-import-schema-org'
 import type { RecipeImportDocument } from '@/lib/recipe-imports'
 
 export const recipeImportRetryPolicy = {
@@ -64,8 +65,8 @@ export function createRecipeImportJobHandler(
 
     try {
       const fetched = await fetcher(document.sourceUrl)
-      const preview = extractSchemaOrgRecipe(fetched.body, fetched.finalUrl)
-      if (!preview) {
+      const adapted = runRecipeImportAdapter(schemaOrgRecipeAdapter, fetched)
+      if (adapted.kind === 'failure') {
         await collection.updateOne(
           {
             _id: payload.importId,
@@ -75,13 +76,14 @@ export function createRecipeImportJobHandler(
           {
             $set: {
               status: 'failed',
-              failureCode: 'RECIPE_DATA_NOT_FOUND',
+              failureCode: adapted.failure.code,
               updatedAt: isoDateTime(new Date()),
             },
           },
         )
         return
       }
+      const preview = adapted.candidate
       const acquiredAt = isoDateTime(new Date())
       const canonicalUrl =
         extractCanonicalUrl(fetched.body, fetched.finalUrl) ?? fetched.finalUrl
@@ -101,7 +103,7 @@ export function createRecipeImportJobHandler(
             ...(preview.sourceAuthor
               ? { sourceAuthor: preview.sourceAuthor }
               : {}),
-            importer: 'schema-org-json-ld',
+            importer: adapted.adapterId,
             acquiredAt,
             acquisitionMethod: 'server-fetch',
             contentFingerprint,

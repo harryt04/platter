@@ -679,7 +679,7 @@ imports
 
 **Status:** ready-for-agent
 
-- [ ] The adapter contract accepts bounded fetched content and returns either a
+- [x] The adapter contract accepts bounded fetched content and returns either a
       normalized candidate, a partial candidate with warnings, or a typed failure.
 - [ ] Selection tries Schema.org first, then an enabled supported site adapter,
       then generic extraction without weakening fetch security.

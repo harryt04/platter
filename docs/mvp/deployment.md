@@ -18,3 +18,13 @@ must use the canonical HTTPS application URL. PostHog remains disabled unless `P
 PostHog settings are present; the adapter never sends recipe or grocery
 content. Google sign-in is reserved for a later release and requires
 human-created OAuth credentials and approved redirect URIs.
+
+## Recipe import adapters
+
+The worker passes only the bounded result of the SSRF-safe fetch stage to an
+import adapter. Adapters implement the typed contract in
+`lib/recipe-import-adapters.ts` and return a normalized candidate, a partial
+candidate with explicit warnings, or a typed failure. The current
+`schema-org-json-ld` adapter is isolated from fetching and persistence, so
+future site-specific or generic adapters can be added or disabled without
+changing manual recipes, saved recipes, discovery, or shopping workflows.

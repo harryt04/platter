@@ -53,11 +53,15 @@ function request(body: unknown) {
   })
 }
 
-function metadata(operationId = 'complete-1', baseRevision?: number) {
+function metadata(
+  operationId = 'complete-1',
+  baseRevision?: number,
+  clientId = 'client-1',
+) {
   return {
     runId: 'run-1',
     operationId,
-    clientId: 'client-1',
+    clientId,
     localDate: '2026-09-10',
     ...(baseRevision === undefined ? {} : { baseRevision }),
   }
@@ -69,6 +73,7 @@ function databaseFor({
   currentRun = {},
   completionMutationReceipts,
   activeRunId = 'run-1',
+  atomicRunDeletion = false,
 }: {
   listMembers?: Array<{
     userId: string
@@ -79,6 +84,7 @@ function databaseFor({
   currentRun?: Record<string, unknown> | null
   completionMutationReceipts?: unknown[]
   activeRunId?: string
+  atomicRunDeletion?: boolean
 } = {}) {
   const list = {
     _id: 'list-1',
@@ -128,9 +134,15 @@ function databaseFor({
     ),
     findOneAndUpdate: vi.fn().mockResolvedValue(list),
   }
+  let runDeleted = false
   const runs = {
     findOne: vi.fn().mockResolvedValue(currentRun === null ? null : run),
-    deleteOne: vi.fn().mockResolvedValue({ deletedCount: 1 }),
+    deleteOne: vi.fn().mockImplementation(async () => {
+      if (!atomicRunDeletion) return { deletedCount: 1 }
+      if (runDeleted) return { deletedCount: 0 }
+      runDeleted = true
+      return { deletedCount: 1 }
+    }),
     insertOne: vi.fn().mockResolvedValue({ acknowledged: true }),
   }
   const histories = {
@@ -310,5 +322,28 @@ describe('POST /api/v1/lists/[listId]/complete', () => {
     expect(await response.json()).toEqual(priorResponse)
     expect(database.runs.deleteOne).not.toHaveBeenCalled()
     expect(database.histories.insertOne).not.toHaveBeenCalled()
+  })
+
+  it('allows only one of two simultaneous completion attempts to roll the run over', async () => {
+    const database = databaseFor({ atomicRunDeletion: true })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const [first, second] = await Promise.all([
+      POST(
+        request(metadata('simultaneous-first', undefined, 'client-1')),
+        routeContext(),
+      ),
+      POST(
+        request(metadata('simultaneous-second', undefined, 'client-2')),
+        routeContext(),
+      ),
+    ])
+
+    expect([first.status, second.status].sort()).toEqual([200, 409])
+    expect(database.runs.deleteOne).toHaveBeenCalledTimes(2)
+    expect(database.histories.insertOne).toHaveBeenCalledTimes(1)
+    expect(database.runs.insertOne).toHaveBeenCalledTimes(1)
+    expect(database.lists.findOneAndUpdate).toHaveBeenCalledTimes(1)
+    expect(publishRunCompletionEvent).toHaveBeenCalledTimes(1)
   })
 })

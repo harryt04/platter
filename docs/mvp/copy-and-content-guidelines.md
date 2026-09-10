@@ -66,6 +66,9 @@ Avoid vague confirmation such as `Updated`, `Success`, `Conflict detected`, or `
 - Treat nutrition values as optional informational data, label their basis (such as per person), and do not make health or dietary claims from them.
 - Do not present a scraped recipe as authored by Platter.
 - Write concise procedural instructions; do not reproduce editorial storytelling from a source.
+- Hosted policy pages describe product behavior, not legal advice; keep
+  jurisdiction-specific obligations, contacts, and moderation processes
+  explicitly configurable by the operator.
 
 ## States and errors
 

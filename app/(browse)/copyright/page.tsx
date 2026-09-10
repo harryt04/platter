@@ -61,6 +61,12 @@ export default function CopyrightPage() {
               review and its audit trail. This page describes product behavior,
               not jurisdiction-specific legal advice.
             </p>
+            <p>
+              Each hosted operator must configure and publish the policies,
+              contacts, and removal or repeat-infringer processes required for
+              its deployment and jurisdiction. Platter does not decide which
+              legal obligations apply.
+            </p>
           </CardContent>
         </Card>
       </div>

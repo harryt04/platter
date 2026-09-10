@@ -15,6 +15,9 @@ describe('public copyright pages', () => {
       screen.getByText(/not shown on public recipe pages/i),
     ).toBeInTheDocument()
     expect(
+      screen.getByText(/each hosted operator must configure and publish/i),
+    ).toBeInTheDocument()
+    expect(
       screen.getAllByRole('link', { name: /report a concern/i })[0],
     ).toHaveAttribute('href', '/copyright/report')
   })

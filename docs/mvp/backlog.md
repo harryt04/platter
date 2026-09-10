@@ -733,7 +733,7 @@ imported-content rights and provenance
       through received, actioned, countered, restored, or closed states.
 - [ ] Administrative access to private data is exceptional, authorized, and
       auditable; contacts stay out of general logs and public APIs.
-- [ ] Hosted-policy copy distinguishes product functionality from legal advice
+- [x] Hosted-policy copy distinguishes product functionality from legal advice
       and leaves jurisdiction-specific operator obligations configurable.
 - [ ] Integration tests cover public submission, validation, rate limits,
       restricted fields, audit transitions, and unauthorized access.

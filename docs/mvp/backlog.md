@@ -192,7 +192,7 @@ without losing their original wording or pretending uncertain data is exact.
 - [x] Aliases can resolve canonical ingredients while meaningful distinctions,
       such as yellow onion and red onion, remain separate when they affect
       shopping intent.
-- [ ] A parsing failure produces a separate readable ingredient rather than
+- [x] A parsing failure produces a separate readable ingredient rather than
       blocking recipe use or fabricating an amount.
 - [ ] Table-driven and property-based tests cover supported forms, precision,
       deterministic conversion, and failure degradation.

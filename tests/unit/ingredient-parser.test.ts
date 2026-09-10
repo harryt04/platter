@@ -158,6 +158,19 @@ describe('ingredient line parser', () => {
     })
   })
 
+  it.each(['1 cup', '1 cup (optional)', 'optional'])(
+    'keeps an incomplete line readable without inventing an amount: %s',
+    (line) => {
+      expect(parseIngredientLine(line)).toMatchObject({
+        originalText: line,
+        quantity: null,
+        unit: { name: 'unknown', dimension: 'unknown' },
+        ingredientName: line,
+        parserConfidence: 'low',
+      })
+    },
+  )
+
   it('parses decimal quantities using the requested locale', () => {
     expect(
       parseIngredientLine('1,5 kg farine', { locale: 'fr-FR' }),

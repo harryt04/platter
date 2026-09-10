@@ -413,9 +413,11 @@ export function parseIngredientLine(
   }
 
   const extracted = extractPreparation(remainder)
-  const ingredientName = extracted.remainder.toLowerCase()
+  const parsedIngredientName = extracted.remainder.toLowerCase()
+  const parsingFailed = parsedIngredientName.length === 0
+  const ingredientName = parsingFailed ? originalText : parsedIngredientName
   const parserConfidence: IngredientParserConfidence =
-    !ingredientName || (quantityMatch !== null && quantity === null)
+    parsingFailed || (quantityMatch !== null && quantity === null)
       ? 'low'
       : quantity && parsedUnit.unit
         ? 'high'
@@ -423,9 +425,23 @@ export function parseIngredientLine(
           ? 'medium'
           : 'low'
   const normalizedIdentity =
-    parserConfidence === 'low'
+    parserConfidence === 'low' || parsingFailed
       ? undefined
       : resolveIngredientAlias(ingredientName)
+
+  if (parsingFailed) {
+    return {
+      originalText,
+      quantity: null,
+      unit: unknownUnit,
+      ingredientName,
+      parserConfidence,
+      ...(extracted.preparationNote
+        ? { preparationNote: extracted.preparationNote }
+        : {}),
+      optional: extracted.optional,
+    }
+  }
 
   return {
     originalText,

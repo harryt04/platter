@@ -748,7 +748,7 @@ complaints
 
 **Status:** ready-for-agent
 
-- [ ] Administrators can find public content by recipe ID, URL, domain, importer,
+- [x] Administrators can find public content by recipe ID, URL, domain, importer,
       or content fingerprint.
 - [ ] An administrator can suppress a recipe, source URL, or domain with a
       reason, actor, timestamp, and audit linkage.

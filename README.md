@@ -199,7 +199,9 @@ data and source details remain in the restricted complaints collection for the
 administrative workflow. Administrators can now review that restricted queue
 and move reports through guarded received, actioned, countered, restored, and
 closed states; each change records the administrator and timestamp in complaint
-history. The hosted policy copy also makes clear that operators must publish
+history. The administrator public-recipes screen also finds usable public or
+suppressed records by recipe ID, source URL, domain, importer, or content
+fingerprint while returning metadata only. The hosted policy copy also makes clear that operators must publish
 the contacts and jurisdiction-specific removal or repeat-infringer processes
 required for their deployment; Platter does not provide legal advice or select
 those obligations.

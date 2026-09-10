@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PublicRecipeFinder } from '@/components/admin/public-recipe-finder'
 import { isoDateTime } from '@/lib/contracts/ids'
 import type { AdminPublicRecipeSummary } from '@/lib/admin-public-recipes'
@@ -22,7 +23,10 @@ const recipe: AdminPublicRecipeSummary = {
 }
 
 describe('PublicRecipeFinder', () => {
-  afterEach(() => cleanup())
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+  })
 
   it('exposes supported search fields and public provenance metadata', () => {
     render(
@@ -62,5 +66,47 @@ describe('PublicRecipeFinder', () => {
       'href',
       '/admin/public-recipes',
     )
+  })
+
+  it('records a suppression reason for a selected public target', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          suppression: {
+            targetType: 'recipe',
+            target: 'recipe-1',
+          },
+        }),
+      }),
+    )
+
+    render(
+      <PublicRecipeFinder
+        field="recipe-id"
+        initialRecipes={[recipe]}
+        query="recipe-1"
+      />,
+    )
+
+    await user.type(screen.getByLabelText('Reason'), 'Rights request')
+    await user.click(screen.getByRole('button', { name: 'Record suppression' }))
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/v1/admin/public-content-suppressions',
+      expect.objectContaining({
+        body: JSON.stringify({
+          targetType: 'recipe',
+          target: 'recipe-1',
+          reason: 'Rights request',
+        }),
+      }),
+    )
+    expect(
+      await screen.findByText('Suppression recorded with an audit entry.'),
+    ).toBeInTheDocument()
   })
 })

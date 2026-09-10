@@ -75,6 +75,23 @@ export async function ensureSharedIndexes(db: Db) {
   await db
     .collection('complaint_access_audit')
     .createIndex({ actorId: 1, occurredAt: -1 })
+  await db.collection('public_content_suppressions').createIndex(
+    { targetType: 1, target: 1, status: 1 },
+    {
+      name: 'public_content_suppressions_active_target',
+      unique: true,
+      partialFilterExpression: { status: 'active' },
+    },
+  )
+  await db
+    .collection('public_content_suppressions')
+    .createIndex({ createdAt: -1 })
+  await db
+    .collection('public_content_suppression_audit')
+    .createIndex({ occurredAt: -1 })
+  await db
+    .collection('public_content_suppression_audit')
+    .createIndex({ actorId: 1, occurredAt: -1 })
   await db
     .collection('recipe_imports')
     .createIndex({ userId: 1, submittedAt: -1, _id: -1 })

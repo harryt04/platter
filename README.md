@@ -209,6 +209,13 @@ fingerprint while returning metadata only. The hosted policy copy also makes cle
 the contacts and jurisdiction-specific removal or repeat-infringer processes
 required for their deployment; Platter does not provide legal advice or select
 those obligations.
+Administrators can now record an active suppression for a public recipe, exact
+source URL, or source domain from the public-content finder. Suppression reasons
+retain the acting administrator, timestamp, and linked audit record; recipe
+targets are marked suppressed in the same Mongo transaction, while URL and
+domain targets are retained for the later publication-gating workflow. Active
+target uniqueness prevents duplicate suppression records, and the new indexes
+support audit review without exposing private recipe content.
 The import extraction stage now runs through a typed replaceable adapter
 contract: bounded fetched HTML can produce a normalized candidate, a partial
 candidate with warnings, or an isolated typed failure. Selection tries

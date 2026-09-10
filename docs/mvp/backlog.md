@@ -750,7 +750,7 @@ complaints
 
 - [x] Administrators can find public content by recipe ID, URL, domain, importer,
       or content fingerprint.
-- [ ] An administrator can suppress a recipe, source URL, or domain with a
+- [x] An administrator can suppress a recipe, source URL, or domain with a
       reason, actor, timestamp, and audit linkage.
 - [ ] Suppression removes a recipe from public search and its public page while
       retaining the minimum private data needed for complaints and completed-run

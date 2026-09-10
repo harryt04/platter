@@ -1,9 +1,16 @@
+'use client'
+
+import * as React from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  SuppressPublicContentForm,
+  type PublicContentSuppressionTarget,
+} from '@/components/admin/suppress-public-content-form'
 import type {
   AdminPublicRecipeSearchField,
   AdminPublicRecipeSummary,
@@ -34,6 +41,8 @@ export function PublicRecipeFinder({
   field: AdminPublicRecipeSearchField
   query: string
 }) {
+  const [recipes, setRecipes] = React.useState(initialRecipes)
+
   return (
     <>
       <Card className="mb-8">
@@ -106,7 +115,7 @@ export function PublicRecipeFinder({
             {query ? 'Matching public content' : 'Recent public content'}
           </h2>
           <div className="space-y-4">
-            {initialRecipes.map((recipe) => (
+            {recipes.map((recipe) => (
               <Card key={recipe.id}>
                 <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-2">
@@ -172,6 +181,45 @@ export function PublicRecipeFinder({
                     {recipe.sourceAvailability === 'unavailable' &&
                       ' · Source unavailable'}
                   </div>
+                  <SuppressPublicContentForm
+                    onSuppressed={(target) => {
+                      if (target.targetType !== 'recipe') return
+                      setRecipes((current) =>
+                        current.map((candidate) =>
+                          candidate.id === target.target
+                            ? { ...candidate, visibility: 'suppressed' }
+                            : candidate,
+                        ),
+                      )
+                    }}
+                    targets={
+                      [
+                        {
+                          targetType: 'recipe',
+                          target: recipe.id,
+                          label: 'This recipe',
+                        },
+                        ...(recipe.sourceUrl
+                          ? [
+                              {
+                                targetType: 'source-url' as const,
+                                target: recipe.sourceUrl,
+                                label: 'This source URL',
+                              },
+                            ]
+                          : []),
+                        ...(recipe.sourceDomain
+                          ? [
+                              {
+                                targetType: 'domain' as const,
+                                target: recipe.sourceDomain,
+                                label: `The ${recipe.sourceDomain} domain`,
+                              },
+                            ]
+                          : []),
+                      ] satisfies PublicContentSuppressionTarget[]
+                    }
+                  />
                 </CardContent>
               </Card>
             ))}

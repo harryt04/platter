@@ -277,7 +277,7 @@ resource and provide signed-in users a clear path to save or use it.
 - [x] The detail view shows title, permitted imagery, typical yield,
       ingredients, directions, source link, attribution, version, and available
       rights or license information.
-- [ ] Ingredient quantities use the documented data typography, and provenance
+- [x] Ingredient quantities use the documented data typography, and provenance
       is visible without a hover-only interaction.
 - [x] Anonymous visitors can read public recipes but are directed to sign in
       before saving or adding one to a list.

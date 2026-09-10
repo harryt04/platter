@@ -15,6 +15,7 @@ export type OfflineSyncResult = {
   attempted: number
   synced: number
   failed: number
+  completedRunOperations: number
 }
 
 function asPayload(value: unknown): Payload {
@@ -199,6 +200,10 @@ function isRevisionConflict(body: Record<string, unknown>, status: number) {
   return status === 409 && body.code === 'RUN_REVISION_CONFLICT'
 }
 
+function isCompletedRunResponse(body: Record<string, unknown>) {
+  return body.code === 'RUN_COMPLETED'
+}
+
 /** Synchronize durable offline changes in order while preserving last-write-wins fields. */
 export async function synchronizeOfflineOperations(
   userId: string,
@@ -240,7 +245,12 @@ export async function synchronizeOfflineOperations(
     }
   }
 
-  const result: OfflineSyncResult = { attempted: 0, synced: 0, failed: 0 }
+  const result: OfflineSyncResult = {
+    attempted: 0,
+    synced: 0,
+    failed: 0,
+    completedRunOperations: 0,
+  }
   for (const operation of candidates) {
     const runKey = `${operation.listId}:${operation.runId}`
     const attemptCount = operation.attemptCount + 1
@@ -270,6 +280,9 @@ export async function synchronizeOfflineOperations(
 
       if (!syncResponse.response.ok) {
         result.failed += 1
+        if (isCompletedRunResponse(syncResponse.body)) {
+          result.completedRunOperations += 1
+        }
         await updateOfflineOperation(userId, operation.operationId, {
           status: 'failed',
           attemptCount,

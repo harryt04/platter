@@ -57,7 +57,12 @@ describe('offline mutation synchronization', () => {
 
     await expect(
       synchronizeOfflineOperations('user-1', request),
-    ).resolves.toEqual({ attempted: 2, synced: 2, failed: 0 })
+    ).resolves.toEqual({
+      attempted: 2,
+      synced: 2,
+      failed: 0,
+      completedRunOperations: 0,
+    })
 
     expect(request).toHaveBeenCalledTimes(2)
     expect(request).toHaveBeenNthCalledWith(
@@ -105,7 +110,12 @@ describe('offline mutation synchronization', () => {
 
     await expect(
       synchronizeOfflineOperations('user-1', request),
-    ).resolves.toEqual({ attempted: 1, synced: 1, failed: 0 })
+    ).resolves.toEqual({
+      attempted: 1,
+      synced: 1,
+      failed: 0,
+      completedRunOperations: 0,
+    })
 
     expect(request).toHaveBeenCalledTimes(2)
     expect(JSON.parse(request.mock.calls[1][1].body as string)).toEqual({
@@ -129,7 +139,12 @@ describe('offline mutation synchronization', () => {
 
     await expect(
       synchronizeOfflineOperations('user-1', request),
-    ).resolves.toEqual({ attempted: 1, synced: 0, failed: 1 })
+    ).resolves.toEqual({
+      attempted: 1,
+      synced: 0,
+      failed: 1,
+      completedRunOperations: 0,
+    })
     expect(offline.updateOfflineOperation).toHaveBeenLastCalledWith(
       'user-1',
       'operation-1',
@@ -155,7 +170,12 @@ describe('offline mutation synchronization', () => {
 
     await expect(
       synchronizeOfflineOperations('user-1', request),
-    ).resolves.toEqual({ attempted: 1, synced: 0, failed: 1 })
+    ).resolves.toEqual({
+      attempted: 1,
+      synced: 0,
+      failed: 1,
+      completedRunOperations: 1,
+    })
     expect(request).toHaveBeenCalledOnce()
     expect(offline.updateOfflineOperation).toHaveBeenLastCalledWith(
       'user-1',

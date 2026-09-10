@@ -32,9 +32,11 @@ export function OfflineMutationSync({ userId }: { userId: string }) {
         }
         setState(result.failed > 0 ? 'failed' : 'synced')
         setMessage(
-          result.failed > 0
-            ? 'Some offline changes need attention. The shared list was refreshed.'
-            : 'Offline changes are synced. Showing the latest shared list.',
+          result.completedRunOperations > 0
+            ? 'This shopping run was completed on another device. Showing the latest shared list.'
+            : result.failed > 0
+              ? 'Some offline changes need attention. The shared list was refreshed.'
+              : 'Offline changes are synced. Showing the latest shared list.',
         )
         router.refresh()
       } catch {

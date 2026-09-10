@@ -13,7 +13,8 @@ the remaining offline correction,
 collaboration, and feature workflows are still planned in the backlog. Active
 shopping-run completion now atomically creates minimal history and a clean
 replacement run; connected clients receive the completion handoff, stale writes
-are rejected, and the remaining offline completion reconciliation is planned.
+are rejected, and queued old-run writes fail on reconnect with an explicit
+cross-device completion explanation.
 
 - `README.md` — project overview and documentation entry point.
 - `docs/mvp/prd.md` — main product rules, data model, planned technology, and acceptance checks.

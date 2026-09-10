@@ -58,4 +58,25 @@ describe('OfflineMutationSync', () => {
     )
     expect(mocks.refresh).not.toHaveBeenCalled()
   })
+
+  it('explains when queued work belongs to a run completed on another device', async () => {
+    mocks.synchronizeOfflineOperations.mockResolvedValue({
+      attempted: 1,
+      synced: 0,
+      failed: 1,
+      completedRunOperations: 1,
+    })
+
+    render(<OfflineMutationSync userId="user-1" />)
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          'This shopping run was completed on another device. Showing the latest shared list.',
+        ),
+      ).toBeInTheDocument(),
+    )
+    expect(screen.getByRole('status')).toHaveTextContent('Sync needs attention')
+    expect(mocks.refresh).toHaveBeenCalledOnce()
+  })
 })

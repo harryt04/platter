@@ -37,6 +37,9 @@ export class MongoRecipeSearchProvider implements SearchProvider {
     const projectedCursor = cursor.project({
       title: 1,
       sourceName: 1,
+      sourceUrl: 1,
+      sourceAuthor: 1,
+      attribution: 1,
       description: 1,
       typicalPeopleFed: 1,
       cuisine: 1,
@@ -58,6 +61,15 @@ export class MongoRecipeSearchProvider implements SearchProvider {
         id: document._id.toString(),
         title: String(document.title ?? 'Untitled recipe'),
         source: String(document.sourceName ?? 'Platter community'),
+        ...(document.sourceUrl === undefined
+          ? {}
+          : { sourceUrl: String(document.sourceUrl) }),
+        ...(document.sourceAuthor === undefined
+          ? {}
+          : { sourceAuthor: String(document.sourceAuthor) }),
+        ...(document.attribution === undefined
+          ? {}
+          : { attribution: String(document.attribution) }),
         score: decimalString(document.score ?? 0),
         visibility: document.visibility === 'private' ? 'private' : 'public',
         ...(document.typicalPeopleFed === undefined
@@ -73,7 +85,10 @@ export class MongoRecipeSearchProvider implements SearchProvider {
         ...(document.dietaryLabels === undefined
           ? {}
           : { dietaryLabels: document.dietaryLabels }),
-        ...(document.image?.url && document.image.rightsStatus !== 'unknown'
+        ...(document.image?.url &&
+        ['user-owned', 'licensed', 'permission-granted'].includes(
+          document.image.rightsStatus,
+        )
           ? {
               image: {
                 url: document.image.url,

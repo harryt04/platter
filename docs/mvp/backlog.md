@@ -254,7 +254,7 @@ search while keeping source attribution and visibility rules intact.
 
 - [x] Public visitors and signed-in users can browse and search public recipes
       by title, ingredient, source, cuisine, tag, and dietary label when present.
-- [ ] Results show title, permitted image, source, typical yield, and concise
+- [x] Results show title, permitted image, source, typical yield, and concise
       summary metadata with visible attribution.
 - [ ] Ranking favors title and ingredient matches, completeness, and allowed
       engagement signals without hiding or outweighing source identity.

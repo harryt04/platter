@@ -21,6 +21,9 @@ export interface RecipeSearchResult {
   id: string
   title: string
   source: string
+  sourceUrl?: string
+  sourceAuthor?: string
+  attribution?: string
   score: DecimalString
   visibility: 'public' | 'private'
   typicalPeopleFed?: number

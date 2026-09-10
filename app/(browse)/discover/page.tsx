@@ -60,11 +60,15 @@ export default async function DiscoverPage({
                 key={recipe.id}
                 title={recipe.title}
                 source={recipe.source}
+                sourceUrl={recipe.sourceUrl}
+                sourceAuthor={recipe.sourceAuthor}
+                attribution={recipe.attribution}
                 href={`/recipes/${recipe.id}`}
                 summary={recipe.summary}
                 typicalPeopleFed={recipe.typicalPeopleFed}
                 cuisine={recipe.cuisine}
                 tags={recipe.tags}
+                image={recipe.image}
               />
             ))}
           </div>

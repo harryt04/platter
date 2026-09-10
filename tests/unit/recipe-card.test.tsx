@@ -13,4 +13,30 @@ describe('RecipeCard', () => {
     expect(screen.getByText(title)).toBeInTheDocument()
     expect(document.querySelector('img')).not.toBeInTheDocument()
   })
+
+  it('shows permitted imagery and source attribution', () => {
+    render(
+      <RecipeCard
+        title="Tomato soup"
+        source="Synthetic kitchen"
+        sourceUrl="https://example.com/recipe"
+        sourceAuthor="Alex Rivera"
+        attribution="Adapted with permission."
+        image={{
+          url: 'https://images.example.com/soup.jpg',
+          altText: 'A bowl of tomato soup',
+        }}
+      />,
+    )
+
+    expect(
+      screen.getByRole('img', { name: 'A bowl of tomato soup' }),
+    ).toHaveAttribute('src', 'https://images.example.com/soup.jpg')
+    expect(
+      screen.getByRole('link', { name: 'Synthetic kitchen' }),
+    ).toHaveAttribute('href', 'https://example.com/recipe')
+    expect(
+      screen.getByText('By Alex Rivera · Adapted with permission.'),
+    ).toBeInTheDocument()
+  })
 })

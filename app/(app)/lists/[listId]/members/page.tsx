@@ -1,6 +1,7 @@
 import { requireSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { InvitationManagement } from '@/components/lists/invitation-management'
+import { MemberManagement } from '@/components/lists/member-management'
 import { findListForMember } from '@/lib/lists'
 import {
   invitations,
@@ -53,7 +54,12 @@ export default async function MembersPage({
       <PageHeader
         eyebrow="Members"
         title={`${list.name} members`}
-        description="Manage who can join this list."
+        description="Manage active members and pending invitations for this list."
+      />
+      <MemberManagement
+        listId={listId}
+        listName={list.name}
+        initialMembers={list.members}
       />
       <InvitationManagement
         listId={listId}

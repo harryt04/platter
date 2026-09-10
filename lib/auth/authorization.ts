@@ -2,6 +2,14 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { auth } from './auth'
 import type { EntityId } from '@/lib/contracts/ids'
+import { getConnectedDatabase } from '@/lib/db/mongo-client'
+import {
+  listIdSchema,
+  listRoleFilter,
+  type ListDocument,
+  type ListMember,
+  type ListRole,
+} from '@/lib/lists'
 
 export type Session = NonNullable<
   Awaited<ReturnType<typeof auth.api.getSession>>
@@ -24,15 +32,37 @@ export async function requireSession(returnTo?: string): Promise<Session> {
 }
 
 export async function requireListRole(
-  _listId: EntityId,
-  _roles: readonly string[] = ['owner', 'editor', 'viewer'],
+  listId: EntityId,
+  roles: readonly ListRole[] = ['owner', 'editor'],
 ) {
-  void _listId
-  void _roles
   const session = await requireSession()
-  throw new Error(
-    `List authorization is reserved for the Lists feature. User ${session.user.id} is authenticated.`,
+  const membership = await findListForRole(listId, session.user.id, roles)
+  if (!membership) redirect('/lists')
+  return { session, ...membership }
+}
+
+export async function findListForRole(
+  listId: string,
+  userId: string,
+  roles: readonly ListRole[] = ['owner', 'editor'],
+): Promise<{ list: ListDocument; member: ListMember } | null> {
+  if (!listIdSchema.safeParse(listId).success || roles.length === 0) {
+    return null
+  }
+
+  const db = await getConnectedDatabase()
+  const list = await db
+    .collection<ListDocument>('lists')
+    .findOne(listRoleFilter(listId, userId, roles))
+  if (!list) return null
+
+  const member = list.members.find(
+    (candidate) =>
+      candidate.userId === userId &&
+      candidate.invitationState === 'active' &&
+      roles.includes(candidate.role),
   )
+  return member ? { list, member } : null
 }
 
 export async function requireAdmin() {

@@ -82,9 +82,9 @@ ownership while preserving the rule that every live list has an owner.
 
 **Blocked by:** 02: Invite users to a list
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] Owners can list members, remove editors, promote an editor to owner, and
+- [x] Owners can list members, remove editors, promote an editor to owner, and
       distinguish pending invitations from active membership.
 - [ ] Editors can use shopping features but cannot invite, remove, promote,
       rename, archive, or delete.

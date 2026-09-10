@@ -301,8 +301,8 @@ the application without an undocumented dependency.
   API handlers, realtime handshakes, and worker-triggering operations perform
   authoritative server-side checks.
 - Provide `requireSession`, `requireListRole`, and `requireAdmin` helpers. The
-  list helper may initially throw a typed not-implemented result until list
-  persistence lands, but its input/output contract is fixed.
+  list-role helper must resolve an active membership and allowed role before a
+  protected list operation proceeds.
 - Leave Google configuration as a documented extension point. The future human
   step is to create OAuth credentials and approved redirect URIs; the future
   implementation step is to register the provider and reveal its sign-in
@@ -532,7 +532,7 @@ claims that a control already works.
 | `/sign-up` | Working name, email, and password registration. |
 | `/forgot-password` | Working request with non-enumerating confirmation. |
 | `/reset-password` | Working token validation and password reset. |
-| `/invitations/[token]` | Invitation summary placeholder; authentication and connectivity boundary are real, acceptance is deferred. |
+| `/invitations/[token]` | Invitation summary and connected acceptance with invited-account and expiry checks. |
 
 ### Protected application routes
 

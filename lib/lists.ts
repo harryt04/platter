@@ -114,6 +114,24 @@ export function listEditorFilter(listId: string, userId: string) {
   }
 }
 
+export function listRoleFilter(
+  listId: string,
+  userId: string,
+  roles: readonly ListRole[] = ['owner', 'editor'],
+) {
+  return {
+    _id: listId,
+    status: { $ne: 'deleted' as const },
+    members: {
+      $elemMatch: {
+        userId,
+        role: roles.length === 1 ? roles[0] : { $in: roles },
+        invitationState: 'active' as const,
+      },
+    },
+  }
+}
+
 export function listMembershipFilter(userId: string) {
   return {
     status: { $ne: 'deleted' as const },

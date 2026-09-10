@@ -38,7 +38,11 @@ const groups = [
   },
 ]
 
-export function AppSidebar() {
+export function AppSidebar({
+  lists,
+}: {
+  lists: { id: string; name: string }[]
+}) {
   const pathname = usePathname()
   const { open } = useSidebar()
   return (
@@ -82,17 +86,19 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Your lists</SidebarGroupLabel>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                active={pathname.startsWith('/lists/family')}
-                asChild
-              >
-                <Link href="/lists/family">
-                  <ChefHat size={18} />
-                  <span className="sidebar-label">Family</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {lists.map((list) => (
+              <SidebarMenuItem key={list.id}>
+                <SidebarMenuButton
+                  active={pathname.startsWith(`/lists/${list.id}`)}
+                  asChild
+                >
+                  <Link href={`/lists/${list.id}`}>
+                    <ChefHat size={18} />
+                    <span className="sidebar-label">{list.name}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
                 <Link href="/lists/new">

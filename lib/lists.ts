@@ -1,0 +1,158 @@
+import type { ClientSession, Collection } from 'mongodb'
+import { z } from 'zod'
+import {
+  entityId,
+  isoDateTime,
+  type EntityId,
+  type IsoDateTime,
+} from '@/lib/contracts/ids'
+import { getConnectedDatabase, getMongoClient } from '@/lib/db/mongo-client'
+
+const listNameSchema = z
+  .string({ error: 'Enter a list name.' })
+  .trim()
+  .min(1, 'Enter a list name.')
+  .max(100, 'List names must be 100 characters or fewer.')
+
+export const createListSchema = z.object({ name: listNameSchema })
+
+export type ListRole = 'owner' | 'editor'
+export type ListStatus = 'active' | 'archived'
+
+export type ListMember = {
+  userId: string
+  role: ListRole
+  invitationState: 'active'
+}
+
+export type ShoppingRunDocument = {
+  _id: string
+  listId: string
+  state: 'active'
+  revision: number
+  recipeSelections: unknown[]
+  groceryItems: unknown[]
+  manualAdditions: unknown[]
+  ordering: unknown[]
+  createdAt: IsoDateTime
+  updatedAt: IsoDateTime
+}
+
+export type ListDocument = {
+  _id: string
+  name: string
+  ownerIds: string[]
+  status: ListStatus
+  activeRunId: string
+  members: ListMember[]
+  createdAt: IsoDateTime
+  updatedAt: IsoDateTime
+}
+
+export type PlatterList = {
+  id: EntityId
+  name: string
+  ownerIds: string[]
+  status: ListStatus
+  activeRunId: EntityId
+  members: ListMember[]
+  createdAt: IsoDateTime
+  updatedAt: IsoDateTime
+}
+
+export function lists(collection: Collection<ListDocument>) {
+  return collection
+}
+
+export function shoppingRuns(collection: Collection<ShoppingRunDocument>) {
+  return collection
+}
+
+export function listMemberFilter(listId: string, userId: string) {
+  return {
+    _id: listId,
+    members: { $elemMatch: { userId, invitationState: 'active' as const } },
+  }
+}
+
+export function listMembershipFilter(userId: string) {
+  return {
+    members: { $elemMatch: { userId, invitationState: 'active' as const } },
+  }
+}
+
+export function createListDocument(
+  ownerId: string,
+  name: string,
+  activeRunId: string,
+  now = new Date(),
+): ListDocument {
+  const timestamp = isoDateTime(now)
+  return {
+    _id: crypto.randomUUID(),
+    name,
+    ownerIds: [ownerId],
+    status: 'active',
+    activeRunId,
+    members: [{ userId: ownerId, role: 'owner', invitationState: 'active' }],
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }
+}
+
+export function createActiveShoppingRunDocument(
+  listId: string,
+  now = new Date(),
+): ShoppingRunDocument {
+  const timestamp = isoDateTime(now)
+  return {
+    _id: crypto.randomUUID(),
+    listId,
+    state: 'active',
+    revision: 0,
+    recipeSelections: [],
+    groceryItems: [],
+    manualAdditions: [],
+    ordering: [],
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }
+}
+
+export function toPlatterList(document: ListDocument): PlatterList {
+  return {
+    id: entityId(document._id),
+    name: document.name,
+    ownerIds: document.ownerIds,
+    status: document.status,
+    activeRunId: entityId(document.activeRunId),
+    members: document.members,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+  }
+}
+
+export async function createListWithActiveRun(
+  ownerId: string,
+  name: string,
+): Promise<{ list: ListDocument; run: ShoppingRunDocument }> {
+  const db = await getConnectedDatabase()
+  const client = getMongoClient()
+  const runId = crypto.randomUUID()
+  const list = createListDocument(ownerId, name, runId)
+  const run = createActiveShoppingRunDocument(list._id)
+  run._id = runId
+
+  await client.withSession(async (session) => {
+    await session.withTransaction(async (transactionSession: ClientSession) => {
+      await lists(db.collection<ListDocument>('lists')).insertOne(list, {
+        session: transactionSession,
+      })
+      await shoppingRuns(
+        db.collection<ShoppingRunDocument>('shopping_runs'),
+      ).insertOne(run, { session: transactionSession })
+    })
+  })
+
+  return { list, run }
+}

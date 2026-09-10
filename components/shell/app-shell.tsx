@@ -6,10 +6,16 @@ import {
 } from '@/components/ui/sidebar'
 import { OfflineBanner } from '@/components/states/offline-banner'
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  lists,
+}: {
+  children: React.ReactNode
+  lists?: { id: string; name: string }[]
+}) {
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar lists={lists ?? []} />
       <SidebarInset>
         <header className="bg-background/95 sticky top-0 z-20 flex min-h-16 items-center gap-3 border-b px-4 backdrop-blur md:px-8">
           <SidebarTrigger />

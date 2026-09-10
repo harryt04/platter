@@ -3,6 +3,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
+import { requireSession } from '@/lib/auth/authorization'
+import { getConnectedDatabase } from '@/lib/db/mongo-client'
+import { listMemberFilter, type ListDocument } from '@/lib/lists'
+import { notFound } from 'next/navigation'
 
 export default async function ListPage({
   params,
@@ -10,12 +14,18 @@ export default async function ListPage({
   params: Promise<{ listId: string }>
 }) {
   const { listId } = await params
-  const name = listId === 'personal' ? 'Personal' : 'Family'
+  const session = await requireSession(`/lists/${listId}`)
+  const db = await getConnectedDatabase()
+  const list = await db
+    .collection<ListDocument>('lists')
+    .findOne(listMemberFilter(listId, session.user.id))
+  if (!list) notFound()
+
   return (
     <ContentContainer>
       <PageHeader
         eyebrow="List"
-        title={name}
+        title={list.name}
         description="Your current recipe selections and shopping run summary."
         action={
           <Button asChild>
@@ -31,11 +41,11 @@ export default async function ListPage({
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span>Recipes</span>
-              <Badge variant="outline">2 selected</Badge>
+              <Badge variant="outline">None selected</Badge>
             </div>
             <div className="flex justify-between">
               <span>Grocery items</span>
-              <span className="font-data">8</span>
+              <span className="font-data">0</span>
             </div>
             <Button className="w-full" asChild>
               <Link href={`/lists/${listId}/shop`}>Start shopping</Link>
@@ -47,8 +57,7 @@ export default async function ListPage({
             <CardTitle>Selected recipes</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <p>Tacos · 4 people</p>
-            <p>Curry · 2 people</p>
+            <p className="text-muted-foreground">No recipes selected yet.</p>
             <Link
               className="text-primary inline-block min-h-11 pt-3"
               href="/discover"

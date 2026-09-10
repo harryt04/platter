@@ -102,7 +102,10 @@ export function RecipeImportForm({
     try {
       const response = await fetch('/api/v1/imports', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          'idempotency-key': crypto.randomUUID(),
+        },
         body: JSON.stringify({ sourceUrl }),
       })
       const body = (await response.json()) as {

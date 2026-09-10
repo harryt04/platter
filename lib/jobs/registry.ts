@@ -1,9 +1,11 @@
 import { z } from 'zod'
+import { recipeImportIdempotencyKeySchema } from '@/lib/recipe-imports'
 
 export const jobPayloads = {
   'recipe-import': z.object({
     importId: z.string().uuid(),
-    sourceUrl: z.string().url(),
+    userId: z.string().min(1),
+    idempotencyKey: recipeImportIdempotencyKeySchema,
   }),
   smoke: z.object({ attempt: z.number().int().nonnegative().default(0) }),
 } as const

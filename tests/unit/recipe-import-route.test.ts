@@ -18,6 +18,7 @@ vi.mock('@/lib/jobs/queue', () => ({ enqueueRecipeImport }))
 const importDocument = {
   _id: 'b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7',
   userId: 'user-1',
+  idempotencyKey: 'import-key-1',
   sourceUrl: 'https://example.com/recipe',
   status: 'queued' as const,
   attemptCount: 0,
@@ -34,7 +35,15 @@ function setup(document = importDocument) {
         }),
       }),
     }),
-    findOne: vi.fn().mockResolvedValue(document),
+    findOne: vi
+      .fn()
+      .mockImplementation(async (filter: Record<string, string>) =>
+        filter.idempotencyKey
+          ? filter.idempotencyKey === document.idempotencyKey
+            ? document
+            : null
+          : document,
+      ),
     insertOne: vi.fn().mockResolvedValue({ acknowledged: true }),
     updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
   }
@@ -61,6 +70,7 @@ describe('/api/v1/imports', () => {
         await POST(
           new Request('http://localhost/api/v1/imports', {
             method: 'POST',
+            headers: { 'idempotency-key': 'auth-test-key' },
             body: JSON.stringify({ sourceUrl: importDocument.sourceUrl }),
           }),
         )
@@ -73,6 +83,7 @@ describe('/api/v1/imports', () => {
     const response = await POST(
       new Request('http://localhost/api/v1/imports', {
         method: 'POST',
+        headers: { 'idempotency-key': 'new-import-key' },
         body: JSON.stringify({ sourceUrl: '  https://example.com/recipe  ' }),
       }),
     )
@@ -92,9 +103,61 @@ describe('/api/v1/imports', () => {
     )
     expect(enqueueRecipeImport).toHaveBeenCalledWith(
       expect.anything(),
-      expect.any(String),
-      'https://example.com/recipe',
+      expect.objectContaining({
+        importId: expect.any(String),
+        userId: 'user-1',
+        idempotencyKey: 'new-import-key',
+      }),
     )
+  })
+
+  it('replays a retry with the same key without creating or enqueueing another import', async () => {
+    const existing = { ...importDocument, idempotencyKey: 'retry-key' }
+    const collection = setup(existing)
+    const response = await POST(
+      new Request('http://localhost/api/v1/imports', {
+        method: 'POST',
+        headers: { 'idempotency-key': 'retry-key' },
+        body: JSON.stringify({ sourceUrl: existing.sourceUrl }),
+      }),
+    )
+
+    expect(response.status).toBe(202)
+    expect((await response.json()).import.id).toBe(existing._id)
+    expect(collection.insertOne).not.toHaveBeenCalled()
+    expect(enqueueRecipeImport).not.toHaveBeenCalled()
+  })
+
+  it('rejects reusing an idempotency key for a different URL', async () => {
+    const existing = { ...importDocument, idempotencyKey: 'reused-key' }
+    const collection = setup(existing)
+    const response = await POST(
+      new Request('http://localhost/api/v1/imports', {
+        method: 'POST',
+        headers: { 'idempotency-key': 'reused-key' },
+        body: JSON.stringify({ sourceUrl: 'https://example.com/other-recipe' }),
+      }),
+    )
+
+    expect(response.status).toBe(409)
+    expect((await response.json()).code).toBe('IDEMPOTENCY_KEY_REUSED')
+    expect(collection.insertOne).not.toHaveBeenCalled()
+    expect(enqueueRecipeImport).not.toHaveBeenCalled()
+  })
+
+  it('requires an idempotency key before touching persistence', async () => {
+    const collection = setup()
+    const response = await POST(
+      new Request('http://localhost/api/v1/imports', {
+        method: 'POST',
+        body: JSON.stringify({ sourceUrl: importDocument.sourceUrl }),
+      }),
+    )
+
+    expect(response.status).toBe(422)
+    expect((await response.json()).code).toBe('INVALID_IDEMPOTENCY_KEY')
+    expect(collection.insertOne).not.toHaveBeenCalled()
+    expect(enqueueRecipeImport).not.toHaveBeenCalled()
   })
 
   it('rejects non-web URLs without touching persistence', async () => {
@@ -102,6 +165,7 @@ describe('/api/v1/imports', () => {
     const response = await POST(
       new Request('http://localhost/api/v1/imports', {
         method: 'POST',
+        headers: { 'idempotency-key': 'invalid-url-key' },
         body: JSON.stringify({ sourceUrl: 'file:///tmp/recipe.html' }),
       }),
     )
@@ -117,6 +181,7 @@ describe('/api/v1/imports', () => {
     const response = await POST(
       new Request('http://localhost/api/v1/imports', {
         method: 'POST',
+        headers: { 'idempotency-key': 'credentials-url-key' },
         body: JSON.stringify({
           sourceUrl: 'https://user:secret@example.com/recipe',
         }),

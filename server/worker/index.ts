@@ -23,13 +23,20 @@ async function main() {
   })
   agenda.define('recipe-import', async (job) => {
     const payload = validateJobPayload('recipe-import', job.attrs.data)
-    await db.collection<RecipeImportDocument>('recipe_imports').updateOne(
-      {
-        _id: payload.importId,
-        status: { $in: ['queued', 'retrying'] },
-      },
-      { $set: { status: 'processing', updatedAt: isoDateTime(new Date()) } },
-    )
+    const result = await db
+      .collection<RecipeImportDocument>('recipe_imports')
+      .updateOne(
+        {
+          _id: payload.importId,
+          userId: payload.userId,
+          idempotencyKey: payload.idempotencyKey,
+          status: { $in: ['queued', 'retrying'] },
+        },
+        { $set: { status: 'processing', updatedAt: isoDateTime(new Date()) } },
+      )
+    if (result.matchedCount !== 1) {
+      throw new Error('Recipe import record is no longer queued.')
+    }
     console.log(
       JSON.stringify({
         service: 'worker',

@@ -608,7 +608,7 @@ giving the importer access to private networks, credentials, or unbounded data.
 
 - [x] A signed-in user can submit only an HTTP or HTTPS URL and see durable
       queued, processing, retrying, failed, or preview-ready status.
-- [ ] Enqueueing uses an idempotency key and the job stores only necessary
+- [x] Enqueueing uses an idempotency key and the job stores only necessary
       references and metadata, not cookies, secrets, or full recipe documents.
 - [ ] Fetching validates DNS and resolved IPs before requests and after every
       redirect, blocking loopback, private, link-local, reserved, multicast, and

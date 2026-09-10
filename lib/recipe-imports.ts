@@ -19,6 +19,18 @@ export type RecipeImportStatus = z.infer<typeof recipeImportStatusSchema>
 
 export const recipeImportIdSchema = z.string().uuid('Enter a valid import id.')
 
+/**
+ * Idempotency keys are opaque request identifiers, not user content. Keep
+ * them bounded and printable so they are safe to persist and use in job
+ * uniqueness queries.
+ */
+export const recipeImportIdempotencyKeySchema = z
+  .string({ error: 'Send an Idempotency-Key header.' })
+  .trim()
+  .min(1, 'Send an Idempotency-Key header.')
+  .max(128, 'Idempotency keys must be 128 characters or fewer.')
+  .regex(/^[\x21-\x7e]+$/, 'Idempotency keys must use printable characters.')
+
 export const recipeImportUrlSchema = z
   .string({ error: 'Enter a recipe URL.' })
   .trim()
@@ -40,6 +52,7 @@ export const submitRecipeImportSchema = z.object({
 export type RecipeImportDocument = {
   _id: string
   userId: string
+  idempotencyKey: string
   sourceUrl: string
   status: RecipeImportStatus
   attemptCount: number
@@ -68,6 +81,7 @@ export function recipeImportOwnerFilter(importId: string, userId: string) {
 
 export function createRecipeImportDocument(
   userId: string,
+  idempotencyKey: string,
   sourceUrl: string,
   now = new Date(),
 ): RecipeImportDocument {
@@ -75,6 +89,7 @@ export function createRecipeImportDocument(
   return {
     _id: crypto.randomUUID(),
     userId,
+    idempotencyKey,
     sourceUrl,
     status: 'queued',
     attemptCount: 0,

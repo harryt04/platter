@@ -4,12 +4,25 @@ import type { Db } from 'mongodb'
 
 export async function enqueueRecipeImport(
   db: Db,
-  importId: string,
-  sourceUrl: string,
+  payload: {
+    importId: string
+    userId: string
+    idempotencyKey: string
+  },
 ) {
   const agenda = new Agenda({
     backend: new MongoBackend({ mongo: db }),
     name: 'platter-web-enqueuer',
   })
-  await agenda.now('recipe-import', { importId, sourceUrl })
+  const job = agenda.create('recipe-import', payload)
+  job
+    .unique(
+      {
+        'data.userId': payload.userId,
+        'data.idempotencyKey': payload.idempotencyKey,
+      },
+      { insertOnly: true },
+    )
+    .schedule(new Date())
+  await job.save()
 }

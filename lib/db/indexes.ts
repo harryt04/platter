@@ -58,6 +58,14 @@ export async function ensureSharedIndexes(db: Db) {
   await db
     .collection('recipe_imports')
     .createIndex({ userId: 1, submittedAt: -1, _id: -1 })
+  await db.collection('recipe_imports').createIndex(
+    { userId: 1, idempotencyKey: 1 },
+    {
+      name: 'recipe_imports_user_idempotency_key',
+      unique: true,
+      partialFilterExpression: { idempotencyKey: { $exists: true } },
+    },
+  )
   await db.collection('lists').createIndex({
     'members.userId': 1,
     'members.invitationState': 1,

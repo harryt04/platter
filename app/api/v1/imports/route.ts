@@ -4,6 +4,7 @@ import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { isoDateTime } from '@/lib/contracts/ids'
 import {
   createRecipeImportDocument,
+  recipeImportIdempotencyKeySchema,
   recipeImports,
   submitRecipeImportSchema,
   toRecipeImportSummary,
@@ -43,6 +44,36 @@ function rateLimited(retryAfterSeconds: number) {
   )
 }
 
+function invalidIdempotencyKey() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/invalid-idempotency-key',
+    title: 'Invalid idempotency key',
+    status: 422,
+    detail:
+      'Send a unique printable Idempotency-Key header with each new import.',
+    code: 'INVALID_IDEMPOTENCY_KEY',
+  })
+}
+
+function idempotencyConflict() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/idempotency-key-reused',
+    title: 'Idempotency key already used',
+    status: 409,
+    detail: 'Use a new Idempotency-Key when importing a different URL.',
+    code: 'IDEMPOTENCY_KEY_REUSED',
+  })
+}
+
+function isDuplicateKeyError(error: unknown) {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    'code' in error &&
+    error.code === 11000
+  )
+}
+
 export async function GET() {
   const session = await getSession()
   if (!session) return authenticationRequired()
@@ -64,6 +95,11 @@ export async function GET() {
 export async function POST(request: Request) {
   const session = await getSession()
   if (!session) return authenticationRequired()
+
+  const idempotencyKey = request.headers.get('idempotency-key')
+  const parsedIdempotencyKey =
+    recipeImportIdempotencyKeySchema.safeParse(idempotencyKey)
+  if (!parsedIdempotencyKey.success) return invalidIdempotencyKey()
 
   const limit = checkRateLimit(
     `recipe-import-submit:${session.user.id}`,
@@ -97,16 +133,52 @@ export async function POST(request: Request) {
   }
 
   const db = await getConnectedDatabase()
+  const collection = recipeImports(
+    db.collection<RecipeImportDocument>('recipe_imports'),
+  )
+  const existing = await collection.findOne({
+    userId: session.user.id,
+    idempotencyKey: parsedIdempotencyKey.data,
+  })
+  if (existing) {
+    if (existing.sourceUrl !== parsed.data.sourceUrl) {
+      return idempotencyConflict()
+    }
+    return Response.json(
+      { import: toRecipeImportSummary(existing) },
+      { status: 202 },
+    )
+  }
+
   const document = createRecipeImportDocument(
     session.user.id,
+    parsedIdempotencyKey.data,
     parsed.data.sourceUrl,
   )
-  await recipeImports(
-    db.collection<RecipeImportDocument>('recipe_imports'),
-  ).insertOne(document)
+  try {
+    await collection.insertOne(document)
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) throw error
+    const raced = await collection.findOne({
+      userId: session.user.id,
+      idempotencyKey: parsedIdempotencyKey.data,
+    })
+    if (!raced) throw error
+    if (raced.sourceUrl !== parsed.data.sourceUrl) {
+      return idempotencyConflict()
+    }
+    return Response.json(
+      { import: toRecipeImportSummary(raced) },
+      { status: 202 },
+    )
+  }
 
   try {
-    await enqueueRecipeImport(db, document._id, document.sourceUrl)
+    await enqueueRecipeImport(db, {
+      importId: document._id,
+      userId: document.userId,
+      idempotencyKey: document.idempotencyKey,
+    })
   } catch {
     await db.collection<RecipeImportDocument>('recipe_imports').updateOne(
       { _id: document._id, userId: session.user.id },

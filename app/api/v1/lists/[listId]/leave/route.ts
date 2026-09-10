@@ -2,7 +2,12 @@ import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { getSession } from '@/lib/auth/authorization'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
-import { listEditorFilter, toPlatterList, type ListDocument } from '@/lib/lists'
+import {
+  listEditorFilter,
+  listIdSchema,
+  toPlatterList,
+  type ListDocument,
+} from '@/lib/lists'
 
 type RouteContext = { params: Promise<{ listId: string }> }
 
@@ -31,6 +36,7 @@ export async function POST(_request: Request, context: RouteContext) {
   if (!session) return authenticationRequired()
 
   const { listId } = await context.params
+  if (!listIdSchema.safeParse(listId).success) return listNotFound()
   const updated = await (
     await getConnectedDatabase()
   )

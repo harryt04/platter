@@ -27,6 +27,26 @@ const list = {
 }
 
 describe('PATCH /api/v1/lists/[listId]', () => {
+  it('rejects malformed list ids without querying another list', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const collection = { findOne: vi.fn() }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/lists/%00', {
+        method: 'PATCH',
+        body: JSON.stringify({ name: 'Private rename' }),
+      }),
+      { params: Promise.resolve({ listId: 'list-\u0000-1' }) },
+    )
+
+    expect(response.status).toBe(404)
+    expect((await response.json()).code).toBe('LIST_NOT_FOUND')
+    expect(collection.findOne).not.toHaveBeenCalled()
+  })
+
   it('renames a list for an authenticated owner and scopes the update', async () => {
     getSession.mockResolvedValue({ user: { id: 'user-1' } })
     const collection = {

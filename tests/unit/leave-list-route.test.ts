@@ -32,6 +32,25 @@ const list = {
 }
 
 describe('POST /api/v1/lists/[listId]/leave', () => {
+  it('rejects malformed list ids before touching list storage', async () => {
+    getSession.mockResolvedValue({ user: { id: 'editor-1' } })
+    const collection = { findOneAndUpdate: vi.fn() }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/leave', {
+        method: 'POST',
+      }),
+      { params: Promise.resolve({ listId: 'list-\u0000-1' }) },
+    )
+
+    expect(response.status).toBe(404)
+    expect((await response.json()).code).toBe('LIST_NOT_FOUND')
+    expect(collection.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
   it('removes an active editor with a list-scoped atomic update', async () => {
     getSession.mockResolvedValue({ user: { id: 'editor-1' } })
     const collection = {

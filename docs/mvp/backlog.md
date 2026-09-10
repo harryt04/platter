@@ -50,7 +50,7 @@ they can create and manage without exposing one list to members of another.
       confirmation that names the shared impact.
 - [x] An editor can leave a list without gaining access to any other list.
 - [ ] An archived or deleted list rejects new shopping operations.
-- [ ] List IDs are treated as untrusted, and server-side authorization prevents
+- [x] List IDs are treated as untrusted, and server-side authorization prevents
       access leakage between independently shared lists.
 - [ ] Integration and browser tests cover creation of three lists, lifecycle
       changes, permissions, and active-run uniqueness.

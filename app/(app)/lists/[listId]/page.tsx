@@ -4,8 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
 import { requireSession } from '@/lib/auth/authorization'
-import { getConnectedDatabase } from '@/lib/db/mongo-client'
-import { listMemberFilter, type ListDocument } from '@/lib/lists'
+import { findListForMember } from '@/lib/lists'
 import { notFound } from 'next/navigation'
 import { RenameListForm } from '@/components/lists/rename-list-form'
 import { LeaveListButton } from '@/components/lists/leave-list-button'
@@ -18,10 +17,7 @@ export default async function ListPage({
 }) {
   const { listId } = await params
   const session = await requireSession(`/lists/${listId}`)
-  const db = await getConnectedDatabase()
-  const list = await db
-    .collection<ListDocument>('lists')
-    .findOne(listMemberFilter(listId, session.user.id))
+  const list = await findListForMember(listId, session.user.id)
   if (!list || list.status === 'deleted') notFound()
 
   return (

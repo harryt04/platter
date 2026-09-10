@@ -96,6 +96,7 @@ describe('lists', () => {
 })
 import { decimalString, entityId, isoDateTime } from '@/lib/contracts/ids'
 import { problemSchema } from '@/lib/contracts/problem'
+import { listIdSchema } from '@/lib/lists'
 
 describe('foundation contracts', () => {
   it('keeps boundary values opaque and serializable', () => {
@@ -115,5 +116,14 @@ describe('foundation contracts', () => {
         code: 'BAD',
       }).code,
     ).toBe('BAD')
+  })
+
+  it('treats list ids as bounded, opaque route input', () => {
+    expect(listIdSchema.safeParse('list-1').success).toBe(true)
+    expect(listIdSchema.safeParse('').success).toBe(false)
+    expect(listIdSchema.safeParse(`list-${'x'.repeat(100)}`).success).toBe(
+      false,
+    )
+    expect(listIdSchema.safeParse('list-\u0000-1').success).toBe(false)
   })
 })

@@ -6,6 +6,9 @@ import {
   PageHeader,
   PageSection,
 } from '@/components/shell/page-header'
+import { requireSession } from '@/lib/auth/authorization'
+import { findListForMember, listAcceptsShoppingOperations } from '@/lib/lists'
+import { notFound } from 'next/navigation'
 
 export default async function ShopPage({
   params,
@@ -13,14 +16,31 @@ export default async function ShopPage({
   params: Promise<{ listId: string }>
 }) {
   const { listId } = await params
+  const session = await requireSession(`/lists/${listId}/shop`)
+  const list = await findListForMember(listId, session.user.id)
+  if (!list) notFound()
+  const isReadOnly = !listAcceptsShoppingOperations(list)
+
   return (
     <ContentContainer>
       <PageHeader
-        eyebrow={listId === 'personal' ? 'Personal list' : 'Family list'}
+        eyebrow={list.name}
         title="Shopping run"
         description="Mark each item purchased as you move through the store."
-        action={<Button>Complete shopping run</Button>}
+        action={
+          <Button disabled={isReadOnly}>
+            {isReadOnly
+              ? 'Shopping unavailable while archived'
+              : 'Complete shopping run'}
+          </Button>
+        }
       />
+      {isReadOnly && (
+        <p className="border-warning/40 bg-warning/10 text-warning-foreground mb-6 rounded-[var(--radius-card)] border p-4 text-sm">
+          This list is archived. The shopping run is read-only until an owner
+          unarchives it.
+        </p>
+      )}
       <div className="mb-6">
         <SyncStatus state="synced" />
       </div>

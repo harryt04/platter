@@ -14,6 +14,15 @@ const listNameSchema = z
   .min(1, 'Enter a list name.')
   .max(100, 'List names must be 100 characters or fewer.')
 
+export const listIdSchema = z
+  .string({ error: 'Enter a list id.' })
+  .min(1, 'Enter a list id.')
+  .max(100, 'List ids must be 100 characters or fewer.')
+  .refine(
+    (value) => !/[\u0000-\u001F\u007F]/.test(value),
+    'List ids cannot contain control characters.',
+  )
+
 export const createListSchema = z.object({ name: listNameSchema })
 export const updateListSchema = z.object({ name: listNameSchema })
 
@@ -116,6 +125,14 @@ export function listAcceptsShoppingOperations(
   list: Pick<ListDocument, 'status'>,
 ) {
   return list.status === 'active'
+}
+
+export async function findListForMember(listId: string, userId: string) {
+  if (!listIdSchema.safeParse(listId).success) return null
+  const db = await getConnectedDatabase()
+  return db
+    .collection<ListDocument>('lists')
+    .findOne(listMemberFilter(listId, userId))
 }
 
 export function createListDocument(

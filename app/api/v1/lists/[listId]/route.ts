@@ -4,6 +4,7 @@ import { isoDateTime } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
 import {
   listOwnerFilter,
+  listIdSchema,
   type ListStatus,
   toPlatterList,
   updateListSchema,
@@ -52,6 +53,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!session) return authenticationRequired('Sign in to rename a list.')
 
   const { listId } = await context.params
+  if (!listIdSchema.safeParse(listId).success) return listNotFound()
   const db = await getConnectedDatabase()
   const filter = listOwnerFilter(listId, session.user.id)
   const current = await db.collection<ListDocument>('lists').findOne(filter)
@@ -120,6 +122,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   if (!session) return authenticationRequired('Sign in to delete a list.')
 
   const { listId } = await context.params
+  if (!listIdSchema.safeParse(listId).success) return listNotFound()
   const deletedAt = isoDateTime(new Date())
   const deleted = await (
     await getConnectedDatabase()

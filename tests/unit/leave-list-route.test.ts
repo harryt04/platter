@@ -57,6 +57,7 @@ describe('POST /api/v1/lists/[listId]/leave', () => {
     expect(collection.findOneAndUpdate).toHaveBeenCalledWith(
       {
         _id: 'list-1',
+        status: { $ne: 'deleted' },
         members: {
           $elemMatch: {
             userId: 'editor-1',

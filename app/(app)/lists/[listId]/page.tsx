@@ -9,6 +9,7 @@ import { listMemberFilter, type ListDocument } from '@/lib/lists'
 import { notFound } from 'next/navigation'
 import { RenameListForm } from '@/components/lists/rename-list-form'
 import { LeaveListButton } from '@/components/lists/leave-list-button'
+import { ListLifecycleActions } from '@/components/lists/list-lifecycle-actions'
 
 export default async function ListPage({
   params,
@@ -21,7 +22,7 @@ export default async function ListPage({
   const list = await db
     .collection<ListDocument>('lists')
     .findOne(listMemberFilter(listId, session.user.id))
-  if (!list) notFound()
+  if (!list || list.status === 'deleted') notFound()
 
   return (
     <ContentContainer>
@@ -30,11 +31,21 @@ export default async function ListPage({
         title={list.name}
         description="Your current recipe selections and shopping run summary."
         action={
-          <Button asChild>
-            <Link href={`/lists/${listId}/review`}>Review at home</Link>
-          </Button>
+          list.status === 'active' ? (
+            <Button asChild>
+              <Link href={`/lists/${listId}/review`}>Review at home</Link>
+            </Button>
+          ) : (
+            <Badge variant="outline">Archived</Badge>
+          )
         }
       />
+      {list.status === 'archived' && (
+        <p className="border-warning/40 bg-warning/10 text-warning-foreground mb-6 rounded-[var(--radius-card)] border p-4 text-sm">
+          This list is archived. Its shared shopping run is read-only until an
+          owner unarchives it.
+        </p>
+      )}
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -49,9 +60,15 @@ export default async function ListPage({
               <span>Grocery items</span>
               <span className="font-data">0</span>
             </div>
-            <Button className="w-full" asChild>
-              <Link href={`/lists/${listId}/shop`}>Start shopping</Link>
-            </Button>
+            {list.status === 'active' ? (
+              <Button className="w-full" asChild>
+                <Link href={`/lists/${listId}/shop`}>Start shopping</Link>
+              </Button>
+            ) : (
+              <Button className="w-full" disabled>
+                Shopping unavailable while archived
+              </Button>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -70,9 +87,18 @@ export default async function ListPage({
         </Card>
       </div>
       {list.ownerIds.includes(session.user.id) && (
-        <div className="mt-6 max-w-2xl">
-          <RenameListForm listId={listId} currentName={list.name} />
-        </div>
+        <>
+          <div className="mt-6 max-w-2xl">
+            <RenameListForm listId={listId} currentName={list.name} />
+          </div>
+          <div className="mt-6 max-w-2xl">
+            <ListLifecycleActions
+              listId={listId}
+              listName={list.name}
+              status={list.status}
+            />
+          </div>
+        </>
       )}
       {list.members.some(
         (member) =>

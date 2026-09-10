@@ -18,7 +18,7 @@ export const createListSchema = z.object({ name: listNameSchema })
 export const updateListSchema = z.object({ name: listNameSchema })
 
 export type ListRole = 'owner' | 'editor'
-export type ListStatus = 'active' | 'archived'
+export type ListStatus = 'active' | 'archived' | 'deleted'
 
 export type ListMember = {
   userId: string
@@ -72,6 +72,7 @@ export function shoppingRuns(collection: Collection<ShoppingRunDocument>) {
 export function listMemberFilter(listId: string, userId: string) {
   return {
     _id: listId,
+    status: { $ne: 'deleted' as const },
     members: { $elemMatch: { userId, invitationState: 'active' as const } },
   }
 }
@@ -79,6 +80,7 @@ export function listMemberFilter(listId: string, userId: string) {
 export function listOwnerFilter(listId: string, userId: string) {
   return {
     _id: listId,
+    status: { $ne: 'deleted' as const },
     members: {
       $elemMatch: {
         userId,
@@ -92,6 +94,7 @@ export function listOwnerFilter(listId: string, userId: string) {
 export function listEditorFilter(listId: string, userId: string) {
   return {
     _id: listId,
+    status: { $ne: 'deleted' as const },
     members: {
       $elemMatch: {
         userId,
@@ -104,8 +107,15 @@ export function listEditorFilter(listId: string, userId: string) {
 
 export function listMembershipFilter(userId: string) {
   return {
+    status: { $ne: 'deleted' as const },
     members: { $elemMatch: { userId, invitationState: 'active' as const } },
   }
+}
+
+export function listAcceptsShoppingOperations(
+  list: Pick<ListDocument, 'status'>,
+) {
+  return list.status === 'active'
 }
 
 export function createListDocument(

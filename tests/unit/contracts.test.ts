@@ -3,6 +3,7 @@ import {
   createActiveShoppingRunDocument,
   createListDocument,
   createListSchema,
+  listAcceptsShoppingOperations,
   listEditorFilter,
   listMemberFilter,
   listMembershipFilter,
@@ -44,18 +45,21 @@ describe('lists', () => {
 
   it('scopes list reads to active membership and the requested list id', () => {
     expect(listMembershipFilter('user-1')).toEqual({
+      status: { $ne: 'deleted' },
       members: {
         $elemMatch: { userId: 'user-1', invitationState: 'active' },
       },
     })
     expect(listMemberFilter('list-1', 'user-1')).toEqual({
       _id: 'list-1',
+      status: { $ne: 'deleted' },
       members: {
         $elemMatch: { userId: 'user-1', invitationState: 'active' },
       },
     })
     expect(listOwnerFilter('list-1', 'user-1')).toEqual({
       _id: 'list-1',
+      status: { $ne: 'deleted' },
       members: {
         $elemMatch: {
           userId: 'user-1',
@@ -66,6 +70,7 @@ describe('lists', () => {
     })
     expect(listEditorFilter('list-1', 'editor-1')).toEqual({
       _id: 'list-1',
+      status: { $ne: 'deleted' },
       members: {
         $elemMatch: {
           userId: 'editor-1',
@@ -81,6 +86,12 @@ describe('lists', () => {
       'Weeknight meals',
     )
     expect(updateListSchema.safeParse({ name: ' ' }).success).toBe(false)
+  })
+
+  it('allows shopping operations only for active lists', () => {
+    expect(listAcceptsShoppingOperations({ status: 'active' })).toBe(true)
+    expect(listAcceptsShoppingOperations({ status: 'archived' })).toBe(false)
+    expect(listAcceptsShoppingOperations({ status: 'deleted' })).toBe(false)
   })
 })
 import { decimalString, entityId, isoDateTime } from '@/lib/contracts/ids'

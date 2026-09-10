@@ -56,7 +56,10 @@ export default async function ListsPage() {
                   {list.members.length === 1
                     ? 'Just you'
                     : `${list.members.length} members`}{' '}
-                  · Empty shopping run
+                  ·{' '}
+                  {list.status === 'archived'
+                    ? 'Archived'
+                    : 'Empty shopping run'}
                 </p>
               </CardHeader>
               <CardContent>

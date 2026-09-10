@@ -1,10 +1,9 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
+import { PublicRecipeAuthPrompt } from '@/components/recipes/public-recipe-auth-prompt'
 import { getSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { publicRecipeFilter, toRecipeDraft } from '@/lib/recipes/drafts'
@@ -36,15 +35,6 @@ export default async function RecipePage({
         eyebrow="Public recipe"
         title={recipe.title}
         description={recipe.description}
-        action={
-          !session ? (
-            <Button asChild variant="outline">
-              <Link href={`/sign-in?returnTo=/recipes/${recipe.id}`}>
-                Sign in to use this recipe
-              </Link>
-            </Button>
-          ) : undefined
-        }
       />
       {imageIsPermitted && recipe.image ? (
         <div className="bg-muted mb-6 overflow-hidden rounded-xl">
@@ -165,6 +155,7 @@ export default async function RecipePage({
           )}
         </CardContent>
       </Card>
+      {!session && <PublicRecipeAuthPrompt recipeId={recipe.id} />}
     </ContentContainer>
   )
 }

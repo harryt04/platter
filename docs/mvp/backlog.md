@@ -279,7 +279,7 @@ resource and provide signed-in users a clear path to save or use it.
       rights or license information.
 - [ ] Ingredient quantities use the documented data typography, and provenance
       is visible without a hover-only interaction.
-- [ ] Anonymous visitors can read public recipes but are directed to sign in
+- [x] Anonymous visitors can read public recipes but are directed to sign in
       before saving or adding one to a list.
 - [ ] Suppressed and non-public versions do not render publicly, while an
       authorized owner can still access permitted private management paths.

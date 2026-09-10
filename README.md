@@ -46,7 +46,9 @@ Discovery cards show permitted recipe images, source links, typical yield,
 concise summaries, and explicit source attribution when supplied. Public recipe
 detail pages now read through the same approved-import and public-visibility
 guard, render the saved ingredient and direction data, and preserve source,
-version, attribution, and image-rights context.
+version, attribution, and image-rights context. Anonymous readers receive an
+explicit sign-in handoff on the detail page before saving or adding a recipe to
+a list, with the recipe URL preserved through authentication.
 Shopping-run recipe references can resolve immutable historical snapshots by
 version identity, preserving selection order and duplicates without falling
 back to a later mutable recipe version.

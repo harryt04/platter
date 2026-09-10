@@ -638,11 +638,11 @@ secure import
       structure, ordered instructions, source facts, and attribution before save.
 - [ ] Partial extraction preserves every safe useful field and opens a prefilled
       manual editor instead of discarding data.
-- [ ] Hostile markup is sanitized and cannot execute or inject active content;
+- [x] Hostile markup is sanitized and cannot execute or inject active content;
       unsupported editorial prose is not copied into the normalized record.
 - [x] The preview clearly states that saving an import will not add it to an
       active shopping run.
-- [ ] Parser tests use synthetic or licensed HTML fixtures and cover incomplete,
+- [x] Parser tests use synthetic or licensed HTML fixtures and cover incomplete,
       malformed, hostile, and missing-quantity recipes.
 
 ## 28: Save and deduplicate public imports

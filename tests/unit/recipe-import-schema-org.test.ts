@@ -112,4 +112,46 @@ describe('Schema.org recipe import adapter', () => {
 
     expect(extractSchemaOrgRecipe(html, sourceUrl)).toBeNull()
   })
+
+  it('strips hostile markup and ignores unsupported editorial prose', () => {
+    const jsonLd = JSON.stringify({
+      '@type': 'Recipe',
+      name: '<img src=x onerror="alert(1)">Safe <strong>Soup</strong>',
+      description: '<p>This editorial story should not be imported.</p>',
+      recipeYield: '4',
+      recipeIngredient: [
+        '<script>alert(1)</script>1 cup carrots <em>, sliced</em>',
+      ],
+      recipeInstructions: [
+        {
+          '@type': 'HowToStep',
+          text: '<a href="javascript:alert(1)">Stir</a> until ready.',
+        },
+      ],
+      author: '<span>Chef Avery</span>',
+      publisher: '<div>Safe Kitchen</div>',
+    }).replaceAll('</script', '<\\/script')
+    const html = `<script type="application/ld+json">${jsonLd}</script>`
+
+    expect(extractSchemaOrgRecipe(html, sourceUrl)).toMatchObject({
+      title: 'Safe Soup',
+      ingredients: [
+        expect.objectContaining({
+          originalText: '1 cup carrots , sliced',
+          ingredientName: 'carrots',
+          preparationNote: 'sliced',
+        }),
+      ],
+      instructions: ['Stir until ready.'],
+      sourceName: 'Safe Kitchen',
+      sourceAuthor: 'Chef Avery',
+    })
+    const candidate = extractSchemaOrgRecipe(html, sourceUrl)
+    expect(JSON.stringify(candidate)).not.toMatch(
+      /<|script|onerror|javascript:/i,
+    )
+    expect(JSON.stringify(candidate)).not.toContain(
+      'This editorial story should not be imported',
+    )
+  })
 })

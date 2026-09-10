@@ -32,6 +32,12 @@ const textLimits = {
 
 function cleanText(value: string) {
   return value
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(
+      /<\s*(script|style|iframe|object|embed|template|svg|math)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi,
+      ' ',
+    )
+    .replace(/<\/?[a-z][^>]*>/gi, ' ')
     .replace(/[\u0000-\u001F\u007F]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
@@ -219,7 +225,8 @@ function sourceNameFromUrl(sourceUrl: string) {
 
 /**
  * Extract only Schema.org Recipe facts from a bounded fetched HTML body.
- * JSON-LD is parsed as data; no source markup is executed or rendered.
+ * JSON-LD is parsed as data; no source markup is executed or rendered. Text
+ * values are stripped of markup before they enter the normalized candidate.
  */
 export function extractSchemaOrgRecipe(
   html: string,

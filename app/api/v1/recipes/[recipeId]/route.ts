@@ -8,6 +8,7 @@ import {
   createPrivateRecipeVariantDocument,
   isUsableRecipe,
   ownedRecipeFilter,
+  publicRecipeFilter,
   recipeShares,
   recipeVersions,
   toRecipeDraft,
@@ -62,6 +63,13 @@ async function sharedRecipe(recipeId: string, userId: string) {
   })
 }
 
+async function publicRecipe(recipeId: string) {
+  const db = await getConnectedDatabase()
+  return db
+    .collection<RecipeDraftDocument>('recipes')
+    .findOne(publicRecipeFilter(recipeId))
+}
+
 function notFoundResponse() {
   return problemResponse({
     type: 'https://platter.dev/problems/recipe-not-found',
@@ -114,15 +122,23 @@ function recipeVersionConflict() {
 }
 
 export async function GET(_request: Request, context: RouteContext) {
-  const session = await getSession()
-  if (!session) return authenticationRequired('Sign in to view your recipes.')
-
   const { recipeId } = await context.params
+  const session = await getSession()
+  if (!session) {
+    const draft = await publicRecipe(recipeId)
+    return draft
+      ? Response.json({ recipe: toRecipeDraft(draft) })
+      : authenticationRequired('Sign in to view this recipe.')
+  }
+
   const draft =
     (await ownedDraft(recipeId, session.user.id)) ??
     (await sharedRecipe(recipeId, session.user.id))
-  return draft
-    ? Response.json({ recipe: toRecipeDraft(draft) })
+  if (draft) return Response.json({ recipe: toRecipeDraft(draft) })
+
+  const publicDraft = await publicRecipe(recipeId)
+  return publicDraft
+    ? Response.json({ recipe: toRecipeDraft(publicDraft) })
     : notFoundResponse()
 }
 

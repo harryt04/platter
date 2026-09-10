@@ -549,6 +549,56 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
 })
 
 describe('GET /api/v1/recipes/[recipeId]', () => {
+  it('allows anonymous readers to view a public recipe', async () => {
+    getSession.mockResolvedValue(null)
+    const collection = {
+      findOne: vi.fn().mockResolvedValue({
+        ...draft,
+        status: 'usable' as const,
+        visibility: 'public' as const,
+        typicalPeopleFed: 4,
+        ingredients: [
+          {
+            originalText: '2 onions',
+            quantity: '2',
+            unit: 'each',
+            ingredientName: 'onions',
+            optional: false,
+          },
+        ],
+        instructions: ['Slice the onions.'],
+        versionId: 'version-2',
+        versionNumber: 2,
+      }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/recipes/recipe-1'),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).recipe).toMatchObject({
+      id: 'recipe-1',
+      visibility: 'public',
+      title: 'Tomato soup',
+      versionNumber: 2,
+    })
+    expect(collection.findOne).toHaveBeenCalledWith({
+      _id: 'recipe-1',
+      status: 'usable',
+      visibility: 'public',
+      $or: [
+        { origin: { $exists: false } },
+        { origin: 'authored' },
+        { origin: 'imported', importReviewStatus: 'approved' },
+      ],
+    })
+  })
+
   it('allows a current member of a selected list to read a shared recipe', async () => {
     getSession.mockResolvedValue({ user: { id: 'member-1' } })
     const collection = {

@@ -43,7 +43,10 @@ owner-scoped query. Public discovery now has a real anonymous and signed-in
 search page and API backed by Mongo text search across recipe titles,
 ingredients, source metadata, cuisines, tags, and dietary labels.
 Discovery cards show permitted recipe images, source links, typical yield,
-concise summaries, and explicit source attribution when supplied.
+concise summaries, and explicit source attribution when supplied. Public recipe
+detail pages now read through the same approved-import and public-visibility
+guard, render the saved ingredient and direction data, and preserve source,
+version, attribution, and image-rights context.
 Shopping-run recipe references can resolve immutable historical snapshots by
 version identity, preserving selection order and duplicates without falling
 back to a later mutable recipe version.

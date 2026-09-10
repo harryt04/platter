@@ -274,7 +274,7 @@ resource and provide signed-in users a clear path to save or use it.
 
 **Status:** ready-for-agent
 
-- [ ] The detail view shows title, permitted imagery, typical yield,
+- [x] The detail view shows title, permitted imagery, typical yield,
       ingredients, directions, source link, attribution, version, and available
       rights or license information.
 - [ ] Ingredient quantities use the documented data typography, and provenance

@@ -96,11 +96,15 @@ const requiredIngredientText = (label: string, max: number) =>
 const optionalIngredientText = (max: number) =>
   z.string().transform(cleanText).pipe(z.string().max(max)).optional()
 
+const ingredientParserConfidenceSchema = z.enum(['high', 'medium', 'low'])
+
 export const recipeIngredientSchema = z.object({
   originalText: requiredIngredientText('line', 500),
   quantity: optionalIngredientText(50),
   unit: optionalIngredientText(50),
   ingredientName: requiredIngredientText('name', 200),
+  normalizedIdentity: optionalIngredientText(200),
+  parserConfidence: ingredientParserConfidenceSchema.optional(),
   preparationNote: optionalIngredientText(200),
   optional: z.boolean().default(false),
 })

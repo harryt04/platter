@@ -60,6 +60,8 @@ describe('recipe drafts', () => {
       quantity: '2',
       unit: 'each',
       ingredientName: '  Yellow onions ',
+      normalizedIdentity: 'yellow onions',
+      parserConfidence: 'medium',
       preparationNote: 'diced',
       optional: false,
     })
@@ -75,7 +77,38 @@ describe('recipe drafts', () => {
       }).status,
     ).toBe('usable')
     expect(ingredient.originalText).toBe('2 yellow onions, diced')
+    expect(ingredient.normalizedIdentity).toBe('yellow onions')
+    expect(ingredient.parserConfidence).toBe('medium')
     expect(typicalPeopleFedSchema.safeParse(2.5).success).toBe(false)
+  })
+
+  it('accepts parser metadata alongside user-corrected ingredient facts', () => {
+    const ingredient = recipeIngredientSchema.parse({
+      originalText: '1 cup onions',
+      quantity: '2',
+      unit: 'each',
+      ingredientName: 'red onions',
+      normalizedIdentity: 'onions',
+      parserConfidence: 'high',
+      optional: false,
+    })
+
+    expect(ingredient).toMatchObject({
+      originalText: '1 cup onions',
+      quantity: '2',
+      unit: 'each',
+      ingredientName: 'red onions',
+      normalizedIdentity: 'onions',
+      parserConfidence: 'high',
+    })
+    expect(
+      recipeIngredientSchema.safeParse({
+        originalText: '1 cup onions',
+        ingredientName: 'onions',
+        parserConfidence: 'certain',
+        optional: false,
+      }).success,
+    ).toBe(false)
   })
 
   it('sanitizes and bounds an optional description', () => {

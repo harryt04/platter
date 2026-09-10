@@ -120,6 +120,66 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
     )
   })
 
+  it('preserves parser metadata when a user corrects ingredient facts', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(draft),
+      updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/recipes/recipe-1', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          typicalPeopleFed: 4,
+          ingredients: [
+            {
+              originalText: '1 cup onions',
+              quantity: '2',
+              unit: 'each',
+              ingredientName: 'red onions',
+              normalizedIdentity: 'onions',
+              parserConfidence: 'high',
+              optional: false,
+            },
+          ],
+        }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).recipe.ingredients).toEqual([
+      {
+        originalText: '1 cup onions',
+        quantity: '2',
+        unit: 'each',
+        ingredientName: 'red onions',
+        normalizedIdentity: 'onions',
+        parserConfidence: 'high',
+        optional: false,
+      },
+    ])
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          ingredients: [
+            expect.objectContaining({
+              originalText: '1 cup onions',
+              ingredientName: 'red onions',
+              normalizedIdentity: 'onions',
+              parserConfidence: 'high',
+            }),
+          ],
+        }),
+      }),
+    )
+  })
+
   it('keeps invalid yield or incomplete ingredients out of usable state', async () => {
     getSession.mockResolvedValue({ user: { id: 'user-1' } })
     const collection = {

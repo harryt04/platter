@@ -12,11 +12,15 @@ export type ParsedIngredientQuantity = {
   max?: string
 }
 
+export type IngredientParserConfidence = 'high' | 'medium' | 'low'
+
 export type ParsedIngredientLine = {
   originalText: string
   quantity: ParsedIngredientQuantity | null
   unit: ParsedIngredientUnit
   ingredientName: string
+  normalizedIdentity?: string
+  parserConfidence: IngredientParserConfidence
   preparationNote?: string
   optional: boolean
   packageSize?: {
@@ -137,6 +141,17 @@ function cleanText(value: string) {
     .replace(/[\u0000-\u001F\u007F]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+function normalizeIngredientIdentity(value: string) {
+  const normalized = value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+
+  return normalized || undefined
 }
 
 function parseDecimal(value: string) {
@@ -370,12 +385,26 @@ export function parseIngredientLine(
 
   const extracted = extractPreparation(remainder)
   const ingredientName = extracted.remainder.toLowerCase()
+  const parserConfidence: IngredientParserConfidence =
+    !ingredientName || (quantityMatch !== null && quantity === null)
+      ? 'low'
+      : quantity && parsedUnit.unit
+        ? 'high'
+        : quantity
+          ? 'medium'
+          : 'low'
+  const normalizedIdentity =
+    parserConfidence === 'low'
+      ? undefined
+      : normalizeIngredientIdentity(ingredientName)
 
   return {
     originalText,
     quantity,
     unit,
     ingredientName,
+    ...(normalizedIdentity ? { normalizedIdentity } : {}),
+    parserConfidence,
     ...(extracted.preparationNote
       ? { preparationNote: extracted.preparationNote }
       : {}),

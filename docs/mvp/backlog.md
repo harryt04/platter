@@ -187,7 +187,7 @@ without losing their original wording or pretending uncertain data is exact.
       quantities, package sizes, preparation notes, and optional ingredients.
 - [x] Parsed units distinguish count, mass, volume, and unknown dimensions;
       conversions are locale-aware and deterministic.
-- [ ] The original line, parser confidence, and normalized identity are
+- [x] The original line, parser confidence, and normalized identity are
       preserved alongside user corrections on the recipe version.
 - [ ] Aliases can resolve canonical ingredients while meaningful distinctions,
       such as yellow onion and red onion, remain separate when they affect

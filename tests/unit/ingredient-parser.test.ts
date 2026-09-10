@@ -104,7 +104,26 @@ describe('ingredient line parser', () => {
       originalText: '2 eggs',
       quantity: { min: '2' },
       ingredientName: 'eggs',
+      normalizedIdentity: 'eggs',
+      parserConfidence: 'medium',
     })
+  })
+
+  it('records confidence and a stable identity without erasing distinctions', () => {
+    expect(parseIngredientLine('1 1/2 cups Crème fraîche')).toMatchObject({
+      normalizedIdentity: 'creme fraiche',
+      parserConfidence: 'high',
+    })
+    expect(parseIngredientLine('3 yellow onions')).toMatchObject({
+      normalizedIdentity: 'yellow onions',
+      parserConfidence: 'medium',
+    })
+    expect(parseIngredientLine('1/0 cup sugar')).toMatchObject({
+      parserConfidence: 'low',
+    })
+    expect(parseIngredientLine('1/0 cup sugar')).not.toHaveProperty(
+      'normalizedIdentity',
+    )
   })
 
   it('retains calculation precision and degrades malformed quantities safely', () => {

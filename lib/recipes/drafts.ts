@@ -39,6 +39,16 @@ export const recipeIngredientSchema = z.object({
   optional: z.boolean().default(false),
 })
 
+export const recipeInstructionSchema = z
+  .string({ error: 'Enter an instruction.' })
+  .transform(cleanText)
+  .pipe(
+    z
+      .string()
+      .min(1, 'Enter an instruction.')
+      .max(2000, 'Instructions must be 2,000 characters or fewer.'),
+  )
+
 export const typicalPeopleFedSchema = z
   .number({ error: 'Enter how many people this recipe feeds.' })
   .int('Typical yield must be a whole number.')
@@ -46,6 +56,7 @@ export const typicalPeopleFedSchema = z
   .max(1000, 'Typical yield must be 1,000 people or fewer.')
 
 export type RecipeIngredient = z.infer<typeof recipeIngredientSchema>
+export type RecipeInstruction = z.infer<typeof recipeInstructionSchema>
 
 export const createDraftSchema = z.object({ title: recipeTitleSchema })
 export const updateDraftSchema = z
@@ -54,6 +65,10 @@ export const updateDraftSchema = z
     description: recipeDescriptionSchema.nullable().optional(),
     typicalPeopleFed: typicalPeopleFedSchema.nullable().optional(),
     ingredients: z.array(recipeIngredientSchema).max(100).optional(),
+    instructions: z
+      .array(recipeInstructionSchema)
+      .max(100, 'Recipes can have 100 instructions or fewer.')
+      .optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: 'Provide at least one recipe field to update.',
@@ -68,6 +83,7 @@ export type RecipeDraft = {
   visibility: 'private'
   typicalPeopleFed?: number
   ingredients: RecipeIngredient[]
+  instructions: RecipeInstruction[]
   createdAt: IsoDateTime
   updatedAt: IsoDateTime
 }
@@ -109,10 +125,12 @@ export function createDraftDocument(
     description?: string
     typicalPeopleFed?: number
     ingredients?: RecipeIngredient[]
+    instructions?: RecipeInstruction[]
   } = {},
 ): RecipeDraftDocument {
   const now = isoDateTime(new Date())
   const ingredients = details.ingredients ?? []
+  const instructions = details.instructions ?? []
   return {
     _id: crypto.randomUUID(),
     ownerId,
@@ -128,6 +146,7 @@ export function createDraftDocument(
       ? {}
       : { typicalPeopleFed: details.typicalPeopleFed }),
     ingredients,
+    instructions,
     createdAt: now,
     updatedAt: now,
   }
@@ -147,6 +166,7 @@ export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
       ? {}
       : { typicalPeopleFed: document.typicalPeopleFed }),
     ingredients: document.ingredients ?? [],
+    instructions: document.instructions ?? [],
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
   }

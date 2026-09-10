@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowUp, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -16,7 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import type { RecipeIngredient } from '@/lib/recipes/drafts'
+import type { RecipeIngredient, RecipeInstruction } from '@/lib/recipes/drafts'
 
 type IngredientForm = RecipeIngredient
 
@@ -29,18 +29,31 @@ const blankIngredient = (): IngredientForm => ({
   optional: false,
 })
 
+function moveItem<T>(items: T[], index: number, offset: -1 | 1) {
+  const targetIndex = index + offset
+  if (targetIndex < 0 || targetIndex >= items.length) return items
+
+  const next = [...items]
+  const current = next[index]
+  next[index] = next[targetIndex]
+  next[targetIndex] = current
+  return next
+}
+
 export function DraftEditor({
   recipeId,
   initialTitle = '',
   initialDescription = '',
   initialTypicalPeopleFed,
   initialIngredients = [],
+  initialInstructions = [],
 }: {
   recipeId?: string
   initialTitle?: string
   initialDescription?: string
   initialTypicalPeopleFed?: number
   initialIngredients?: RecipeIngredient[]
+  initialInstructions?: RecipeInstruction[]
 }) {
   const router = useRouter()
   const [title, setTitle] = useState(initialTitle)
@@ -50,6 +63,8 @@ export function DraftEditor({
   )
   const [ingredients, setIngredients] =
     useState<IngredientForm[]>(initialIngredients)
+  const [instructions, setInstructions] =
+    useState<RecipeInstruction[]>(initialInstructions)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -79,6 +94,7 @@ export function DraftEditor({
                   typicalPeopleFed:
                     typicalPeopleFed === '' ? null : Number(typicalPeopleFed),
                   ingredients,
+                  instructions,
                 }
               : { title },
           ),
@@ -185,20 +201,51 @@ export function DraftEditor({
                       <h3 className="text-sm font-medium">
                         Ingredient {index + 1}
                       </h3>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setIngredients((current) =>
-                            current.filter(
-                              (_, itemIndex) => itemIndex !== index,
-                            ),
-                          )
-                        }
-                      >
-                        Remove
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Move ingredient ${index + 1} up`}
+                          title="Move up"
+                          disabled={index === 0}
+                          onClick={() =>
+                            setIngredients((current) =>
+                              moveItem(current, index, -1),
+                            )
+                          }
+                        >
+                          <ArrowUp size={16} />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Move ingredient ${index + 1} down`}
+                          title="Move down"
+                          disabled={index === ingredients.length - 1}
+                          onClick={() =>
+                            setIngredients((current) =>
+                              moveItem(current, index, 1),
+                            )
+                          }
+                        >
+                          <ArrowDown size={16} />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() =>
+                            setIngredients((current) =>
+                              current.filter(
+                                (_, itemIndex) => itemIndex !== index,
+                              ),
+                            )
+                          }
+                        >
+                          Remove
+                        </Button>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor={`ingredient-line-${index}`}>
@@ -309,6 +356,91 @@ export function DraftEditor({
                   }
                 >
                   Add ingredient
+                </Button>
+              </fieldset>
+              <fieldset className="space-y-4">
+                <legend className="text-sm font-medium">Instructions</legend>
+                <p className="text-muted-foreground text-xs">
+                  Add one concise step at a time. Use the move buttons to keep
+                  the cooking order clear; they work with a keyboard too.
+                </p>
+                {instructions.map((instruction, index) => (
+                  <div
+                    className="border-border space-y-3 rounded-[var(--radius-card)] border p-4"
+                    key={index}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-medium">Step {index + 1}</h3>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Move step ${index + 1} up`}
+                          title="Move up"
+                          disabled={index === 0}
+                          onClick={() =>
+                            setInstructions((current) =>
+                              moveItem(current, index, -1),
+                            )
+                          }
+                        >
+                          <ArrowUp size={16} />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Move step ${index + 1} down`}
+                          title="Move down"
+                          disabled={index === instructions.length - 1}
+                          onClick={() =>
+                            setInstructions((current) =>
+                              moveItem(current, index, 1),
+                            )
+                          }
+                        >
+                          <ArrowDown size={16} />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() =>
+                            setInstructions((current) =>
+                              current.filter(
+                                (_, itemIndex) => itemIndex !== index,
+                              ),
+                            )
+                          }
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                    <Label htmlFor={`instruction-${index}`}>
+                      Instruction {index + 1}
+                    </Label>
+                    <Textarea
+                      id={`instruction-${index}`}
+                      value={instruction}
+                      onChange={(event) =>
+                        setInstructions((current) =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index ? event.target.value : item,
+                          ),
+                        )
+                      }
+                      placeholder="Simmer until the onions are tender."
+                      required
+                    />
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setInstructions((current) => [...current, ''])}
+                >
+                  Add instruction
                 </Button>
               </fieldset>
             </>

@@ -17,6 +17,7 @@ const draft = {
   status: 'draft' as const,
   visibility: 'private' as const,
   ingredients: [],
+  instructions: [],
   createdAt: '2026-09-10T12:00:00.000Z' as `${string}`,
   updatedAt: '2026-09-10T12:00:00.000Z' as `${string}`,
 }
@@ -49,6 +50,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
               optional: false,
             },
           ],
+          instructions: ['Stir the soup until smooth.\u0000'],
         }),
       }),
       { params: Promise.resolve({ recipeId: 'recipe-1' }) },
@@ -61,6 +63,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
       status: 'usable',
       typicalPeopleFed: 4,
       ingredients: [{ ingredientName: 'onions' }],
+      instructions: ['Stir the soup until smooth.'],
     })
     expect(collection.updateOne).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -73,6 +76,45 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
           status: 'usable',
           typicalPeopleFed: 4,
           description: 'A bright tomato soup.',
+          instructions: ['Stir the soup until smooth.'],
+        }),
+      }),
+    )
+  })
+
+  it('preserves instruction order and sanitizes saved steps', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue({
+        ...draft,
+        instructions: ['First step', 'Second step'],
+      }),
+      updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/recipes/recipe-1', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          instructions: ['  Second step  ', 'First step\u0000'],
+        }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).recipe.instructions).toEqual([
+      'Second step',
+      'First step',
+    ])
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          instructions: ['Second step', 'First step'],
         }),
       }),
     )

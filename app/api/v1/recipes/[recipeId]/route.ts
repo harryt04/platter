@@ -135,6 +135,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   if ('ingredients' in parsed.data && parsed.data.ingredients !== undefined) {
     setFields.ingredients = parsed.data.ingredients
   }
+  if ('instructions' in parsed.data && parsed.data.instructions !== undefined) {
+    setFields.instructions = parsed.data.instructions
+  }
   if ('typicalPeopleFed' in parsed.data) {
     if (parsed.data.typicalPeopleFed === null) {
       unsetFields.typicalPeopleFed = ''

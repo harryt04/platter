@@ -6,6 +6,7 @@ import {
   isUsableRecipe,
   privateDraftFilter,
   recipeIngredientSchema,
+  recipeInstructionSchema,
   typicalPeopleFedSchema,
   toRecipeDraft,
   updateDraftSchema,
@@ -85,5 +86,20 @@ describe('recipe drafts', () => {
     expect(
       updateDraftSchema.parse({ description: null }).description,
     ).toBeNull()
+  })
+
+  it('sanitizes ordered instructions and rejects blank or oversized steps', () => {
+    expect(recipeInstructionSchema.parse('  Stir until smooth.\u0000  ')).toBe(
+      'Stir until smooth.',
+    )
+    expect(recipeInstructionSchema.safeParse('  ').success).toBe(false)
+    expect(recipeInstructionSchema.safeParse('x'.repeat(2001)).success).toBe(
+      false,
+    )
+    expect(
+      updateDraftSchema.safeParse({
+        instructions: Array.from({ length: 101 }, () => 'Do a thing.'),
+      }).success,
+    ).toBe(false)
   })
 })

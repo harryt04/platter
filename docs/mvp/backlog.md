@@ -153,11 +153,11 @@ mobile-friendly editor and make its usable state explicit.
       preparation note, and optional flag.
 - [x] A recipe becomes usable only with a positive valid typical yield and at
       least one structured ingredient; invalid or zero yield leaves it a draft.
-- [ ] Ordered fields can be added, edited, removed, and reordered with pointer
+- [x] Ordered fields can be added, edited, removed, and reordered with pointer
       and keyboard-accessible controls.
 - [ ] User-authored content is validated and sanitized, and active imported
       content is never rendered.
-- [ ] Tests cover partial saves, validation recovery, ordering, and the
+- [x] Tests cover partial saves, validation recovery, ordering, and the
       draft-to-usable transition.
 
 ## 07: Parse and correct ingredient lines

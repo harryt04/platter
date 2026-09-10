@@ -34,6 +34,7 @@ export default async function EditRecipePage({
         initialDescription={draft.description}
         initialTypicalPeopleFed={draft.typicalPeopleFed}
         initialIngredients={draft.ingredients}
+        initialInstructions={draft.instructions}
       />
     </ContentContainer>
   )

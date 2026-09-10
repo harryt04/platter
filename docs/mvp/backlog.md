@@ -226,10 +226,14 @@ they authored, imported, saved, or received through a list.
 
 **Blocked by:** 08: Version recipes and control visibility
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] The library contains authored recipes, user imports, explicitly saved
-      public recipes, and recipes shared through a current list membership.
+- [x] The library contains recipes authored by the user and usable recipes
+      shared through a current list membership.
+- [ ] User imports appear in the library after the import-save workflow
+      completes.
+- [ ] Explicitly saved public recipes appear in the library without adding
+      them to a shopping run.
 - [ ] A user can save a public recipe without adding it to a run and later
       remove that saved reference without deleting public or other-user data.
 - [ ] Library search supports title, ingredient, source, and tag with stable

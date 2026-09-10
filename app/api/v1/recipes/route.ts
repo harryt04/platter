@@ -1,11 +1,11 @@
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { getSession } from '@/lib/auth/authorization'
 import { problemResponse } from '@/lib/contracts/problem'
+import { findRecipeLibrary } from '@/lib/recipes/library'
 import {
   createDraftDocument,
   createDraftSchema,
   createRecipeVersionDocument,
-  ownedRecipeFilter,
   recipeVersions,
   toRecipeDraft,
   type RecipeDraftDocument,
@@ -25,13 +25,15 @@ export async function GET() {
   }
 
   const db = await getConnectedDatabase()
-  const drafts = await db
-    .collection<RecipeDraftDocument>('recipes')
-    .find(ownedRecipeFilter(session.user.id))
-    .sort({ updatedAt: -1 })
-    .toArray()
+  const recipes = await findRecipeLibrary(db, session.user.id)
 
-  return Response.json({ recipes: drafts.map(toRecipeDraft) })
+  return Response.json({
+    recipes: recipes.map(({ recipe, access, sharedListNames }) => ({
+      ...recipe,
+      libraryAccess: access,
+      ...(sharedListNames.length ? { sharedListNames } : {}),
+    })),
+  })
 }
 
 export async function POST(request: Request) {

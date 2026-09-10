@@ -703,7 +703,7 @@ recipe experience and prevent unlicensed media or prose from entering it.
 
 - [x] Every imported public recipe preserves and displays its source name and
       link in detail views and other contexts where full attribution is required.
-- [ ] Ingredient facts, yield, time, and concise procedural steps are separated
+- [x] Ingredient facts, yield, time, and concise procedural steps are separated
       from substantial editorial prose, which is not copied.
 - [ ] Each copied image has independent provenance and is stored or displayed
       only when the known license or permission permits; otherwise an allowed

@@ -166,7 +166,10 @@ source facts, attribution, and metadata for correction before saving to the
 recipe library. A reviewed import with a positive yield and at least one
 structured ingredient is approved and published to public discovery at save
 time; incomplete imports remain private drafts until they are usable. The
-import worker also records the submitted and canonical URLs,
+normalizer keeps structured ingredient facts, yield, timing, and concise
+procedural steps separate from source editorial prose; descriptions are not
+copied, and instruction values over 500 characters are omitted with a review
+warning. The import worker also records the submitted and canonical URLs,
 source domain and title, source author, acquisition method and timestamp, the
 Schema.org importer, a SHA-256 content fingerprint, and unknown rights status;
 that provenance is copied to the immutable recipe version. Saving is safe to

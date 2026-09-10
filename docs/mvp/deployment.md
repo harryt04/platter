@@ -75,3 +75,9 @@ copy no external recipe prose, images, or datasets, and therefore carry no
 third-party license or attribution requirement. Any future external fixture
 must record its source, license or permission, and attribution next to the
 fixture before it is added to the test suite.
+
+Import normalization keeps structured ingredient facts, yield, timing, and
+concise procedural steps separate from source editorial prose. Descriptions
+are not copied, and instruction values over 500 characters are excluded from
+the normalized candidate and surfaced as a review warning; the user can add a
+shorter step manually in the review editor.

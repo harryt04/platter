@@ -195,4 +195,25 @@ describe('recipe import adapter contract', () => {
       failure: { code: 'ADAPTER_DISABLED' },
     })
   })
+
+  it('keeps generic extraction limited to concise procedural facts', () => {
+    const longEditorialParagraph = `A source story ${'about this dish '.repeat(45)}`
+    const result = runRecipeImportAdapter(genericHtmlRecipeAdapter, {
+      ...content,
+      body: `<h1>Fallback soup</h1>
+        <span itemprop="recipeIngredient">1 cup carrots</span>
+        <div itemprop="recipeInstructions">Warm the carrots.</div>
+        <div itemprop="recipeInstructions">${longEditorialParagraph}</div>`,
+    })
+
+    expect(result).toMatchObject({
+      kind: 'partial',
+      candidate: {
+        instructions: ['Warm the carrots.'],
+        warnings: expect.arrayContaining([
+          'Substantial source prose was not imported; only concise procedural steps were kept.',
+        ]),
+      },
+    })
+  })
 })

@@ -180,4 +180,32 @@ describe('Schema.org recipe import adapter', () => {
       'This editorial story should not be imported',
     )
   })
+
+  it('keeps concise procedural steps but omits substantial source prose', () => {
+    const longEditorialParagraph = `A source story ${'about this dish '.repeat(45)}`
+    const jsonLd = JSON.stringify({
+      '@type': 'Recipe',
+      name: 'Concise soup',
+      recipeYield: '2',
+      recipeIngredient: ['1 cup broth'],
+      description: longEditorialParagraph,
+      recipeInstructions: [
+        'Warm the broth.',
+        longEditorialParagraph,
+        'Serve immediately.',
+      ],
+    }).replaceAll('</script', '<\\/script')
+    const candidate = extractSchemaOrgRecipe(
+      `<script type="application/ld+json">${jsonLd}</script>`,
+      sourceUrl,
+    )
+
+    expect(candidate).toMatchObject({
+      instructions: ['Warm the broth.', 'Serve immediately.'],
+      warnings: [
+        'Substantial source prose was not imported; only concise procedural steps were kept.',
+      ],
+    })
+    expect(JSON.stringify(candidate)).not.toContain(longEditorialParagraph)
+  })
 })

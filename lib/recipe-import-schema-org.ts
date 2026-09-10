@@ -1,5 +1,9 @@
 import type { RecipeIngredient, RecipeInstruction } from '@/lib/recipes/drafts'
 import { parseIngredientLine } from '@/lib/recipes/ingredient-parser'
+import {
+  importedEditorialProseWarning,
+  keepConciseProceduralSteps,
+} from '@/lib/recipe-import-content'
 
 export type RecipeImportCandidate = {
   title?: string
@@ -278,7 +282,10 @@ export function extractSchemaOrgRecipe(
     recipe.recipeIngredient,
     textLimits.ingredient,
   )
-  const instructions = instructionTexts(recipe.recipeInstructions)
+  const instructionResult = keepConciseProceduralSteps(
+    instructionTexts(recipe.recipeInstructions),
+  )
+  const instructions = instructionResult.steps
   const sourceName =
     textValue(recipe.publisher, textLimits.metadata) ??
     sourceNameFromUrl(sourceUrl)
@@ -327,6 +334,9 @@ export function extractSchemaOrgRecipe(
 
   if (!candidate.title)
     candidate.warnings.push('The source did not provide a usable title.')
+  if (instructionResult.omittedCount > 0) {
+    candidate.warnings.push(importedEditorialProseWarning)
+  }
   if (!candidate.typicalPeopleFed) {
     candidate.warnings.push(
       'The source did not provide a single whole-number yield.',

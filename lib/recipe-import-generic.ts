@@ -1,5 +1,9 @@
 import type { RecipeIngredient } from '@/lib/recipes/drafts'
 import { parseIngredientLine } from '@/lib/recipes/ingredient-parser'
+import {
+  importedEditorialProseWarning,
+  keepConciseProceduralSteps,
+} from '@/lib/recipe-import-content'
 import type { RecipeImportCandidate } from '@/lib/recipe-import-schema-org'
 
 const textLimits = {
@@ -134,11 +138,10 @@ export function extractGenericRecipe(
     'recipeIngredient',
     textLimits.ingredient,
   ).map(ingredientFromLine)
-  const instructions = itempropValues(
-    html,
-    'recipeInstructions',
-    textLimits.instruction,
+  const instructionResult = keepConciseProceduralSteps(
+    itempropValues(html, 'recipeInstructions', textLimits.instruction),
   )
+  const instructions = instructionResult.steps
 
   const sourceName = sourceNameFromUrl(sourceUrl)
   const candidate: RecipeImportCandidate = {
@@ -152,6 +155,9 @@ export function extractGenericRecipe(
     ],
   }
 
+  if (instructionResult.omittedCount > 0) {
+    candidate.warnings.push(importedEditorialProseWarning)
+  }
   if (!candidate.title)
     candidate.warnings.push('The source did not provide a usable title.')
   candidate.warnings.push(

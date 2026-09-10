@@ -62,6 +62,7 @@ Avoid vague confirmation such as `Updated`, `Success`, `Conflict detected`, or `
 - Attribute imported recipes with the source name and a source link wherever a recipe is presented in detail.
 - Preserve original ingredient wording where normalization confidence is low.
 - Explain public import restrictions without legalistic filler: `This source does not permit an image here. The recipe link is still available.`
+- Keep image source, creator, license or permission, and rights status separate from recipe attribution; unknown rights must remain explicit.
 - Do not present a scraped recipe as authored by Platter.
 - Write concise procedural instructions; do not reproduce editorial storytelling from a source.
 

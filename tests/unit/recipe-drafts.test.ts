@@ -7,6 +7,7 @@ import {
   privateDraftFilter,
   recipeIngredientSchema,
   recipeInstructionSchema,
+  recipeImageProvenanceSchema,
   recipeMetadataSchema,
   typicalPeopleFedSchema,
   toRecipeDraft,
@@ -159,6 +160,44 @@ describe('recipe drafts', () => {
     ).toBe(false)
     expect(
       recipeMetadataSchema.safeParse({ attribution: 'x'.repeat(1001) }).success,
+    ).toBe(false)
+  })
+
+  it('records image provenance and keeps reuse rights explicit', () => {
+    expect(
+      recipeImageProvenanceSchema.parse({
+        url: ' https://images.example.com/soup.jpg ',
+        altText: '  Tomato soup with herbs\u0000 ',
+        sourceName: '  My kitchen ',
+        sourceUrl: ' https://example.com/image ',
+        creator: '  Alex Rivera ',
+        license: '  Personal permission ',
+        rightsStatus: 'permission-granted',
+      }),
+    ).toEqual({
+      url: 'https://images.example.com/soup.jpg',
+      altText: 'Tomato soup with herbs',
+      sourceName: 'My kitchen',
+      sourceUrl: 'https://example.com/image',
+      creator: 'Alex Rivera',
+      license: 'Personal permission',
+      rightsStatus: 'permission-granted',
+    })
+    expect(
+      recipeImageProvenanceSchema.parse({
+        url: 'https://images.example.com/soup.jpg',
+      }).rightsStatus,
+    ).toBe('unknown')
+    expect(
+      recipeImageProvenanceSchema.safeParse({
+        url: 'javascript:alert(1)',
+      }).success,
+    ).toBe(false)
+    expect(
+      recipeImageProvenanceSchema.safeParse({
+        url: 'https://images.example.com/soup.jpg',
+        altText: 'x'.repeat(301),
+      }).success,
     ).toBe(false)
   })
 })

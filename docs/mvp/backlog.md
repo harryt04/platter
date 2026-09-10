@@ -146,10 +146,12 @@ mobile-friendly editor and make its usable state explicit.
 - [ ] The editor supports title, description, typical people fed, ordered
       ingredients, ordered instructions, times, cuisine, meal type, tags,
       dietary labels, household notes, source, attribution, image provenance,
-      image provenance, and optional nutrition data.
+      and optional nutrition data.
 - [x] Private drafts support a sanitized source name, HTTP(S) source link,
-      source author, and attribution; image provenance and nutrition remain
-      outstanding.
+      source author, and attribution; nutrition remains outstanding.
+- [x] Private drafts support an HTTP(S) image with sanitized accessibility and
+      provenance metadata, including source, creator, license or permission,
+      and an explicit rights status.
 - [x] Household notes are optional, private, sanitized, length-bounded,
       persisted, editable, and removable.
 - [x] Recipe timing and classification metadata (prep, cooking, and total

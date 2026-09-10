@@ -16,7 +16,11 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import type { RecipeIngredient, RecipeInstruction } from '@/lib/recipes/drafts'
+import type {
+  RecipeImageProvenance,
+  RecipeIngredient,
+  RecipeInstruction,
+} from '@/lib/recipes/drafts'
 
 type IngredientForm = RecipeIngredient
 
@@ -62,6 +66,7 @@ export function DraftEditor({
   initialSourceUrl = '',
   initialSourceAuthor = '',
   initialAttribution = '',
+  initialImage,
   initialTags = [],
   initialDietaryLabels = [],
   initialIngredients = [],
@@ -81,6 +86,7 @@ export function DraftEditor({
   initialSourceUrl?: string
   initialSourceAuthor?: string
   initialAttribution?: string
+  initialImage?: RecipeImageProvenance
   initialTags?: string[]
   initialDietaryLabels?: string[]
   initialIngredients?: RecipeIngredient[]
@@ -108,6 +114,19 @@ export function DraftEditor({
   const [sourceUrl, setSourceUrl] = useState(initialSourceUrl)
   const [sourceAuthor, setSourceAuthor] = useState(initialSourceAuthor)
   const [attribution, setAttribution] = useState(initialAttribution)
+  const [imageUrl, setImageUrl] = useState(initialImage?.url ?? '')
+  const [imageAltText, setImageAltText] = useState(initialImage?.altText ?? '')
+  const [imageSourceName, setImageSourceName] = useState(
+    initialImage?.sourceName ?? '',
+  )
+  const [imageSourceUrl, setImageSourceUrl] = useState(
+    initialImage?.sourceUrl ?? '',
+  )
+  const [imageCreator, setImageCreator] = useState(initialImage?.creator ?? '')
+  const [imageLicense, setImageLicense] = useState(initialImage?.license ?? '')
+  const [imageRightsStatus, setImageRightsStatus] = useState<
+    RecipeImageProvenance['rightsStatus']
+  >(initialImage?.rightsStatus ?? 'unknown')
   const [tags, setTags] = useState(initialTags.join(', '))
   const [dietaryLabels, setDietaryLabels] = useState(
     initialDietaryLabels.join(', '),
@@ -159,6 +178,18 @@ export function DraftEditor({
                   sourceUrl,
                   sourceAuthor,
                   attribution,
+                  image:
+                    imageUrl.trim() === ''
+                      ? null
+                      : {
+                          url: imageUrl,
+                          altText: imageAltText,
+                          sourceName: imageSourceName,
+                          sourceUrl: imageSourceUrl,
+                          creator: imageCreator,
+                          license: imageLicense,
+                          rightsStatus: imageRightsStatus,
+                        },
                   tags: splitLabels(tags),
                   dietaryLabels: splitLabels(dietaryLabels),
                   ingredients,
@@ -468,6 +499,159 @@ export function DraftEditor({
                     <p className="text-muted-foreground text-xs">
                       Keep attribution factual. It will remain separate from
                       recipe instructions and editorial prose.
+                    </p>
+                  </div>
+                </fieldset>
+                <fieldset className="border-border space-y-4 rounded-[var(--radius-card)] border p-4">
+                  <legend className="px-1 text-sm font-medium">
+                    Image provenance{' '}
+                    <span className="text-muted-foreground">(optional)</span>
+                  </legend>
+                  <p className="text-muted-foreground text-xs">
+                    Add an HTTP or HTTPS image only when you can use it. Record
+                    what you know; unknown rights stay explicit and will not
+                    make the image public automatically.
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="recipe-image-url">Image URL</Label>
+                    <Input
+                      id="recipe-image-url"
+                      name="imageUrl"
+                      type="url"
+                      inputMode="url"
+                      value={imageUrl}
+                      onChange={(event) => setImageUrl(event.target.value)}
+                      placeholder="https://images.example.com/soup.jpg"
+                      maxLength={2048}
+                    />
+                    {imageUrl && (
+                      <p className="text-muted-foreground text-xs">
+                        This address is stored with the private draft and will
+                        not make the image public automatically.
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="recipe-image-alt-text">
+                      Image description{' '}
+                      <span className="text-muted-foreground">(optional)</span>
+                    </Label>
+                    <Input
+                      id="recipe-image-alt-text"
+                      name="imageAltText"
+                      value={imageAltText}
+                      onChange={(event) => setImageAltText(event.target.value)}
+                      placeholder="Bowl of tomato soup with herbs"
+                      maxLength={300}
+                    />
+                    <p className="text-muted-foreground text-xs">
+                      Describe what the image shows for people using a screen
+                      reader.
+                    </p>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="recipe-image-source-name">
+                        Image source name{' '}
+                        <span className="text-muted-foreground">
+                          (optional)
+                        </span>
+                      </Label>
+                      <Input
+                        id="recipe-image-source-name"
+                        name="imageSourceName"
+                        value={imageSourceName}
+                        onChange={(event) =>
+                          setImageSourceName(event.target.value)
+                        }
+                        placeholder="My kitchen"
+                        maxLength={200}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="recipe-image-creator">
+                        Image creator{' '}
+                        <span className="text-muted-foreground">
+                          (optional)
+                        </span>
+                      </Label>
+                      <Input
+                        id="recipe-image-creator"
+                        name="imageCreator"
+                        value={imageCreator}
+                        onChange={(event) =>
+                          setImageCreator(event.target.value)
+                        }
+                        placeholder="Your name"
+                        maxLength={200}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="recipe-image-source-url">
+                        Image source URL{' '}
+                        <span className="text-muted-foreground">
+                          (optional)
+                        </span>
+                      </Label>
+                      <Input
+                        id="recipe-image-source-url"
+                        name="imageSourceUrl"
+                        type="url"
+                        inputMode="url"
+                        value={imageSourceUrl}
+                        onChange={(event) =>
+                          setImageSourceUrl(event.target.value)
+                        }
+                        placeholder="https://example.com/image"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="recipe-image-license">
+                        License or permission{' '}
+                        <span className="text-muted-foreground">
+                          (optional)
+                        </span>
+                      </Label>
+                      <Input
+                        id="recipe-image-license"
+                        name="imageLicense"
+                        value={imageLicense}
+                        onChange={(event) =>
+                          setImageLicense(event.target.value)
+                        }
+                        placeholder="CC BY 4.0 or personal permission"
+                        maxLength={300}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="recipe-image-rights-status">
+                      Image rights status
+                    </Label>
+                    <select
+                      id="recipe-image-rights-status"
+                      name="imageRightsStatus"
+                      value={imageRightsStatus}
+                      onChange={(event) =>
+                        setImageRightsStatus(
+                          event.target
+                            .value as RecipeImageProvenance['rightsStatus'],
+                        )
+                      }
+                      className="bg-background focus:ring-ring min-h-11 w-full rounded-[var(--radius-control)] border px-3 text-sm outline-none focus:ring-2"
+                    >
+                      <option value="user-owned">I created or own it</option>
+                      <option value="licensed">Licensed for reuse</option>
+                      <option value="permission-granted">
+                        Permission granted
+                      </option>
+                      <option value="unknown">Rights are unknown</option>
+                    </select>
+                    <p className="text-muted-foreground text-xs">
+                      This status records what is known; it is not a legal
+                      determination.
                     </p>
                   </div>
                 </fieldset>

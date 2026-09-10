@@ -193,6 +193,15 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
           sourceUrl: ' https://example.com/recipe ',
           sourceAuthor: ' Alex Rivera ',
           attribution: ' Adapted with permission.\u0000 ',
+          image: {
+            url: ' https://images.example.com/soup.jpg ',
+            altText: ' Tomato soup with herbs\u0000 ',
+            sourceName: ' My kitchen ',
+            sourceUrl: ' https://example.com/image ',
+            creator: ' Alex Rivera ',
+            license: ' Personal permission ',
+            rightsStatus: 'permission-granted',
+          },
           tags: ['weeknight', 'make ahead'],
           dietaryLabels: ['vegetarian'],
         }),
@@ -212,6 +221,15 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
       sourceUrl: 'https://example.com/recipe',
       sourceAuthor: 'Alex Rivera',
       attribution: 'Adapted with permission.',
+      image: {
+        url: 'https://images.example.com/soup.jpg',
+        altText: 'Tomato soup with herbs',
+        sourceName: 'My kitchen',
+        sourceUrl: 'https://example.com/image',
+        creator: 'Alex Rivera',
+        license: 'Personal permission',
+        rightsStatus: 'permission-granted',
+      },
       tags: ['weeknight', 'make ahead'],
       dietaryLabels: ['vegetarian'],
     })
@@ -225,6 +243,10 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
           cuisine: 'Mediterranean',
           mealType: 'Dinner',
           householdNotes: 'Use less salt for the kids.',
+          image: expect.objectContaining({
+            url: 'https://images.example.com/soup.jpg',
+            rightsStatus: 'permission-granted',
+          }),
           tags: ['weeknight', 'make ahead'],
           dietaryLabels: ['vegetarian'],
         }),
@@ -258,6 +280,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
           sourceUrl: null,
           sourceAuthor: '',
           attribution: '',
+          image: null,
         }),
       }),
       { params: Promise.resolve({ recipeId: 'recipe-1' }) },
@@ -268,6 +291,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
     expect(result).not.toHaveProperty('cuisine')
     expect(result).not.toHaveProperty('householdNotes')
     expect(result).not.toHaveProperty('prepTimeMinutes')
+    expect(result).not.toHaveProperty('image')
     expect(collection.updateOne).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -279,6 +303,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
           sourceUrl: '',
           sourceAuthor: '',
           attribution: '',
+          image: '',
         },
       }),
     )

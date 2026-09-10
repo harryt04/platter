@@ -35,6 +35,15 @@ describe('DraftEditor', () => {
         initialSourceUrl="https://example.com/recipe"
         initialSourceAuthor="Alex Rivera"
         initialAttribution="Adapted with permission."
+        initialImage={{
+          url: 'https://images.example.com/soup.jpg',
+          altText: 'Tomato soup with herbs',
+          sourceName: 'My kitchen',
+          sourceUrl: 'https://example.com/image',
+          creator: 'Alex Rivera',
+          license: 'Personal permission',
+          rightsStatus: 'permission-granted',
+        }}
         initialTags={['weeknight', 'make ahead']}
         initialDietaryLabels={['vegetarian']}
         initialIngredients={[
@@ -87,6 +96,27 @@ describe('DraftEditor', () => {
     expect(screen.getByRole('textbox', { name: /Attribution/ })).toHaveValue(
       'Adapted with permission.',
     )
+    expect(screen.getByRole('textbox', { name: 'Image URL' })).toHaveValue(
+      'https://images.example.com/soup.jpg',
+    )
+    expect(
+      screen.getByRole('textbox', { name: /Image description/ }),
+    ).toHaveValue('Tomato soup with herbs')
+    expect(
+      screen.getByRole('textbox', { name: /Image source name/ }),
+    ).toHaveValue('My kitchen')
+    expect(screen.getByRole('textbox', { name: /Image creator/ })).toHaveValue(
+      'Alex Rivera',
+    )
+    expect(
+      screen.getByRole('textbox', { name: /Image source URL/ }),
+    ).toHaveValue('https://example.com/image')
+    expect(
+      screen.getByRole('textbox', { name: /License or permission/ }),
+    ).toHaveValue('Personal permission')
+    expect(
+      screen.getByRole('combobox', { name: 'Image rights status' }),
+    ).toHaveValue('permission-granted')
     expect(screen.getByRole('textbox', { name: 'Tags' })).toHaveValue(
       'weeknight, make ahead',
     )

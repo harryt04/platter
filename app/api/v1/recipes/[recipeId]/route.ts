@@ -160,6 +160,13 @@ export async function PATCH(request: Request, context: RouteContext) {
       setFields.typicalPeopleFed = parsed.data.typicalPeopleFed
     }
   }
+  if ('image' in parsed.data) {
+    if (parsed.data.image === null || parsed.data.image === undefined) {
+      unsetFields.image = ''
+    } else {
+      setFields.image = parsed.data.image
+    }
+  }
   for (const field of recipeMetadataFields) {
     if (!(field in parsed.data)) continue
     const value = parsed.data[field]
@@ -191,6 +198,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   ) {
     delete updatedDraft.description
   }
+  if ('image' in unsetFields) delete updatedDraft.image
   for (const field of recipeMetadataFields) {
     if (field in unsetFields) Reflect.deleteProperty(updatedDraft, field)
   }

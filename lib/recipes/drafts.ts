@@ -51,6 +51,16 @@ const optionalSourceUrl = z.preprocess(
     .nullable(),
 )
 
+const imageUrl = z
+  .string({ error: 'Enter a valid image URL.' })
+  .trim()
+  .max(2048, 'Image URLs must be 2,048 characters or fewer.')
+  .url({ error: 'Enter a valid image URL.' })
+  .refine(
+    (value) => value.startsWith('https://') || value.startsWith('http://'),
+    'Image URL must use HTTP or HTTPS.',
+  )
+
 const recipeTimeSchema = (label: string) =>
   z
     .number({ error: `Enter a valid ${label} in minutes.` })
@@ -122,8 +132,23 @@ export const recipeMetadataSchema = z.object({
   dietaryLabels: recipeLabelsSchema.optional(),
 })
 
+export const recipeImageProvenanceSchema = z.object({
+  url: imageUrl,
+  altText: optionalMetadataText('image description', 300),
+  sourceName: optionalMetadataText('image source name', 200),
+  sourceUrl: optionalSourceUrl,
+  creator: optionalMetadataText('image creator', 200),
+  license: optionalMetadataText('image license or permission', 300),
+  rightsStatus: z
+    .enum(['user-owned', 'licensed', 'permission-granted', 'unknown'], {
+      error: 'Choose how this image may be reused.',
+    })
+    .default('unknown'),
+})
+
 export type RecipeIngredient = z.infer<typeof recipeIngredientSchema>
 export type RecipeInstruction = z.infer<typeof recipeInstructionSchema>
+export type RecipeImageProvenance = z.infer<typeof recipeImageProvenanceSchema>
 
 export const createDraftSchema = z.object({ title: recipeTitleSchema })
 export const updateDraftSchema = z
@@ -132,6 +157,7 @@ export const updateDraftSchema = z
     description: recipeDescriptionSchema.nullable().optional(),
     typicalPeopleFed: typicalPeopleFedSchema.nullable().optional(),
     ...recipeMetadataSchema.shape,
+    image: recipeImageProvenanceSchema.nullable().optional(),
     ingredients: z.array(recipeIngredientSchema).max(100).optional(),
     instructions: z
       .array(recipeInstructionSchema)
@@ -162,6 +188,7 @@ export type RecipeDraft = {
   attribution?: string
   tags?: string[]
   dietaryLabels?: string[]
+  image?: RecipeImageProvenance
   ingredients: RecipeIngredient[]
   instructions: RecipeInstruction[]
   createdAt: IsoDateTime
@@ -216,6 +243,7 @@ export function createDraftDocument(
     attribution?: string
     tags?: string[]
     dietaryLabels?: string[]
+    image?: RecipeImageProvenance
     ingredients?: RecipeIngredient[]
     instructions?: RecipeInstruction[]
   } = {},
@@ -267,6 +295,7 @@ export function createDraftDocument(
     ...(details.dietaryLabels === undefined
       ? {}
       : { dietaryLabels: details.dietaryLabels }),
+    ...(details.image === undefined ? {} : { image: details.image }),
     ingredients,
     instructions,
     createdAt: now,
@@ -317,6 +346,7 @@ export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
     ...(document.dietaryLabels === undefined
       ? {}
       : { dietaryLabels: document.dietaryLabels }),
+    ...(document.image === undefined ? {} : { image: document.image }),
     ingredients: document.ingredients ?? [],
     instructions: document.instructions ?? [],
     createdAt: document.createdAt,

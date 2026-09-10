@@ -1,6 +1,6 @@
 import { getSession } from '@/lib/auth/authorization'
 import { problemResponse } from '@/lib/contracts/problem'
-import { getConnectedDatabase } from '@/lib/db/mongo-client'
+import { getConnectedDatabase, getMongoClient } from '@/lib/db/mongo-client'
 import { isoDateTime } from '@/lib/contracts/ids'
 import {
   createDraftDocument,
@@ -22,6 +22,7 @@ import {
   recipeImportIdSchema,
   type RecipeImportDocument,
 } from '@/lib/recipe-imports'
+import type { ClientSession } from 'mongodb'
 import {
   findExistingPublicImportedRecipe,
   isExactImportedContent,
@@ -81,6 +82,42 @@ function notReady() {
     detail: 'Wait for the recipe preview before saving it.',
     code: 'IMPORT_NOT_READY',
   })
+}
+
+function duplicateImport(existingRecipe: {
+  id: string
+  title: string
+  sourceUrl?: string
+  canonicalUrl?: string
+  contentFingerprint?: string
+  versionId?: string
+  versionNumber?: number
+}) {
+  return problemResponse({
+    type: 'https://platter.dev/problems/import-duplicate',
+    title: 'Public recipe already exists',
+    status: 409,
+    detail:
+      'A public recipe from this source already exists. Review it before saving another imported recipe.',
+    code: 'IMPORT_DUPLICATE',
+    existingRecipe,
+  })
+}
+
+function isDuplicateKeyError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 11000
+  )
+}
+
+class ImportSaveClaimLost extends Error {
+  constructor() {
+    super('Recipe import save was claimed by another request.')
+    this.name = 'ImportSaveClaimLost'
+  }
 }
 
 function createImportProvenance(
@@ -191,15 +228,7 @@ export async function POST(
   const isRelatedVersion =
     existingRecipe && isRelatedImportedContent(source, existingRecipe)
   if (isExactDuplicate || (existingRecipe && !isRelatedVersion)) {
-    return problemResponse({
-      type: 'https://platter.dev/problems/import-duplicate',
-      title: 'Public recipe already exists',
-      status: 409,
-      detail:
-        'A public recipe from this source already exists. Review it before saving another imported recipe.',
-      code: 'IMPORT_DUPLICATE',
-      existingRecipe,
-    })
+    return duplicateImport(existingRecipe)
   }
   if (isRelatedVersion && !parsed.data.acceptRelatedVersion) {
     return problemResponse({
@@ -258,43 +287,55 @@ export async function POST(
     ingredients: parsed.data.ingredients,
     instructions: parsed.data.instructions,
   })
-  const claim = await imports.findOneAndUpdate(
-    {
-      _id: importId,
-      userId: session.user.id,
-      status: 'preview-ready',
-      savedRecipeId: { $exists: false },
-    },
-    {
-      $set: {
-        savedRecipeId: draft._id,
-        updatedAt: isoDateTime(new Date()),
-      },
-    },
-    { returnDocument: 'after' },
-  )
-  if (!claim) {
-    const raced = await imports.findOne({
-      _id: importId,
-      userId: session.user.id,
-    })
-    return raced?.savedRecipeId
-      ? Response.json({ recipeId: raced.savedRecipeId }, { status: 200 })
-      : notReady()
-  }
-
   try {
-    await db.collection<RecipeDraftDocument>('recipes').insertOne(draft)
-    const version = createRecipeVersionDocument(draft)
-    const { _id: versionId, ...versionContent } = version
-    await db
-      .collection<RecipeVersionDocument>('recipe_versions')
-      .insertOne({ _id: versionId, ...versionContent })
+    await getMongoClient().withSession(async (mongoSession) => {
+      await mongoSession.withTransaction(
+        async (transactionSession: ClientSession) => {
+          const claim = await imports.findOneAndUpdate(
+            {
+              _id: importId,
+              userId: session.user.id,
+              status: 'preview-ready',
+              savedRecipeId: { $exists: false },
+            },
+            {
+              $set: {
+                savedRecipeId: draft._id,
+                updatedAt: isoDateTime(new Date()),
+              },
+            },
+            { returnDocument: 'after', session: transactionSession },
+          )
+          if (!claim) throw new ImportSaveClaimLost()
+
+          await db
+            .collection<RecipeDraftDocument>('recipes')
+            .insertOne(draft, { session: transactionSession })
+          const version = createRecipeVersionDocument(draft)
+          const { _id: versionId, ...versionContent } = version
+          await db
+            .collection<RecipeVersionDocument>('recipe_versions')
+            .insertOne(
+              { _id: versionId, ...versionContent },
+              { session: transactionSession },
+            )
+        },
+      )
+    })
   } catch (error) {
-    await imports.updateOne(
-      { _id: importId, userId: session.user.id, savedRecipeId: draft._id },
-      { $unset: { savedRecipeId: '' } },
-    )
+    if (error instanceof ImportSaveClaimLost) {
+      const raced = await imports.findOne({
+        _id: importId,
+        userId: session.user.id,
+      })
+      return raced?.savedRecipeId
+        ? Response.json({ recipeId: raced.savedRecipeId }, { status: 200 })
+        : notReady()
+    }
+    if (isDuplicateKeyError(error)) {
+      const racedRecipe = await findExistingPublicImportedRecipe(db, source)
+      if (racedRecipe) return duplicateImport(racedRecipe)
+    }
     throw error
   }
 

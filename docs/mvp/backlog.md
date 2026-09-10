@@ -664,7 +664,7 @@ recipe data
       the source and relationship visible before confirmation.
 - [x] A successful import becomes discoverable to other users and appears in
       the importer's library, but never changes an active run automatically.
-- [ ] Concurrent or retried saves are idempotent and cannot create duplicate
+- [x] Concurrent or retried saves are idempotent and cannot create duplicate
       public identities or versions.
 - [ ] Integration tests cover deduplication, version coexistence, public search,
       private boundaries, and complete provenance.

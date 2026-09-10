@@ -174,7 +174,11 @@ content fingerprints against approved public imports and link the user to an
 existing public recipe instead of silently creating a duplicate. When the
 canonical source has changed, the preview identifies the existing recipe and
 version, requires explicit confirmation, and records the new draft as a
-related source update without replacing the existing recipe.
+related source update without replacing the existing recipe. Import saves now
+claim the source import and create its public recipe plus immutable version in
+one transaction; a unique public fingerprint index and duplicate-key recovery
+keep concurrent or retried saves from creating duplicate identities or
+versions.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

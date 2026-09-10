@@ -36,6 +36,20 @@ export async function ensureSharedIndexes(db: Db) {
       },
     },
   )
+  await db.collection('recipes').createIndex(
+    { 'importProvenance.contentFingerprint': 1 },
+    {
+      name: 'recipe_imported_public_fingerprint',
+      unique: true,
+      partialFilterExpression: {
+        status: 'usable',
+        visibility: 'public',
+        origin: 'imported',
+        importReviewStatus: 'approved',
+        'importProvenance.contentFingerprint': { $exists: true },
+      },
+    },
+  )
   await db
     .collection('recipe_versions')
     .createIndex({ recipeId: 1, versionNumber: 1 }, { unique: true })

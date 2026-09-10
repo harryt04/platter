@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST } from '@/app/api/v1/imports/[importId]/save/route'
 
-const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
+const { getSession, getConnectedDatabase, getMongoClient } = vi.hoisted(() => ({
   getSession: vi.fn(),
   getConnectedDatabase: vi.fn(),
+  getMongoClient: vi.fn(),
 }))
 
 vi.mock('@/lib/auth/authorization', () => ({ getSession }))
-vi.mock('@/lib/db/mongo-client', () => ({ getConnectedDatabase }))
+vi.mock('@/lib/db/mongo-client', () => ({
+  getConnectedDatabase,
+  getMongoClient,
+}))
 
 const importId = 'b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7'
 const source = {
@@ -74,6 +78,13 @@ function setup(
   )
   getConnectedDatabase.mockResolvedValue({
     collection,
+  })
+  getMongoClient.mockReturnValue({
+    withSession: async (callback: (session: unknown) => unknown) =>
+      callback({
+        withTransaction: async (transaction: (session: unknown) => unknown) =>
+          transaction({}),
+      }),
   })
   return { collection, imports, recipes, versions }
 }
@@ -148,7 +159,7 @@ describe('POST /api/v1/imports/[importId]/save', () => {
       expect.objectContaining({
         $set: expect.objectContaining({ savedRecipeId: expect.any(String) }),
       }),
-      { returnDocument: 'after' },
+      { returnDocument: 'after', session: expect.anything() },
     )
     expect(recipes.insertOne).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -162,6 +173,7 @@ describe('POST /api/v1/imports/[importId]/save', () => {
           versionRelationship: 'source-original',
         }),
       }),
+      expect.objectContaining({ session: expect.anything() }),
     )
     expect(versions.insertOne).toHaveBeenCalledOnce()
     expect(collection).not.toHaveBeenCalledWith('shopping_runs')
@@ -190,6 +202,7 @@ describe('POST /api/v1/imports/[importId]/save', () => {
         importReviewStatus: 'pending',
         visibility: 'private',
       }),
+      expect.objectContaining({ session: expect.anything() }),
     )
   })
 
@@ -205,6 +218,88 @@ describe('POST /api/v1/imports/[importId]/save', () => {
     expect(await response.json()).toEqual({ recipeId: savedRecipeId })
     expect(recipes.insertOne).not.toHaveBeenCalled()
     expect(versions.insertOne).not.toHaveBeenCalled()
+  })
+
+  it('lets only one concurrent save claim an import and replays the winner', async () => {
+    const { imports, recipes, versions } = setup()
+    imports.findOneAndUpdate
+      .mockResolvedValueOnce(source)
+      .mockResolvedValueOnce(null)
+    imports.findOne.mockResolvedValueOnce(source).mockResolvedValueOnce(source)
+    imports.findOne.mockResolvedValueOnce({
+      ...source,
+      savedRecipeId: 'winner-recipe-id',
+    })
+
+    const responses = await Promise.all([
+      POST(
+        request({
+          title: 'Corrected soup',
+          typicalPeopleFed: 4,
+          ingredients: source.preview.ingredients,
+          instructions: source.preview.instructions,
+        }),
+        { params: Promise.resolve({ importId }) },
+      ),
+      POST(
+        request({
+          title: 'Corrected soup',
+          typicalPeopleFed: 4,
+          ingredients: source.preview.ingredients,
+          instructions: source.preview.instructions,
+        }),
+        { params: Promise.resolve({ importId }) },
+      ),
+    ])
+
+    expect(responses.map((response) => response.status).sort()).toEqual([
+      200, 201,
+    ])
+    expect(recipes.insertOne).toHaveBeenCalledOnce()
+    expect(versions.insertOne).toHaveBeenCalledOnce()
+  })
+
+  it('turns a concurrent public-identity race into the existing-recipe response', async () => {
+    const { recipes, versions } = setup()
+    const existingRecipe = {
+      _id: 'raced-public-recipe',
+      title: 'Raced soup',
+      sourceUrl: source.canonicalUrl,
+      importProvenance: {
+        canonicalUrl: source.canonicalUrl,
+        contentFingerprint: source.contentFingerprint,
+      },
+    }
+    recipes.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(existingRecipe)
+    recipes.insertOne
+      .mockResolvedValueOnce({ acknowledged: true })
+      .mockRejectedValueOnce({ code: 11000 })
+
+    const body = {
+      title: 'Raced soup',
+      typicalPeopleFed: 4,
+      ingredients: source.preview.ingredients,
+      instructions: source.preview.instructions,
+    }
+    const responses = await Promise.all([
+      POST(request(body), { params: Promise.resolve({ importId }) }),
+      POST(request(body), { params: Promise.resolve({ importId }) }),
+    ])
+
+    expect(responses.map((response) => response.status).sort()).toEqual([
+      201, 409,
+    ])
+    expect(
+      (await responses.find((response) => response.status === 409)?.json()) ??
+        {},
+    ).toMatchObject({
+      code: 'IMPORT_DUPLICATE',
+      existingRecipe: { id: existingRecipe._id },
+    })
+    expect(versions.insertOne).toHaveBeenCalledOnce()
   })
 
   it('proposes an existing approved public import instead of creating a duplicate', async () => {

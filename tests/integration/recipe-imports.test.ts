@@ -189,7 +189,7 @@ describe('Mongo-backed public recipe import workflow', () => {
     await getMongoClient().close()
   })
 
-  it('publishes complete provenance, supports discovery, and preserves private boundaries', async () => {
+  it('publishes independently provenanced permitted images without exposing unknown rights', async () => {
     const publicImport = recipeImport()
     const privateImport = recipeImport({
       sourceUrl: `${sourceUrl}/incomplete`,
@@ -211,7 +211,19 @@ describe('Mongo-backed public recipe import workflow', () => {
     const publicSave = await saveImport(
       new Request('http://localhost/api/v1/imports/save', {
         method: 'POST',
-        body: JSON.stringify(requestBody()),
+        body: JSON.stringify(
+          requestBody({
+            image: {
+              url: `https://images.${fixtureToken}.test/soup.jpg`,
+              altText: 'A bowl of synthetic soup',
+              sourceName: `${fixtureToken} image source`,
+              sourceUrl: `https://images.${fixtureToken}.test/license`,
+              creator: 'Synthetic image creator',
+              license: 'CC BY 4.0',
+              rightsStatus: 'licensed',
+            },
+          }),
+        ),
       }),
       saveContext(publicImport._id),
     )
@@ -219,6 +231,7 @@ describe('Mongo-backed public recipe import workflow', () => {
     const publicRecipe = (await publicSave.json()).recipe as {
       id: string
       visibility: string
+      image: Record<string, unknown>
       importProvenance: Record<string, unknown>
     }
     expect(publicRecipe.visibility).toBe('public')
@@ -235,12 +248,25 @@ describe('Mongo-backed public recipe import workflow', () => {
       versionRelationship: 'source-original',
       rightsStatus: 'unknown',
     })
+    expect(publicRecipe.image).toEqual({
+      url: `https://images.${fixtureToken}.test/soup.jpg`,
+      altText: 'A bowl of synthetic soup',
+      sourceName: `${fixtureToken} image source`,
+      sourceUrl: `https://images.${fixtureToken}.test/license`,
+      creator: 'Synthetic image creator',
+      license: 'CC BY 4.0',
+      rightsStatus: 'licensed',
+    })
 
     const savedVersion = await db
       .collection<RecipeVersionDocument>('recipe_versions')
       .findOne({ recipeId: publicRecipe.id })
     expect(savedVersion).toMatchObject({
       recipeId: publicRecipe.id,
+      image: expect.objectContaining({
+        url: `https://images.${fixtureToken}.test/soup.jpg`,
+        rightsStatus: 'licensed',
+      }),
       importProvenance: expect.objectContaining({
         contentFingerprint: originalFingerprint,
       }),
@@ -249,11 +275,22 @@ describe('Mongo-backed public recipe import workflow', () => {
     const publicSearch = await new MongoRecipeSearchProvider(db).searchRecipes({
       text: `${fixtureToken} imported`,
     })
-    expect(publicSearch.results.map(({ id }) => id)).toContain(publicRecipe.id)
+    expect(publicSearch.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: publicRecipe.id,
+          image: {
+            url: `https://images.${fixtureToken}.test/soup.jpg`,
+            altText: 'A bowl of synthetic soup',
+          },
+        }),
+      ]),
+    )
 
     const library = await findRecipeLibrary(db, ownerId)
     expect(library.map(({ recipe }) => recipe.id)).toContain(publicRecipe.id)
 
+    getSession.mockResolvedValue({ user: { id: ownerId } })
     const privateSave = await saveImport(
       new Request('http://localhost/api/v1/imports/save', {
         method: 'POST',
@@ -292,6 +329,31 @@ describe('Mongo-backed public recipe import workflow', () => {
     expect(privateSearch.results.map(({ id }) => id)).not.toContain(
       privateRecipe.id,
     )
+
+    await db.collection<RecipeDraftDocument>('recipes').updateOne(
+      { _id: publicRecipe.id },
+      {
+        $set: {
+          'importProvenance.sourceAvailability': 'unavailable',
+          'importProvenance.sourceCheckedAt': timestamp,
+        },
+      },
+    )
+    getSession.mockResolvedValue(null)
+    const unavailableSource = await getRecipe(
+      new Request(`http://localhost/api/v1/recipes/${publicRecipe.id}`),
+      { params: Promise.resolve({ recipeId: publicRecipe.id }) },
+    )
+    expect(unavailableSource.status).toBe(200)
+    expect(await unavailableSource.json()).toMatchObject({
+      recipe: {
+        image: {
+          url: `https://images.${fixtureToken}.test/soup.jpg`,
+          rightsStatus: 'licensed',
+        },
+        importProvenance: { sourceAvailability: 'unavailable' },
+      },
+    })
   })
 
   it('reuses exact public identities and allows an explicitly confirmed source update', async () => {

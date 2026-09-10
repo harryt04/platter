@@ -8,6 +8,7 @@ import {
   createRecipeVersionDocument,
   draftOwnerFilter,
   getRecipeSourceMetadata,
+  isRecipeImagePubliclyPermitted,
   isPubliclyRenderableRecipe,
   isUsableRecipe,
   privateDraftFilter,
@@ -29,6 +30,34 @@ import {
 } from '@/lib/recipes/drafts'
 
 describe('recipe drafts', () => {
+  it('requires explicit image reuse rights before a public surface can expose an image', () => {
+    expect(
+      isRecipeImagePubliclyPermitted({
+        url: 'https://example.com/user-owned.jpg',
+        rightsStatus: 'user-owned',
+      }),
+    ).toBe(true)
+    expect(
+      isRecipeImagePubliclyPermitted({
+        url: 'https://example.com/licensed.jpg',
+        rightsStatus: 'licensed',
+      }),
+    ).toBe(true)
+    expect(
+      isRecipeImagePubliclyPermitted({
+        url: 'https://example.com/permission.jpg',
+        rightsStatus: 'permission-granted',
+      }),
+    ).toBe(true)
+    expect(
+      isRecipeImagePubliclyPermitted({
+        url: 'https://example.com/unknown.jpg',
+        rightsStatus: 'unknown',
+      }),
+    ).toBe(false)
+    expect(isRecipeImagePubliclyPermitted(null)).toBe(false)
+  })
+
   it('uses retained import provenance when editable source fields are absent', () => {
     const recipe = toRecipeDraft(
       createDraftDocument('user-1', 'Imported soup', {
@@ -148,6 +177,23 @@ describe('recipe drafts', () => {
     expect(toRecipeDraftForViewer(recipe, 'public')).not.toHaveProperty(
       'householdNotes',
     )
+  })
+
+  it('removes image URLs from shared and public responses when reuse rights are unknown', () => {
+    const recipe = createDraftDocument('user-1', 'Imported soup', {
+      image: {
+        url: 'https://images.example.com/soup.jpg',
+        license: 'Source license not verified',
+        rightsStatus: 'unknown',
+      },
+    })
+
+    expect(toRecipeDraftForViewer(recipe, 'owner').image).toMatchObject({
+      url: 'https://images.example.com/soup.jpg',
+      rightsStatus: 'unknown',
+    })
+    expect(toRecipeDraftForViewer(recipe, 'shared')).not.toHaveProperty('image')
+    expect(toRecipeDraftForViewer(recipe, 'public')).not.toHaveProperty('image')
   })
 
   it('scopes every lookup to both the draft id and owner', () => {

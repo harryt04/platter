@@ -17,6 +17,7 @@ import {
 } from '@/lib/lists'
 import {
   getRecipeSourceMetadata,
+  isRecipeImagePubliclyPermitted,
   publicRecipeFilter,
   toRecipeDraftForViewer,
 } from '@/lib/recipes/drafts'
@@ -65,11 +66,8 @@ export default async function RecipePage({
   const revisionsByRunId = new Map(
     activeRuns.map((run) => [run._id, run.revision]),
   )
-  const imageIsPermitted =
-    recipe.image &&
-    ['user-owned', 'licensed', 'permission-granted'].includes(
-      recipe.image.rightsStatus,
-    )
+  const imageIsPermitted = isRecipeImagePubliclyPermitted(document.image)
+  const imageRightsAreUnknown = Boolean(document.image && !imageIsPermitted)
   const { sourceName, sourceUrl, sourceAuthor } =
     getRecipeSourceMetadata(recipe)
 
@@ -115,7 +113,7 @@ export default async function RecipePage({
             width={1280}
           />
         </div>
-      ) : recipe.image ? (
+      ) : imageRightsAreUnknown ? (
         <p className="text-muted-foreground mb-6 text-sm" role="status">
           This source does not permit an image here. The recipe link is still
           available.
@@ -150,8 +148,8 @@ export default async function RecipePage({
             </div>
             <PublicRecipeProvenance
               attribution={recipe.attribution}
-              imageLicense={recipe.image?.license ?? undefined}
-              imageRightsStatus={recipe.image?.rightsStatus}
+              imageLicense={document.image?.license ?? undefined}
+              imageRightsStatus={document.image?.rightsStatus}
               sourceAuthor={sourceAuthor}
               sourceName={sourceName}
               sourceUrl={sourceUrl}

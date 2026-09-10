@@ -705,7 +705,7 @@ recipe experience and prevent unlicensed media or prose from entering it.
       link in detail views and other contexts where full attribution is required.
 - [x] Ingredient facts, yield, time, and concise procedural steps are separated
       from substantial editorial prose, which is not copied.
-- [ ] Each copied image has independent provenance and is stored or displayed
+- [x] Each copied image has independent provenance and is stored or displayed
       only when the known license or permission permits; otherwise an allowed
       image, user image, or no image is used.
 - [x] Unknown rights are represented honestly and never inferred from the

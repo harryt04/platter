@@ -246,6 +246,21 @@ export type RecipeInstruction = z.infer<typeof recipeInstructionSchema>
 export type RecipeImageProvenance = z.infer<typeof recipeImageProvenanceSchema>
 export type RecipeNutrition = z.infer<typeof recipeNutritionSchema>
 
+const publiclyPermittedImageRights = new Set<
+  RecipeImageProvenance['rightsStatus']
+>(['user-owned', 'licensed', 'permission-granted'])
+
+/**
+ * Public recipe surfaces may expose an image only when its reuse status is
+ * explicit. Unknown rights remain stored as provenance for owner review, but
+ * never become a public image by accident.
+ */
+export function isRecipeImagePubliclyPermitted(
+  image: RecipeImageProvenance | null | undefined,
+) {
+  return Boolean(image && publiclyPermittedImageRights.has(image.rightsStatus))
+}
+
 export type RecipeImportProvenanceDocument = {
   submittedUrl: string
   canonicalUrl: string
@@ -706,13 +721,18 @@ export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
 /**
  * Personal household notes are only meaningful to the recipe owner. Keep the
  * field out of shared, saved, and public responses even when the underlying
- * recipe is otherwise readable through one of those paths.
+ * recipe is otherwise readable through one of those paths. The image URL is
+ * similarly private until its reuse status is explicit; public surfaces may
+ * still describe unknown rights without receiving the unusable image URL.
  */
 export function toRecipeDraftForViewer(
   document: RecipeDraftDocument,
   viewer: RecipeViewer,
 ): RecipeDraft {
   const recipe = toRecipeDraft(document)
-  if (viewer !== 'owner') delete recipe.householdNotes
+  if (viewer !== 'owner') {
+    delete recipe.householdNotes
+    if (!isRecipeImagePubliclyPermitted(recipe.image)) delete recipe.image
+  }
   return recipe
 }

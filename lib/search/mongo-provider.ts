@@ -5,7 +5,10 @@ import type {
   RecipeSearchResponse,
 } from './provider'
 import { decimalString } from '@/lib/contracts/ids'
-import { publicRecipeFilter } from '@/lib/recipes/drafts'
+import {
+  isRecipeImagePubliclyPermitted,
+  publicRecipeFilter,
+} from '@/lib/recipes/drafts'
 import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
 import { z } from 'zod'
 
@@ -229,9 +232,7 @@ export class MongoRecipeSearchProvider implements SearchProvider {
           ? {}
           : { dietaryLabels: document.dietaryLabels }),
         ...(document.image?.url &&
-        ['user-owned', 'licensed', 'permission-granted'].includes(
-          document.image.rightsStatus,
-        )
+        isRecipeImagePubliclyPermitted(document.image)
           ? {
               image: {
                 url: document.image.url,

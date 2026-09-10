@@ -92,7 +92,7 @@ export default async function ReviewPage({
                 listId={listId}
               >
                 {items.map((item, itemIndex) => (
-                  <div className="space-y-2" key={item.id}>
+                  <div className="space-y-2" key={item.id} role="listitem">
                     <GroceryRow
                       item={item}
                       mergeSuggestions={mergeSuggestions.filter(

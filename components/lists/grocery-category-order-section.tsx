@@ -138,7 +138,13 @@ export function GroceryCategoryOrderSection({
           {pending ? 'Moving category…' : message}
         </span>
       </div>
-      <div className="space-y-3">{children}</div>
+      <div
+        aria-label={`${label} grocery items`}
+        className="space-y-3"
+        role="list"
+      >
+        {children}
+      </div>
     </section>
   )
 }

@@ -16,7 +16,11 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isMobile, setIsMobile] = React.useState(false)
   React.useEffect(() => {
     const query = window.matchMedia('(max-width: 767px)')
-    const update = () => setIsMobile(query.matches)
+    const update = () => {
+      const mobile = query.matches
+      setIsMobile(mobile)
+      if (mobile) setOpen(false)
+    }
     update()
     query.addEventListener('change', update)
     return () => query.removeEventListener('change', update)
@@ -40,24 +44,34 @@ export function Sidebar({
   children: React.ReactNode
   className?: string
 }) {
-  const { open, isMobile } = useSidebar()
+  const { open, isMobile, setOpen } = useSidebar()
   return (
-    <aside
-      className={cn(
-        'sticky top-0 z-30 flex h-screen shrink-0 flex-col border-r bg-[var(--sidebar)] transition-[width,transform] duration-200',
-        isMobile
-          ? open
-            ? 'fixed inset-y-0 left-0 w-72 shadow-xl'
-            : 'fixed w-72 -translate-x-full'
-          : open
-            ? 'w-64'
-            : 'w-16',
-        className,
+    <>
+      <aside
+        className={cn(
+          'sticky top-0 z-30 flex h-screen shrink-0 flex-col border-r bg-[var(--sidebar)] transition-[width,transform] duration-200',
+          isMobile
+            ? open
+              ? 'fixed inset-y-0 left-0 w-72 shadow-xl'
+              : 'fixed w-72 -translate-x-full'
+            : open
+              ? 'w-64'
+              : 'w-16',
+          className,
+        )}
+        aria-label="Primary navigation"
+      >
+        {children}
+      </aside>
+      {isMobile && open && (
+        <button
+          aria-label="Close navigation"
+          className="bg-foreground/20 fixed inset-0 z-20"
+          onClick={() => setOpen(false)}
+          type="button"
+        />
       )}
-      aria-label="Primary navigation"
-    >
-      {children}
-    </aside>
+    </>
   )
 }
 export function SidebarHeader({

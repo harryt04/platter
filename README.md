@@ -159,7 +159,9 @@ review and shopping modes remain directly linked after shopping starts, with
 touch-safe narrow layouts and live state feedback for `Already have` changes.
 The shopping checklist now also keeps `Purchased` separate from `Already have`,
 records which member marked the item, and supports retry-safe check and uncheck
-actions from both shopping and review modes.
+actions from both shopping and review modes. Its categorized rows expose amount,
+ingredient, state, category, and contribution access as a narrow-screen-safe
+semantic list with touch-safe controls.
 The active run also shares a temporary within-category item order: members can
 use accessible move-up and move-down controls, while a newly created run begins
 at the documented default order. Members can also drag a category or use its

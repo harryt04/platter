@@ -473,11 +473,11 @@ current run
       have` and records the acting member.
 - [x] Repeating the same check is idempotent and does not create a conflicting
       state or duplicate audit metadata.
-- [ ] Each row keeps amount, unit, ingredient, state, category, and contribution
+- [x] Each row keeps amount, unit, ingredient, state, category, and contribution
       access legible without horizontal scrolling at 320px.
-- [ ] State is communicated by control state, text, and icon or position rather
+- [x] State is communicated by control state, text, and icon or position rather
       than color alone, with at least 44px interaction targets.
-- [ ] Browser tests cover review-to-shopping transition, checking, unchecking,
+- [x] Browser tests cover review-to-shopping transition, checking, unchecking,
       contribution detail, and one-handed mobile use.
 
 ## 21: Synchronize connected shoppers

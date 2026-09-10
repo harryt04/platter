@@ -160,6 +160,7 @@ test.describe('authenticated list workflow', () => {
   test('checks and unchecks a grocery item independently while shopping', async ({
     page,
   }) => {
+    await page.setViewportSize({ width: 320, height: 800 })
     await page.goto('/sign-in')
     await page
       .getByRole('textbox', { name: 'Email' })
@@ -183,10 +184,30 @@ test.describe('authenticated list workflow', () => {
     await page.getByRole('link', { name: 'Start shopping' }).click()
     await expect(page).toHaveURL(/\/lists\/[^/]+\/shop$/)
 
+    const groceryRow = page
+      .locator('[role="listitem"]')
+      .filter({ hasText: 'spinach' })
+      .first()
+    await expect(groceryRow).toContainText('2 bag')
+    await expect(groceryRow).toContainText('spinach')
+    await expect(groceryRow).toContainText('Produce')
+    await expect(groceryRow).toContainText('To buy')
+    await expect(
+      groceryRow.getByText('View contribution', { exact: true }),
+    ).toBeVisible()
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true)
+
     const markPurchased = page.getByRole('button', {
       name: 'Mark spinach purchased',
     })
     await expect(markPurchased).toBeVisible()
+    expect(
+      (await markPurchased.boundingBox())?.height ?? 0,
+    ).toBeGreaterThanOrEqual(44)
     await markPurchased.click()
     await expect(
       page.getByRole('button', { name: 'Undo purchased for spinach' }),

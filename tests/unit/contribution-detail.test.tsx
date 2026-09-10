@@ -61,6 +61,15 @@ describe('ContributionDetail', () => {
     expect(screen.getByText('4 cup')).toBeInTheDocument()
   })
 
+  it('keeps checklist state and contribution access visible in the row', () => {
+    render(<GroceryRow item={item} state="purchased" />)
+
+    expect(screen.getAllByText('Purchased', { exact: true })).toHaveLength(2)
+    expect(screen.getByText('View contributions')).toBeInTheDocument()
+    expect(screen.getAllByText('4 cup')).toHaveLength(2)
+    expect(screen.getByText('onions', { exact: true })).toBeInTheDocument()
+  })
+
   it('keeps an unquantified contribution readable without inventing a total', () => {
     render(
       <ContributionDetail

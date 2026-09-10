@@ -58,8 +58,8 @@ export function ContributionDetail({
   }
 
   return (
-    <details className="min-w-0">
-      <summary className="text-primary flex min-h-11 cursor-pointer items-center justify-end text-sm font-medium underline-offset-4 hover:underline">
+    <details className="max-w-full min-w-0">
+      <summary className="text-primary flex min-h-11 max-w-full cursor-pointer items-center justify-end text-right text-sm font-medium break-words underline-offset-4 hover:underline">
         View{' '}
         {item.contributions.length === 1 ? 'contribution' : 'contributions'}
       </summary>

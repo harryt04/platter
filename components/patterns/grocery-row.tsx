@@ -118,13 +118,13 @@ export function GroceryRow({
 
   return (
     <div className="space-y-2">
-      <Card className="flex min-h-16 items-center gap-3 rounded-lg p-3">
-        <div className="flex-1">
+      <Card className="flex min-h-16 min-w-0 items-center gap-3 rounded-lg p-3">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-data text-sm font-medium">{itemAmount}</span>
-            <span>{itemIngredient}</span>
+            <span className="break-words">{itemIngredient}</span>
           </div>
-          <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
+          <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-2 text-xs">
             <span>{item ? groceryCategoryLabel(item.category) : category}</span>
             <span aria-hidden="true">·</span>
             <span>
@@ -144,6 +144,7 @@ export function GroceryRow({
           )}
         </div>
         <Badge
+          className="shrink-0"
           variant={
             state === 'purchased'
               ? 'success'

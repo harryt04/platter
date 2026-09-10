@@ -1,8 +1,12 @@
 import { createHash } from 'node:crypto'
 import type { Db } from 'mongodb'
 import { isoDateTime } from '@/lib/contracts/ids'
+import { serverEnv } from '@/lib/env/server'
 import { validateJobPayload } from '@/lib/jobs/registry'
-import { selectRecipeImportAdapter } from '@/lib/recipe-import-adapters'
+import {
+  parseDisabledRecipeImportAdapters,
+  selectRecipeImportAdapter,
+} from '@/lib/recipe-import-adapters'
 import {
   fetchRecipeSource,
   isRecipeImportFetchError,
@@ -62,7 +66,11 @@ export function createRecipeImportJobHandler(
 
     try {
       const fetched = await fetcher(document.sourceUrl)
-      const adapted = selectRecipeImportAdapter(fetched)
+      const adapted = selectRecipeImportAdapter(fetched, {
+        disabledAdapterIds: parseDisabledRecipeImportAdapters(
+          serverEnv().RECIPE_IMPORT_DISABLED_ADAPTERS,
+        ),
+      })
       if (adapted.kind === 'failure') {
         await collection.updateOne(
           {

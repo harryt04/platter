@@ -16,6 +16,7 @@ export type RecipeImportAdapterFailureCode =
   | 'INVALID_CONTENT'
   | 'UNSUPPORTED_CONTENT_TYPE'
   | 'RECIPE_DATA_NOT_FOUND'
+  | 'ADAPTER_DISABLED'
   | 'ADAPTER_FAILED'
 
 export type RecipeImportAdapterFailure = {
@@ -56,6 +57,19 @@ export type RecipeImportAdapter = {
 export type RecipeImportAdapterSelectionOptions = {
   /** Site adapters are ordered by specificity and may be disabled by config. */
   supportedAdapters?: readonly RecipeImportAdapter[]
+  /** Built-in and site adapters disabled by the operator. */
+  disabledAdapterIds?: readonly string[]
+}
+
+export function parseDisabledRecipeImportAdapters(value: string | undefined) {
+  return [
+    ...new Set(
+      (value ?? '')
+        .split(',')
+        .map((adapterId) => adapterId.trim())
+        .filter(Boolean),
+    ),
+  ]
 }
 
 function invalidContent(content: RecipeImportAdapterContent) {
@@ -144,11 +158,16 @@ export function selectRecipeImportAdapter(
   content: RecipeImportAdapterContent,
   options: RecipeImportAdapterSelectionOptions = {},
 ) {
-  const primary = runRecipeImportAdapter(schemaOrgRecipeAdapter, content)
-  if (primary.kind !== 'failure') return primary
+  const disabledAdapterIds = new Set(options.disabledAdapterIds ?? [])
+
+  if (!disabledAdapterIds.has(schemaOrgRecipeAdapter.adapterId)) {
+    const primary = runRecipeImportAdapter(schemaOrgRecipeAdapter, content)
+    if (primary.kind !== 'failure') return primary
+  }
 
   for (const adapter of options.supportedAdapters ?? []) {
-    if (adapter.enabled === false) continue
+    if (adapter.enabled === false || disabledAdapterIds.has(adapter.adapterId))
+      continue
     try {
       if (adapter.supports && !adapter.supports(content)) continue
     } catch {
@@ -156,6 +175,14 @@ export function selectRecipeImportAdapter(
     }
     const result = runRecipeImportAdapter(adapter, content)
     if (result.kind !== 'failure') return result
+  }
+
+  if (disabledAdapterIds.has(genericHtmlRecipeAdapter.adapterId)) {
+    return {
+      kind: 'failure' as const,
+      adapterId: genericHtmlRecipeAdapter.adapterId,
+      failure: { code: 'ADAPTER_DISABLED' as const },
+    }
   }
 
   return runRecipeImportAdapter(genericHtmlRecipeAdapter, content)

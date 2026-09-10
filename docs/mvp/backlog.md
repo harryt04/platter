@@ -683,7 +683,7 @@ imports
       normalized candidate, a partial candidate with warnings, or a typed failure.
 - [x] Selection tries Schema.org first, then an enabled supported site adapter,
       then generic extraction without weakening fetch security.
-- [ ] Operators can disable a source adapter, and its failure or absence leaves
+- [x] Operators can disable a source adapter, and its failure or absence leaves
       manual recipes, saved recipes, discovery, and shopping available.
 - [ ] Failed and historical jobs can be safely retried or reprocessed through
       the typed job registry without duplicate saves.

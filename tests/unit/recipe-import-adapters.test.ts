@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   genericHtmlRecipeAdapter,
+  parseDisabledRecipeImportAdapters,
   runRecipeImportAdapter,
   selectRecipeImportAdapter,
   schemaOrgRecipeAdapter,
@@ -20,6 +21,14 @@ const content = {
 }
 
 describe('recipe import adapter contract', () => {
+  it('parses a comma-separated operator disable list', () => {
+    expect([
+      ...parseDisabledRecipeImportAdapters(
+        ' schema-org-json-ld, generic-html ',
+      ),
+    ]).toEqual(['schema-org-json-ld', 'generic-html'])
+  })
+
   it('returns a normalized candidate from bounded fetched content', () => {
     expect(runRecipeImportAdapter(schemaOrgRecipeAdapter, content)).toEqual({
       kind: 'candidate',
@@ -148,5 +157,17 @@ describe('recipe import adapter contract', () => {
     })
     expect(disabledAdapter.extract).not.toHaveBeenCalled()
     expect(genericHtmlRecipeAdapter.adapterId).toBe('generic-html')
+  })
+
+  it('skips disabled built-ins and reports an isolated failure when none remain', () => {
+    const result = selectRecipeImportAdapter(content, {
+      disabledAdapterIds: ['schema-org-json-ld', 'generic-html'],
+    })
+
+    expect(result).toEqual({
+      kind: 'failure',
+      adapterId: 'generic-html',
+      failure: { code: 'ADAPTER_DISABLED' },
+    })
   })
 })

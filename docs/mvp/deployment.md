@@ -30,3 +30,9 @@ registry order, and finally the conservative `generic-html` adapter. Every
 adapter receives only the same bounded fetch result; a disabled or failing
 adapter therefore cannot expand fetch authority or interrupt manual recipes,
 saved recipes, discovery, or shopping workflows.
+
+Operators can set `RECIPE_IMPORT_DISABLED_ADAPTERS` to a comma-separated list
+of adapter IDs, such as `schema-org-json-ld` or `generic-html`. Disabled
+adapters are skipped during selection; if no adapter remains, only that import
+is marked failed with `ADAPTER_DISABLED`. Manual recipes, saved recipes,
+discovery, and shopping continue to use their normal paths.

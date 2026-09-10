@@ -188,7 +188,10 @@ contract: bounded fetched HTML can produce a normalized candidate, a partial
 candidate with warnings, or an isolated typed failure. Selection tries
 Schema.org JSON-LD first, then enabled site adapters supplied by the registry,
 and finally conservative generic HTML microdata/title extraction. All adapters
-receive only the same bounded SSRF-safe fetch result.
+receive only the same bounded SSRF-safe fetch result. Operators can disable
+adapter IDs with the comma-separated `RECIPE_IMPORT_DISABLED_ADAPTERS`
+setting; disabled or absent adapters fail only the affected import and leave
+manual recipes, saved recipes, discovery, and shopping available.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

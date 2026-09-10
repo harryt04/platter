@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { resetServerEnvForTests } from '@/lib/env/server'
 import { createRecipeImportJobHandler } from '@/lib/recipe-import-worker'
 import { RecipeImportFetchError } from '@/lib/recipe-import-fetcher'
 
@@ -14,7 +15,11 @@ const document = {
 }
 
 describe('recipe import worker fetch stage', () => {
-  beforeEach(() => vi.restoreAllMocks())
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+    resetServerEnvForTests()
+  })
 
   it('atomically claims a queued import and stores an editable preview', async () => {
     const collection = {
@@ -175,6 +180,52 @@ describe('recipe import worker fetch stage', () => {
         },
       },
     )
+  })
+
+  it('isolates imports when the operator disables every configured adapter', async () => {
+    vi.stubEnv(
+      'RECIPE_IMPORT_DISABLED_ADAPTERS',
+      'schema-org-json-ld,generic-html',
+    )
+    resetServerEnvForTests()
+
+    const collection = {
+      findOneAndUpdate: vi.fn().mockResolvedValue(document),
+      updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
+    }
+    const db = { collection: vi.fn().mockReturnValue(collection) }
+    const fetcher = vi.fn().mockResolvedValue({
+      requestedUrl: document.sourceUrl,
+      finalUrl: document.sourceUrl,
+      contentType: 'text/html',
+      body: '<h1>Recipe</h1>',
+      byteLength: 20,
+    })
+
+    await createRecipeImportJobHandler(
+      db as never,
+      fetcher,
+    )({
+      attrs: {
+        data: {
+          importId: document._id,
+          userId: document.userId,
+          idempotencyKey: document.idempotencyKey,
+        },
+      },
+    })
+
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      { _id: document._id, userId: document.userId, status: 'processing' },
+      {
+        $set: {
+          status: 'failed',
+          failureCode: 'ADAPTER_DISABLED',
+          updatedAt: expect.any(String),
+        },
+      },
+    )
+    expect(db.collection).toHaveBeenCalledOnce()
   })
 
   it('marks transient failures for retry and rethrows them for Agenda', async () => {

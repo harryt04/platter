@@ -302,7 +302,7 @@ lines; 08: Version recipes and control visibility
       desired people divided by typical people fed.
 - [x] Decimal calculations retain sufficient precision and do not accumulate
       friendly-display rounding; count suggestions never alter source facts.
-- [ ] Ingredients with no quantity remain readable contributions without a
+- [x] Ingredients with no quantity remain readable contributions without a
       fabricated amount, and optional ingredients remain visibly optional.
 - [ ] Selecting a recipe never happens as a side effect of saving or importing
       it.

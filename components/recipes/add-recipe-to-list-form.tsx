@@ -2,6 +2,10 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
+import {
+  SelectionIngredientPreview,
+  type SelectionIngredientPreviewItem,
+} from '@/components/recipes/selection-ingredient-preview'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -24,6 +28,9 @@ export function AddRecipeToListForm({
   const [pending, setPending] = React.useState(false)
   const [message, setMessage] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const [preview, setPreview] = React.useState<
+    SelectionIngredientPreviewItem[] | null
+  >(null)
 
   async function addRecipe(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -39,6 +46,7 @@ export function AddRecipeToListForm({
       const body = (await response.json()) as {
         detail?: string
         selection?: { scaleFactor: string }
+        calculatedIngredients?: SelectionIngredientPreviewItem[]
       }
       if (!response.ok) {
         throw new Error(body.detail ?? 'The recipe could not be added.')
@@ -47,6 +55,7 @@ export function AddRecipeToListForm({
       setMessage(
         `Added ${recipeTitle} to ${listName ?? 'the list'} for ${desiredPeople} people (scale ${body.selection?.scaleFactor ?? '1'}).`,
       )
+      setPreview(body.calculatedIngredients ?? [])
       router.refresh()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Try again.')
@@ -99,6 +108,7 @@ export function AddRecipeToListForm({
       <p aria-live="polite" className="text-muted-foreground text-sm">
         {error ?? message}
       </p>
+      {preview && <SelectionIngredientPreview ingredients={preview} />}
     </form>
   )
 }

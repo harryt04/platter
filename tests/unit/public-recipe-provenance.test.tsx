@@ -44,4 +44,21 @@ describe('PublicRecipeProvenance', () => {
     expect(screen.queryByText('Attribution')).not.toBeInTheDocument()
     expect(screen.queryByText('Image rights')).not.toBeInTheDocument()
   })
+
+  it('explains that unavailable sources do not remove preserved recipe facts', () => {
+    render(
+      <PublicRecipeProvenance
+        sourceAvailability="unavailable"
+        sourceName="Synthetic kitchen"
+        sourceUrl="https://example.com/recipe"
+        versionNumber={1}
+      />,
+    )
+
+    expect(
+      screen.getByText(
+        'Source currently unavailable. The recipe facts and attribution are preserved.',
+      ),
+    ).toBeInTheDocument()
+  })
 })

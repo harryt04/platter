@@ -304,6 +304,67 @@ describe('recipe import worker fetch stage', () => {
     )
   })
 
+  it('marks a saved recipe source unavailable without replacing normalized content', async () => {
+    const savedDocument = {
+      ...document,
+      savedRecipeId: 'saved-recipe-1',
+    }
+    const imports = {
+      findOneAndUpdate: vi.fn().mockResolvedValue(savedDocument),
+      updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 }),
+    }
+    const recipes = {
+      updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 }),
+    }
+    const db = {
+      collection: vi.fn((name: string) =>
+        name === 'recipe_imports' ? imports : recipes,
+      ),
+    }
+    const fetcher = vi
+      .fn()
+      .mockRejectedValue(new RecipeImportFetchError('SOURCE_UNAVAILABLE'))
+
+    await createRecipeImportJobHandler(
+      db as never,
+      fetcher,
+    )({
+      attrs: {
+        data: {
+          importId: savedDocument._id,
+          userId: savedDocument.userId,
+          idempotencyKey: savedDocument.idempotencyKey,
+        },
+      },
+    })
+
+    expect(imports.updateOne).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'processing' }),
+      {
+        $set: expect.objectContaining({
+          status: 'failed',
+          failureCode: 'SOURCE_UNAVAILABLE',
+          sourceAvailability: 'unavailable',
+          sourceCheckedAt: expect.any(String),
+        }),
+      },
+    )
+    expect(recipes.updateOne).toHaveBeenCalledWith(
+      {
+        _id: savedDocument.savedRecipeId,
+        origin: 'imported',
+        importProvenance: { $exists: true },
+      },
+      {
+        $set: {
+          'importProvenance.sourceAvailability': 'unavailable',
+          'importProvenance.sourceCheckedAt': expect.any(String),
+          updatedAt: expect.any(String),
+        },
+      },
+    )
+  })
+
   it('reprocesses a historical import generation without changing its saved recipe claim', async () => {
     const historicalDocument = {
       ...document,

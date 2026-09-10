@@ -161,6 +161,24 @@ describe('recipe import source fetching', () => {
     expect(oversized).toBe('RESPONSE_TOO_LARGE')
   })
 
+  it.each([404, 410])(
+    'reports a disappeared source for HTTP %s without treating it as a transient outage',
+    async (status) => {
+      const code = await failure(
+        fetchRecipeSource('https://safe.example.test/recipe', {
+          lookupHost: vi.fn().mockResolvedValue([publicAddress]),
+          request: vi
+            .fn()
+            .mockResolvedValue(
+              response(status, { 'content-type': 'text/html' }),
+            ),
+        }),
+      )
+
+      expect(code).toBe('SOURCE_UNAVAILABLE')
+    },
+  )
+
   it('enforces the response byte limit while streaming', async () => {
     const body = (async function* () {
       yield new TextEncoder().encode('12345')

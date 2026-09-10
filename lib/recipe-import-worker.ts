@@ -13,6 +13,7 @@ import {
   type RecipeImportFetchResult,
 } from '@/lib/recipe-import-fetcher'
 import { extractCanonicalUrl } from '@/lib/recipe-import-schema-org'
+import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
 import type { RecipeImportDocument } from '@/lib/recipe-imports'
 
 export const recipeImportRetryPolicy = {
@@ -38,6 +39,30 @@ const retryableFetchErrorCodes = new Set([
 
 function isRetryableFetchFailure(code: string) {
   return retryableFetchErrorCodes.has(code)
+}
+
+async function updateSavedRecipeSourceAvailability(
+  db: Db,
+  document: RecipeImportDocument,
+  sourceAvailability: 'available' | 'unavailable',
+  sourceCheckedAt: ReturnType<typeof isoDateTime>,
+) {
+  if (!document.savedRecipeId) return
+
+  await db.collection<RecipeDraftDocument>('recipes').updateOne(
+    {
+      _id: document.savedRecipeId,
+      origin: 'imported',
+      importProvenance: { $exists: true },
+    },
+    {
+      $set: {
+        'importProvenance.sourceAvailability': sourceAvailability,
+        'importProvenance.sourceCheckedAt': sourceCheckedAt,
+        updatedAt: sourceCheckedAt,
+      },
+    },
+  )
 }
 
 export function createRecipeImportJobHandler(
@@ -101,7 +126,7 @@ export function createRecipeImportJobHandler(
       const contentFingerprint = `sha256:${createHash('sha256')
         .update(fetched.body, 'utf8')
         .digest('hex')}`
-      await collection.updateOne(processingFilter, {
+      const previewUpdate = await collection.updateOne(processingFilter, {
         $set: {
           status: 'preview-ready',
           preview,
@@ -116,10 +141,28 @@ export function createRecipeImportJobHandler(
           acquisitionMethod: 'server-fetch',
           contentFingerprint,
           rightsStatus: 'unknown',
+          ...(document.savedRecipeId
+            ? {
+                sourceAvailability: 'available',
+                sourceCheckedAt: acquiredAt,
+              }
+            : {}),
           updatedAt: isoDateTime(new Date()),
         },
         $unset: { failureCode: '' },
       })
+      if (
+        document.savedRecipeId &&
+        (previewUpdate?.matchedCount === undefined ||
+          previewUpdate.matchedCount > 0)
+      ) {
+        await updateSavedRecipeSourceAvailability(
+          db,
+          document,
+          'available',
+          acquiredAt,
+        )
+      }
     } catch (error) {
       const failureCode = isRecipeImportFetchError(error)
         ? error.code
@@ -148,13 +191,33 @@ export function createRecipeImportJobHandler(
           : new Error('Recipe source request failed.')
       }
 
-      await collection.updateOne(processingFilter, {
+      const checkedAt = isoDateTime(new Date())
+      const failureUpdate = await collection.updateOne(processingFilter, {
         $set: {
           status: 'failed',
           failureCode,
+          ...(failureCode === 'SOURCE_UNAVAILABLE'
+            ? {
+                sourceAvailability: 'unavailable',
+                sourceCheckedAt: checkedAt,
+              }
+            : {}),
           updatedAt: isoDateTime(new Date()),
         },
       })
+      if (
+        failureCode === 'SOURCE_UNAVAILABLE' &&
+        document.savedRecipeId &&
+        (failureUpdate?.matchedCount === undefined ||
+          failureUpdate.matchedCount > 0)
+      ) {
+        await updateSavedRecipeSourceAvailability(
+          db,
+          document,
+          'unavailable',
+          checkedAt,
+        )
+      }
       return
     }
   }

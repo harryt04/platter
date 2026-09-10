@@ -42,3 +42,7 @@ retry or a preview refresh. Queue uniqueness is scoped to that generation, and
 the worker claims it before fetching. Refreshing an existing import preserves
 its saved-recipe claim, so reprocessing a historical job cannot create a
 duplicate recipe save.
+If a refresh receives HTTP 404 or 410, the import is terminally marked with
+`SOURCE_UNAVAILABLE`; the saved normalized recipe and its provenance remain
+available, while the current recipe record records the source status and check
+time. A later successful refresh marks the source available again.

@@ -18,6 +18,10 @@ export const recipeImportRightsStatusSchema = z.enum([
   'licensed',
   'permission-granted',
 ])
+export const recipeImportSourceAvailabilitySchema = z.enum([
+  'available',
+  'unavailable',
+])
 
 export type RecipeImportAcquisitionMethod = z.infer<
   typeof recipeImportAcquisitionMethodSchema
@@ -25,6 +29,9 @@ export type RecipeImportAcquisitionMethod = z.infer<
 export type RecipeImportImporter = z.infer<typeof recipeImportImporterSchema>
 export type RecipeImportRightsStatus = z.infer<
   typeof recipeImportRightsStatusSchema
+>
+export type RecipeImportSourceAvailability = z.infer<
+  typeof recipeImportSourceAvailabilitySchema
 >
 
 export const recipeImportStatusSchema = z.enum([
@@ -88,6 +95,8 @@ export type RecipeImportDocument = {
   acquisitionMethod?: RecipeImportAcquisitionMethod
   contentFingerprint?: string
   rightsStatus?: RecipeImportRightsStatus
+  sourceAvailability?: RecipeImportSourceAvailability
+  sourceCheckedAt?: IsoDateTime
   failureCode?: string
   preview?: RecipeImportCandidate
   savedRecipeId?: string
@@ -100,6 +109,8 @@ export type RecipeImportSummary = {
   attemptCount: number
   submittedAt: IsoDateTime
   updatedAt: IsoDateTime
+  sourceAvailability?: RecipeImportSourceAvailability
+  sourceCheckedAt?: IsoDateTime
   failureCode?: string
   preview?: RecipeImportCandidate
   savedRecipeId?: EntityId
@@ -143,6 +154,12 @@ export function toRecipeImportSummary(
     attemptCount: document.attemptCount,
     submittedAt: document.submittedAt,
     updatedAt: document.updatedAt,
+    ...(document.sourceAvailability
+      ? { sourceAvailability: document.sourceAvailability }
+      : {}),
+    ...(document.sourceCheckedAt
+      ? { sourceCheckedAt: document.sourceCheckedAt }
+      : {}),
     ...(document.failureCode ? { failureCode: document.failureCode } : {}),
     ...(document.preview ? { preview: document.preview } : {}),
     ...(document.savedRecipeId

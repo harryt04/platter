@@ -196,7 +196,11 @@ Failed imports can be retried from import history, and preview-ready
 historical imports can be reprocessed through a fresh typed job generation.
 Generation-aware queue claims prevent stale work from changing a newer run;
 reprocessing preserves any existing saved-recipe claim, so refreshing a source
-cannot create a duplicate save.
+cannot create a duplicate save. When a refresh receives HTTP 404 or 410, the
+source is marked unavailable without deleting or rewriting the normalized
+recipe facts or provenance. Public recipe detail keeps the source link and
+explains that the preserved recipe remains available; a later successful
+refresh restores the available status.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

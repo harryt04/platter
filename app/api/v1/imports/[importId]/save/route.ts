@@ -172,6 +172,8 @@ function createImportProvenance(
         }
       : {}),
     rightsStatus: source.rightsStatus ?? 'unknown',
+    sourceAvailability: 'available',
+    sourceCheckedAt: source.acquiredAt ?? importedAt,
   }
 }
 

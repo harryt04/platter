@@ -353,6 +353,7 @@ Imported recipes should record:
 - source content fingerprint;
 - rights or license metadata when known;
 - separate provenance for each copied image;
+- source availability and last-check timestamp;
 - suppression or takedown status.
 
 ### 11.4 Ingredient line

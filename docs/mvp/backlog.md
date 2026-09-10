@@ -687,7 +687,7 @@ imports
       manual recipes, saved recipes, discovery, and shopping available.
 - [x] Failed and historical jobs can be safely retried or reprocessed through
       the typed job registry without duplicate saves.
-- [ ] A disappeared source leaves the normalized recipe and provenance intact
+- [x] A disappeared source leaves the normalized recipe and provenance intact
       and can be marked unavailable when detected.
 - [ ] Adapter contract, fallback order, deployment behavior, and fixture rights
       are documented and tested.

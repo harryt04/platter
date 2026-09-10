@@ -1,3 +1,5 @@
+import type { RecipeImportSourceAvailability } from '@/lib/recipe-imports'
+
 export function PublicRecipeProvenance({
   sourceName,
   sourceUrl,
@@ -5,6 +7,7 @@ export function PublicRecipeProvenance({
   attribution,
   versionNumber,
   imageLicense,
+  sourceAvailability,
 }: {
   sourceName: string
   sourceUrl?: string
@@ -12,6 +15,7 @@ export function PublicRecipeProvenance({
   attribution?: string
   versionNumber: number
   imageLicense?: string
+  sourceAvailability?: RecipeImportSourceAvailability
 }) {
   return (
     <div
@@ -35,6 +39,12 @@ export function PublicRecipeProvenance({
             sourceName
           )}
         </p>
+        {sourceAvailability === 'unavailable' && (
+          <p className="text-warning mt-1 text-sm" role="status">
+            Source currently unavailable. The recipe facts and attribution are
+            preserved.
+          </p>
+        )}
       </div>
       {(sourceAuthor || attribution) && (
         <div>

@@ -16,6 +16,7 @@ export type RecipeImportFetchErrorCode =
   | 'DNS_LOOKUP_FAILED'
   | 'REDIRECT_LIMIT_EXCEEDED'
   | 'REDIRECT_BLOCKED'
+  | 'SOURCE_UNAVAILABLE'
   | 'UNSUPPORTED_CONTENT_TYPE'
   | 'RESPONSE_TOO_LARGE'
   | 'TIMEOUT'
@@ -397,6 +398,10 @@ export async function fetchRecipeSource(
       }
 
       if (response.status < 200 || response.status >= 300) {
+        if (response.status === 404 || response.status === 410) {
+          closeResponseBody(response.body)
+          throw new RecipeImportFetchError('SOURCE_UNAVAILABLE')
+        }
         throw new RecipeImportFetchError('UPSTREAM_FAILURE')
       }
       const contentLength = headerValue(response.headers, 'content-length')

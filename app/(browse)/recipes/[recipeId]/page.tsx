@@ -152,6 +152,7 @@ export default async function RecipePage({
               sourceAuthor={recipe.sourceAuthor}
               sourceName={sourceName}
               sourceUrl={recipe.sourceUrl}
+              sourceAvailability={recipe.importProvenance?.sourceAvailability}
               versionNumber={recipe.versionNumber}
             />
           </CardContent>

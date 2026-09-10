@@ -6,7 +6,10 @@ import {
   type EntityId,
   type IsoDateTime,
 } from '@/lib/contracts/ids'
-import type { RecipeImportImporter } from '@/lib/recipe-imports'
+import type {
+  RecipeImportImporter,
+  RecipeImportSourceAvailability,
+} from '@/lib/recipe-imports'
 
 const cleanText = (value: string) =>
   value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim()
@@ -259,6 +262,9 @@ export type RecipeImportProvenanceDocument = {
   relatedVersionId?: string
   relatedVersionNumber?: number
   rightsStatus: 'unknown' | 'licensed' | 'permission-granted'
+  /** Operational source health never replaces the imported recipe facts. */
+  sourceAvailability?: RecipeImportSourceAvailability
+  sourceCheckedAt?: IsoDateTime
 }
 
 export type RecipeImportProvenance = RecipeImportProvenanceDocument

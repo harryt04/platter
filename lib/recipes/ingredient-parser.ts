@@ -154,6 +154,35 @@ function normalizeIngredientIdentity(value: string) {
   return normalized || undefined
 }
 
+const ingredientAliases: Record<string, string> = {
+  aubergine: 'eggplant',
+  aubergines: 'eggplant',
+  eggplant: 'eggplant',
+  eggplants: 'eggplant',
+  'bicarbonate of soda': 'baking soda',
+  'confectioners sugar': 'powdered sugar',
+  'icing sugar': 'powdered sugar',
+  'powdered sugar': 'powdered sugar',
+  courgette: 'zucchini',
+  courgettes: 'zucchini',
+  zucchini: 'zucchini',
+  'garbanzo bean': 'chickpeas',
+  'garbanzo beans': 'chickpeas',
+  chickpea: 'chickpeas',
+  chickpeas: 'chickpeas',
+  scallion: 'green onions',
+  scallions: 'green onions',
+  'spring onion': 'green onions',
+  'spring onions': 'green onions',
+  'green onion': 'green onions',
+  'green onions': 'green onions',
+}
+
+function resolveIngredientAlias(value: string) {
+  const normalized = normalizeIngredientIdentity(value)
+  return normalized ? (ingredientAliases[normalized] ?? normalized) : undefined
+}
+
 function parseDecimal(value: string) {
   const normalized = value
     .replace(
@@ -396,7 +425,7 @@ export function parseIngredientLine(
   const normalizedIdentity =
     parserConfidence === 'low'
       ? undefined
-      : normalizeIngredientIdentity(ingredientName)
+      : resolveIngredientAlias(ingredientName)
 
   return {
     originalText,

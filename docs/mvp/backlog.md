@@ -189,7 +189,7 @@ without losing their original wording or pretending uncertain data is exact.
       conversions are locale-aware and deterministic.
 - [x] The original line, parser confidence, and normalized identity are
       preserved alongside user corrections on the recipe version.
-- [ ] Aliases can resolve canonical ingredients while meaningful distinctions,
+- [x] Aliases can resolve canonical ingredients while meaningful distinctions,
       such as yellow onion and red onion, remain separate when they affect
       shopping intent.
 - [ ] A parsing failure produces a separate readable ingredient rather than

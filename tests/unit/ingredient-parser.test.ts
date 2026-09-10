@@ -126,6 +126,28 @@ describe('ingredient line parser', () => {
     )
   })
 
+  it.each([
+    ['2 scallions', 'green onions'],
+    ['1 spring onion', 'green onions'],
+    ['1 aubergine', 'eggplant'],
+    ['1 garbanzo bean', 'chickpeas'],
+    ['1 can garbanzo beans', 'chickpeas'],
+    ['1 cup icing sugar', 'powdered sugar'],
+  ])('resolves %s to the canonical identity %s', (line, identity) => {
+    expect(parseIngredientLine(line)).toMatchObject({
+      normalizedIdentity: identity,
+    })
+  })
+
+  it('does not alias distinct onion varieties into one shopping identity', () => {
+    expect(parseIngredientLine('2 yellow onions').normalizedIdentity).toBe(
+      'yellow onions',
+    )
+    expect(parseIngredientLine('2 red onions').normalizedIdentity).toBe(
+      'red onions',
+    )
+  })
+
   it('retains calculation precision and degrades malformed quantities safely', () => {
     expect(parseIngredientLine('1/3 cup sugar').quantity).toEqual({
       min: '0.33333333333333333333',

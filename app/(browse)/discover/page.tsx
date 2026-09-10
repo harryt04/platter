@@ -1,13 +1,30 @@
-import { Search } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RecipeCard } from '@/components/patterns/recipe-card'
 import { EmptyState } from '@/components/states/empty-state'
-import { LoadingSkeleton } from '@/components/states/loading-skeleton'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
+import { getConnectedDatabase } from '@/lib/db/mongo-client'
+import { MongoRecipeSearchProvider } from '@/lib/search/mongo-provider'
 
-export default function DiscoverPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>
+
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value
+}
+
+export default async function DiscoverPage({
+  searchParams,
+}: {
+  searchParams?: SearchParams
+}) {
+  const params = (await searchParams) ?? {}
+  const query = firstParam(params.q)?.trim() ?? ''
+  const db = await getConnectedDatabase()
+  const { results } = await new MongoRecipeSearchProvider(db).searchRecipes({
+    text: query,
+  })
+
   return (
     <ContentContainer>
       <PageHeader
@@ -20,38 +37,54 @@ export default function DiscoverPage() {
           </Button>
         }
       />
-      <div className="mb-8 flex gap-2">
+      <form className="mb-8 flex gap-2" method="get">
         <Input
           aria-label="Search recipes"
-          placeholder="Search recipes, ingredients, or cuisines"
+          defaultValue={query}
+          name="q"
+          placeholder="Search titles, ingredients, sources, or labels"
         />
-        <Button aria-label="Search">
-          <Search size={16} />
-        </Button>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <RecipeCard
-          title="Tacos"
-          source="Platter community"
-          href="/recipes/tacos"
-        />
-        <RecipeCard
-          title="Weeknight curry"
-          source="Platter community"
-          href="/recipes/curry"
-        />
-      </div>
-      <div className="mt-8">
-        <LoadingSkeleton />
-      </div>
-      <div className="mt-8">
+        <Button type="submit">Search</Button>
+      </form>
+      {results.length > 0 ? (
+        <section aria-labelledby="discovery-results-heading">
+          <h2
+            id="discovery-results-heading"
+            className="mb-4 text-lg font-semibold"
+          >
+            {query ? `Recipes matching “${query}”` : 'Public recipes'}
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {results.map((recipe) => (
+              <RecipeCard
+                key={recipe.id}
+                title={recipe.title}
+                source={recipe.source}
+                href={`/recipes/${recipe.id}`}
+                summary={recipe.summary}
+                typicalPeopleFed={recipe.typicalPeopleFed}
+                cuisine={recipe.cuisine}
+                tags={recipe.tags}
+              />
+            ))}
+          </div>
+        </section>
+      ) : (
         <EmptyState
-          title="No more recipes"
-          description="Try another ingredient or cuisine to find a useful next step."
-          action="Browse all recipes"
-          href="/discover"
+          title={
+            query
+              ? `No public recipes match “${query}”`
+              : 'No public recipes yet'
+          }
+          description={
+            query
+              ? 'Try another title, ingredient, source, cuisine, tag, or dietary label.'
+              : 'Public recipes will appear here when they are ready to share.'
+          }
+          action={query ? 'Browse all recipes' : 'Create a recipe'}
+          href={query ? '/discover' : '/recipes/new'}
         />
-      </div>
+      )}
     </ContentContainer>
   )
 }

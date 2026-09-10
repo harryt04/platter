@@ -39,7 +39,9 @@ Editing a published recipe creates a private personal variant with lineage to
 the published version, leaving the public source unchanged.
 Mongo-backed public discovery now applies the same usable, explicit-public, and
 approved-import guard as public recipe reads; private searches require an
-owner-scoped query.
+owner-scoped query. Public discovery now has a real anonymous and signed-in
+search page and API backed by Mongo text search across recipe titles,
+ingredients, source metadata, cuisines, tags, and dietary labels.
 Shopping-run recipe references can resolve immutable historical snapshots by
 version identity, preserving selection order and duplicates without falling
 back to a later mutable recipe version.

@@ -9,6 +9,33 @@ export async function ensureSharedIndexes(db: Db) {
     .createIndex({ createdAt: 1 }, { expireAfterSeconds: 86_400 })
   await db.collection('realtime_events').createIndex({ listId: 1, revision: 1 })
   await db.collection('recipes').createIndex({ ownerId: 1, updatedAt: -1 })
+  await db.collection('recipes').createIndex(
+    {
+      title: 'text',
+      'ingredients.originalText': 'text',
+      'ingredients.ingredientName': 'text',
+      sourceName: 'text',
+      sourceAuthor: 'text',
+      sourceUrl: 'text',
+      cuisine: 'text',
+      tags: 'text',
+      dietaryLabels: 'text',
+    },
+    {
+      name: 'recipe_public_search_text',
+      weights: {
+        title: 10,
+        'ingredients.ingredientName': 8,
+        'ingredients.originalText': 5,
+        sourceName: 4,
+        cuisine: 3,
+        tags: 3,
+        dietaryLabels: 3,
+        sourceAuthor: 2,
+        sourceUrl: 1,
+      },
+    },
+  )
   await db
     .collection('recipe_versions')
     .createIndex({ recipeId: 1, versionNumber: 1 }, { unique: true })

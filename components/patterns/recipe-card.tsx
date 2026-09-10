@@ -7,10 +7,18 @@ export function RecipeCard({
   title,
   source = 'Platter community',
   href = '/recipes/tacos',
+  summary,
+  typicalPeopleFed,
+  cuisine,
+  tags = [],
 }: {
   title: string
   source?: string
   href?: string
+  summary?: string
+  typicalPeopleFed?: number
+  cuisine?: string
+  tags?: string[]
 }) {
   return (
     <Card>
@@ -27,6 +35,20 @@ export function RecipeCard({
         <p className="font-data text-muted-foreground text-xs">
           Source: {source}
         </p>
+        {(typicalPeopleFed || cuisine || tags.length > 0) && (
+          <p className="text-muted-foreground mt-2 text-sm">
+            {typicalPeopleFed ? `Feeds ${typicalPeopleFed} people` : null}
+            {typicalPeopleFed && (cuisine || tags.length > 0) ? ' · ' : null}
+            {cuisine}
+            {cuisine && tags.length > 0 ? ' · ' : null}
+            {tags.join(' · ')}
+          </p>
+        )}
+        {summary && (
+          <p className="text-muted-foreground mt-2 line-clamp-2 text-sm">
+            {summary}
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <Link

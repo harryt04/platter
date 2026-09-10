@@ -248,7 +248,7 @@ search while keeping source attribution and visibility rules intact.
 
 **Status:** ready-for-agent
 
-- [ ] Public visitors and signed-in users can browse and search public recipes
+- [x] Public visitors and signed-in users can browse and search public recipes
       by title, ingredient, source, cuisine, tag, and dietary label when present.
 - [ ] Results show title, permitted image, source, typical yield, and concise
       summary metadata with visible attribution.

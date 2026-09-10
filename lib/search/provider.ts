@@ -1,4 +1,5 @@
 import type { DecimalString } from '@/lib/contracts/ids'
+import type { RecipeImageProvenance } from '@/lib/recipes/drafts'
 
 export interface RecipeSearchFilters {
   cuisine?: string
@@ -22,6 +23,12 @@ export interface RecipeSearchResult {
   source: string
   score: DecimalString
   visibility: 'public' | 'private'
+  typicalPeopleFed?: number
+  summary?: string
+  cuisine?: string
+  tags?: string[]
+  dietaryLabels?: string[]
+  image?: Pick<RecipeImageProvenance, 'url' | 'altText'>
 }
 
 export interface RecipeSearchResponse {

@@ -64,4 +64,67 @@ describe('MongoRecipeSearchProvider', () => {
       $text: { $search: 'soup' },
     })
   })
+
+  it('returns public discovery metadata and only permitted images', async () => {
+    const { db } = createDatabase([
+      {
+        _id: 'recipe-1',
+        title: 'Tomato soup',
+        sourceName: 'Synthetic kitchen',
+        description: 'A quick soup.',
+        typicalPeopleFed: 4,
+        cuisine: 'Italian',
+        tags: ['weeknight'],
+        dietaryLabels: ['vegetarian'],
+        image: {
+          url: 'https://example.com/soup.jpg',
+          altText: 'A bowl of soup',
+          rightsStatus: 'licensed',
+        },
+        visibility: 'public',
+        score: 4.25,
+      },
+      {
+        _id: 'recipe-2',
+        title: 'Private soup',
+        visibility: 'public',
+        image: {
+          url: 'https://example.com/private.jpg',
+          rightsStatus: 'unknown',
+        },
+      },
+    ])
+
+    const response = await new MongoRecipeSearchProvider(
+      db as never,
+    ).searchRecipes({
+      text: 'soup',
+    })
+
+    expect(response.results).toEqual([
+      {
+        id: 'recipe-1',
+        title: 'Tomato soup',
+        source: 'Synthetic kitchen',
+        score: '4.25',
+        visibility: 'public',
+        typicalPeopleFed: 4,
+        summary: 'A quick soup.',
+        cuisine: 'Italian',
+        tags: ['weeknight'],
+        dietaryLabels: ['vegetarian'],
+        image: {
+          url: 'https://example.com/soup.jpg',
+          altText: 'A bowl of soup',
+        },
+      },
+      {
+        id: 'recipe-2',
+        title: 'Private soup',
+        source: 'Platter community',
+        score: '0',
+        visibility: 'public',
+      },
+    ])
+  })
 })

@@ -4,6 +4,7 @@ import type {
   RecipeSearchQuery,
   RecipeSearchResponse,
 } from './provider'
+import { decimalString } from '@/lib/contracts/ids'
 import { publicRecipeFilter } from '@/lib/recipes/drafts'
 import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
 
@@ -13,6 +14,7 @@ export class MongoRecipeSearchProvider implements SearchProvider {
   async searchRecipes(query: RecipeSearchQuery): Promise<RecipeSearchResponse> {
     const pageSize = Math.min(Math.max(query.pageSize ?? 20, 1), 50)
     const filters = query.filters ?? {}
+    const text = query.text.trim()
     const recipeVisibilityFilter =
       filters.visibility === 'private'
         ? query.ownerId
@@ -23,34 +25,64 @@ export class MongoRecipeSearchProvider implements SearchProvider {
             }
           : { _id: { $in: [] } }
         : publicRecipeFilter()
-    const documents = await this.db
-      .collection<RecipeDraftDocument>('recipes')
-      .find({
-        ...recipeVisibilityFilter,
-        ...(query.text ? { $text: { $search: query.text } } : {}),
-        ...(filters.cuisine ? { cuisine: filters.cuisine } : {}),
-        ...(filters.tags?.length ? { tags: { $all: filters.tags } } : {}),
-        ...(filters.dietaryLabels?.length
-          ? { dietaryLabels: { $all: filters.dietaryLabels } }
-          : {}),
-      })
-      .project({
-        title: 1,
-        source: 1,
-        visibility: 1,
-        score: { $meta: 'textScore' },
-      })
-      .sort({ score: { $meta: 'textScore' }, _id: 1 })
-      .limit(pageSize)
-      .toArray()
+    const cursor = this.db.collection<RecipeDraftDocument>('recipes').find({
+      ...recipeVisibilityFilter,
+      ...(text ? { $text: { $search: text } } : {}),
+      ...(filters.cuisine ? { cuisine: filters.cuisine } : {}),
+      ...(filters.tags?.length ? { tags: { $all: filters.tags } } : {}),
+      ...(filters.dietaryLabels?.length
+        ? { dietaryLabels: { $all: filters.dietaryLabels } }
+        : {}),
+    })
+    const projectedCursor = cursor.project({
+      title: 1,
+      sourceName: 1,
+      description: 1,
+      typicalPeopleFed: 1,
+      cuisine: 1,
+      tags: 1,
+      dietaryLabels: 1,
+      'image.url': 1,
+      'image.altText': 1,
+      'image.rightsStatus': 1,
+      visibility: 1,
+      ...(text ? { score: { $meta: 'textScore' as const } } : {}),
+    })
+    const scoredCursor = text
+      ? projectedCursor.sort({ score: { $meta: 'textScore' }, _id: 1 })
+      : projectedCursor.sort({ _id: 1 })
+    const documents = await scoredCursor.limit(pageSize).toArray()
 
     return {
       results: documents.map((document) => ({
         id: document._id.toString(),
         title: String(document.title ?? 'Untitled recipe'),
-        source: String(document.source ?? 'Platter'),
-        score: String(document.score ?? 0) as never,
+        source: String(document.sourceName ?? 'Platter community'),
+        score: decimalString(document.score ?? 0),
         visibility: document.visibility === 'private' ? 'private' : 'public',
+        ...(document.typicalPeopleFed === undefined
+          ? {}
+          : { typicalPeopleFed: document.typicalPeopleFed }),
+        ...(document.description === undefined
+          ? {}
+          : { summary: String(document.description) }),
+        ...(document.cuisine === undefined
+          ? {}
+          : { cuisine: String(document.cuisine) }),
+        ...(document.tags === undefined ? {} : { tags: document.tags }),
+        ...(document.dietaryLabels === undefined
+          ? {}
+          : { dietaryLabels: document.dietaryLabels }),
+        ...(document.image?.url && document.image.rightsStatus !== 'unknown'
+          ? {
+              image: {
+                url: document.image.url,
+                ...(document.image.altText === undefined
+                  ? {}
+                  : { altText: document.image.altText }),
+              },
+            }
+          : {}),
       })),
     }
   }

@@ -64,6 +64,9 @@ recipe provenance use the documented data typography and remain visibly labeled
 on the detail page. Anonymous readers receive an
 explicit sign-in handoff on the detail page before saving or adding a recipe to
 a list, with the recipe URL preserved through authentication.
+Suppressed, draft, and list-shared recipe versions remain available through
+authorized private management paths but are excluded from public detail reads,
+anonymous rendering, and public discovery.
 Shopping-run recipe references can resolve immutable historical snapshots by
 version identity, preserving selection order and duplicates without falling
 back to a later mutable recipe version.

@@ -23,6 +23,7 @@ const memberId = `${fixtureToken}-member`
 const outsiderId = `${fixtureToken}-outsider`
 const listId = `${fixtureToken}-list`
 const publicRecipeId = `${fixtureToken}-public`
+const suppressedRecipeId = `${fixtureToken}-suppressed`
 const privateRecipeId = `${fixtureToken}-private`
 const sharedRecipeId = `${fixtureToken}-shared`
 const pendingRecipeId = `${fixtureToken}-pending`
@@ -54,7 +55,7 @@ const timestamp = isoDateTime('2026-09-10T12:00:00.000Z')
 
 function recipeDocument(
   id: string,
-  visibility: 'private' | 'list-shared' | 'public',
+  visibility: 'private' | 'list-shared' | 'public' | 'suppressed',
 ) {
   return {
     _id: id,
@@ -158,6 +159,7 @@ describe('recipe visibility and immutable versions', () => {
       recipeDocument(privateRecipeId, 'private'),
       recipeDocument(sharedRecipeId, 'list-shared'),
       recipeDocument(publicRecipeId, 'public'),
+      recipeDocument(suppressedRecipeId, 'suppressed'),
       {
         ...recipeDocument(pendingRecipeId, 'public'),
         origin: 'imported' as const,
@@ -290,6 +292,20 @@ describe('recipe visibility and immutable versions', () => {
     const search = new MongoRecipeSearchProvider(db)
     const publicResults = await search.searchRecipes({ text: fixtureToken })
     expect(publicResults.results.map(({ id }) => id)).toEqual([publicRecipeId])
+
+    getSession.mockResolvedValue({ user: { id: ownerId } })
+    const suppressedOwnerResponse = await GET(
+      new Request(`http://localhost/api/v1/recipes/${suppressedRecipeId}`),
+      { params: Promise.resolve({ recipeId: suppressedRecipeId }) },
+    )
+    expect(suppressedOwnerResponse.status).toBe(200)
+
+    getSession.mockResolvedValue({ user: { id: outsiderId } })
+    const suppressedPublicResponse = await GET(
+      new Request(`http://localhost/api/v1/recipes/${suppressedRecipeId}`),
+      { params: Promise.resolve({ recipeId: suppressedRecipeId }) },
+    )
+    expect(suppressedPublicResponse.status).toBe(404)
 
     const privateResults = await search.searchRecipes({
       text: fixtureToken,

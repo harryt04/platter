@@ -694,6 +694,36 @@ describe('GET /api/v1/recipes/[recipeId]', () => {
     })
   })
 
+  it('allows an owner to access a suppressed recipe through management paths', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue({
+        ...draft,
+        status: 'usable' as const,
+        visibility: 'suppressed' as const,
+      }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/recipes/recipe-1'),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).recipe).toMatchObject({
+      id: 'recipe-1',
+      visibility: 'suppressed',
+    })
+    expect(collection.findOne).toHaveBeenCalledWith({
+      _id: 'recipe-1',
+      ownerId: 'user-1',
+      status: { $in: ['draft', 'usable'] },
+    })
+  })
+
   it('allows a current member of a selected list to read a shared recipe', async () => {
     getSession.mockResolvedValue({ user: { id: 'member-1' } })
     const collection = {

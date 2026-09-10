@@ -212,6 +212,29 @@ describe('recipe drafts', () => {
     })
   })
 
+  it('keeps suppressed and non-public recipes out of public rendering', () => {
+    expect(publicRecipeFilter()).toMatchObject({
+      status: 'usable',
+      visibility: 'public',
+    })
+    expect(
+      isPubliclyRenderableRecipe({
+        status: 'usable',
+        visibility: 'suppressed',
+        origin: 'authored',
+        importReviewStatus: 'not-required',
+      }),
+    ).toBe(false)
+    expect(
+      isPubliclyRenderableRecipe({
+        status: 'usable',
+        visibility: 'list-shared',
+        origin: 'authored',
+        importReviewStatus: 'not-required',
+      }),
+    ).toBe(false)
+  })
+
   it('normalizes legacy recipe documents to authored, not-required state', () => {
     const legacy = createDraftDocument('user-1', 'Soup')
     delete legacy.versionId

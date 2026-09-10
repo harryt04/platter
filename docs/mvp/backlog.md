@@ -281,7 +281,7 @@ resource and provide signed-in users a clear path to save or use it.
       is visible without a hover-only interaction.
 - [x] Anonymous visitors can read public recipes but are directed to sign in
       before saving or adding one to a list.
-- [ ] Suppressed and non-public versions do not render publicly, while an
+- [x] Suppressed and non-public versions do not render publicly, while an
       authorized owner can still access permitted private management paths.
 - [ ] Mobile, desktop, loading, unavailable-image, and missing-optional-metadata
       states have browser and accessibility coverage.

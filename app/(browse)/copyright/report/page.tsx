@@ -2,14 +2,26 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
+import { ComplaintForm } from '@/components/recipes/complaint-form'
 
-export default function CopyrightReportPage() {
+export default async function CopyrightReportPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ recipeId?: string; sourceUrl?: string }>
+}) {
+  const params = searchParams ? await searchParams : {}
+
   return (
     <ContentContainer>
       <PageHeader
         description="Prepare the details an operator needs to review a public recipe or source."
         eyebrow="Removal request"
         title="Report a copyright concern"
+      />
+
+      <ComplaintForm
+        initialRecipeId={params.recipeId}
+        initialSourceUrl={params.sourceUrl}
       />
 
       <Card className="max-w-3xl">
@@ -30,9 +42,9 @@ export default function CopyrightReportPage() {
             content.
           </p>
           <p>
-            This route currently documents the request requirements. The
-            operator&apos;s configured complaint intake and review workflow will
-            accept the request when it is enabled.
+            Reports are rate-limited and enter a restricted operator review
+            queue. Submitting a report does not grant access to private recipes
+            or complaint records.
           </p>
           <Button asChild variant="outline">
             <Link href="/copyright">Review the removal policy</Link>

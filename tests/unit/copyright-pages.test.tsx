@@ -19,8 +19,8 @@ describe('public copyright pages', () => {
     ).toHaveAttribute('href', '/copyright/report')
   })
 
-  it('sets expectations for the future complaint intake', () => {
-    render(<CopyrightReportPage />)
+  it('sets expectations for the future complaint intake', async () => {
+    render(await CopyrightReportPage({}))
 
     expect(
       screen.getByRole('heading', { name: 'Report a copyright concern' }),

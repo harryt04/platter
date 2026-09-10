@@ -1,7 +1,9 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
 import { PublicRecipeAuthPrompt } from '@/components/recipes/public-recipe-auth-prompt'
 import { PublicRecipeIngredients } from '@/components/recipes/public-recipe-ingredients'
@@ -177,6 +179,15 @@ export default async function RecipePage({
           )}
         </CardContent>
       </Card>
+      <div className="mt-6">
+        <Button asChild variant="outline">
+          <Link
+            href={`/copyright/report?recipeId=${encodeURIComponent(recipe.recipeId)}`}
+          >
+            Report a concern about this recipe
+          </Link>
+        </Button>
+      </div>
       {!session && <PublicRecipeAuthPrompt recipeId={recipe.id} />}
     </ContentContainer>
   )

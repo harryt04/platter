@@ -190,8 +190,13 @@ deduplication, source-version coexistence, discovery visibility, private
 boundaries, and complete provenance.
 Public copyright and removal pages explain the information needed for a
 content request and state that complaint contacts stay out of public recipe
-responses and general application logs; the restricted complaint intake and
-administrative workflow remain the next moderation slice.
+responses and general application logs. The public report form accepts a
+recipe ID or source URL, report type, review description, and optional reply
+contact; a process-local per-client limit protects the intake, public recipe
+IDs must resolve to visible public recipes, and only a receipt containing the
+complaint ID, received status, and timestamp is returned. Complaint contact
+data and source details remain in the restricted complaints collection for the
+administrative workflow.
 The import extraction stage now runs through a typed replaceable adapter
 contract: bounded fetched HTML can produce a normalized candidate, a partial
 candidate with warnings, or an isolated typed failure. Selection tries

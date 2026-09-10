@@ -610,10 +610,10 @@ giving the importer access to private networks, credentials, or unbounded data.
       queued, processing, retrying, failed, or preview-ready status.
 - [x] Enqueueing uses an idempotency key and the job stores only necessary
       references and metadata, not cookies, secrets, or full recipe documents.
-- [ ] Fetching validates DNS and resolved IPs before requests and after every
+- [x] Fetching validates DNS and resolved IPs before requests and after every
       redirect, blocking loopback, private, link-local, reserved, multicast, and
       cloud-metadata targets.
-- [ ] Requests forward no user credentials and enforce redirect, byte, duration,
+- [x] Requests forward no user credentials and enforce redirect, byte, duration,
       and content-type limits without bypassing authentication, paywalls, or
       explicit technical blocks.
 - [x] Import submission and status reads are authorized and rate-limited, and a

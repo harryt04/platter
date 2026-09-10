@@ -144,9 +144,14 @@ Import submission and status reads are authenticated and rate-limited per user;
 a queue outage marks only the import as failed and does not cross into saved
 recipes, discovery, or shopping. The connected import screen shows queued,
 processing, retrying, failed, and preview-ready status vocabulary and never
-queues URL work while offline. The background worker claims queued imports for
-the later extraction and review lanes; no URL content is treated as approved or
-public before that review.
+queues URL work while offline. The worker now fetches sources through an SSRF-safe
+HTTP(S) boundary: every hostname is resolved before connecting and again after
+redirects, resolved private or reserved addresses are rejected, requests are
+pinned to the validated address without user credentials, and HTML responses
+are bounded to 2 MiB, five redirects, and ten seconds. Unsupported content,
+unsafe redirects, oversized responses, and timeouts become isolated import
+failures. Fetched content is held only for the later extraction and review
+stage; it is never treated as approved or public by the fetch stage.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

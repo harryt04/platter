@@ -2,8 +2,7 @@ import { Agenda } from 'agenda'
 import { MongoBackend } from '@agendajs/mongo-backend'
 import { getConnectedDatabase, getMongoClient } from '@/lib/db/mongo-client'
 import { validateJobPayload } from '@/lib/jobs/registry'
-import { isoDateTime } from '@/lib/contracts/ids'
-import type { RecipeImportDocument } from '@/lib/recipe-imports'
+import { createRecipeImportJobHandler } from '@/lib/recipe-import-worker'
 
 async function main() {
   const db = await getConnectedDatabase()
@@ -22,29 +21,7 @@ async function main() {
     )
   })
   agenda.define('recipe-import', async (job) => {
-    const payload = validateJobPayload('recipe-import', job.attrs.data)
-    const result = await db
-      .collection<RecipeImportDocument>('recipe_imports')
-      .updateOne(
-        {
-          _id: payload.importId,
-          userId: payload.userId,
-          idempotencyKey: payload.idempotencyKey,
-          status: { $in: ['queued', 'retrying'] },
-        },
-        { $set: { status: 'processing', updatedAt: isoDateTime(new Date()) } },
-      )
-    if (result.matchedCount !== 1) {
-      throw new Error('Recipe import record is no longer queued.')
-    }
-    console.log(
-      JSON.stringify({
-        service: 'worker',
-        job: 'recipe-import',
-        importId: payload.importId,
-        status: 'processing',
-      }),
-    )
+    await createRecipeImportJobHandler(db)(job)
   })
 
   await agenda.start()

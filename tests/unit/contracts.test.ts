@@ -97,6 +97,10 @@ describe('lists', () => {
 import { decimalString, entityId, isoDateTime } from '@/lib/contracts/ids'
 import { problemSchema } from '@/lib/contracts/problem'
 import { listIdSchema } from '@/lib/lists'
+import {
+  createInvitationDocument,
+  hashInvitationToken,
+} from '@/lib/invitations'
 
 describe('foundation contracts', () => {
   it('keeps boundary values opaque and serializable', () => {
@@ -125,5 +129,27 @@ describe('foundation contracts', () => {
       false,
     )
     expect(listIdSchema.safeParse('list-\u0000-1').success).toBe(false)
+  })
+
+  it('stores only a hash of an unguessable invitation token with an expiry', () => {
+    const now = new Date('2026-09-10T12:00:00.000Z')
+    const { document, token } = createInvitationDocument(
+      'list-1',
+      'owner-1',
+      'guest@example.com',
+      now,
+      24,
+    )
+
+    expect(token).toHaveLength(43)
+    expect(document.tokenHash).toBe(hashInvitationToken(token))
+    expect(document.tokenHash).not.toBe(token)
+    expect(document).toMatchObject({
+      listId: 'list-1',
+      inviterId: 'owner-1',
+      email: 'guest@example.com',
+      status: 'pending',
+      expiresAt: '2026-09-11T12:00:00.000Z',
+    })
   })
 })

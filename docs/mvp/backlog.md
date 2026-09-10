@@ -64,9 +64,9 @@ let the recipient understand and accept that invitation safely.
 
 **Status:** ready-for-agent
 
-- [ ] An owner can create, inspect, resend, and revoke an invitation for a
-      specific list; editors and non-members cannot.
-- [ ] Invitation tokens are unguessable, stored safely, scoped to one list, and
+- [ ] An owner can inspect, resend, and revoke an invitation for a specific
+      list; editors and non-members cannot.
+- [x] Invitation tokens are unguessable, stored safely, scoped to one list, and
       expire after the configured period.
 - [ ] A recipient can view an invitation summary, authenticate if needed, and
       accept a valid invitation while connected.

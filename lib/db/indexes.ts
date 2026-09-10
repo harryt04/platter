@@ -9,6 +9,12 @@ export async function ensureSharedIndexes(db: Db) {
     .createIndex({ createdAt: 1 }, { expireAfterSeconds: 86_400 })
   await db.collection('realtime_events').createIndex({ listId: 1, revision: 1 })
   await db.collection('recipes').createIndex({ ownerId: 1, updatedAt: -1 })
+  await db
+    .collection('list_invitations')
+    .createIndex({ tokenHash: 1 }, { unique: true })
+  await db
+    .collection('list_invitations')
+    .createIndex({ listId: 1, status: 1, expiresAt: 1 })
   await db.collection('lists').createIndex({
     'members.userId': 1,
     'members.invitationState': 1,

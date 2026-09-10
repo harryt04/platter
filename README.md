@@ -7,8 +7,8 @@ Platter is a mobile-first recipe-to-grocery app you can install on your device. 
 The foundation scaffold, private recipe drafts with structured yield,
 ingredients, ordered instructions, timing/classification metadata, household
 notes, source attribution, and image provenance, plus the first list management
-flows are in place. Recipe drafts also accept optional informational nutrition
-values per person.
+flows and owner-only invitation creation boundary are in place. Recipe drafts
+also accept optional informational nutrition values per person.
 Product behavior such as recipe
 parsing, ingredient normalization, grocery calculations, collaboration, and
 moderation remains intentionally deferred to the feature lanes described in the

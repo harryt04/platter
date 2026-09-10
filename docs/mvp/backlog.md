@@ -226,11 +226,11 @@ they authored, imported, saved, or received through a list.
 
 **Blocked by:** 08: Version recipes and control visibility
 
-**Status:** in progress
+**Status:** implemented
 
 - [x] The library contains recipes authored by the user and usable recipes
       shared through a current list membership.
-- [ ] User imports appear in the library after the import-save workflow
+- [x] User imports appear in the library after the import-save workflow
       completes.
 - [x] Explicitly saved public recipes appear in the library without adding
       them to a shopping run.

@@ -111,13 +111,15 @@ export default async function MyRecipesPage({
                           ? `Shared with ${sharedListNames.join(', ')}`
                           : access === 'saved'
                             ? 'Saved public recipe'
-                            : recipe.status !== 'usable'
-                              ? 'Private draft'
-                              : recipe.visibility === 'public'
-                                ? 'Published recipe'
-                                : recipe.visibility === 'list-shared'
-                                  ? 'Shared recipe'
-                                  : 'Ready to use'}
+                            : recipe.origin === 'imported'
+                              ? 'Imported recipe'
+                              : recipe.status !== 'usable'
+                                ? 'Private draft'
+                                : recipe.visibility === 'public'
+                                  ? 'Published recipe'
+                                  : recipe.visibility === 'list-shared'
+                                    ? 'Shared recipe'
+                                    : 'Ready to use'}
                       </p>
                       <CardTitle className="font-display mt-2 text-2xl">
                         {recipe.title}

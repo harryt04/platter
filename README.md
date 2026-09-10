@@ -135,7 +135,9 @@ credential-gated browser tests.
 The signed-in recipe library now combines authored recipes with usable recipes
 shared through the member's current lists, and shared entries remain read-only.
 Signed-in users can also save public recipes to that library without adding
-them to a shopping run, then remove only their own saved reference.
+them to a shopping run, then remove only their own saved reference. Completed
+recipe imports now appear in the same library with an explicit imported label
+and remain owner-scoped for editing.
 Signed-in users can now submit public HTTP(S) recipe URLs into a durable,
 owner-scoped import queue. Each submission carries a bounded per-user
 `Idempotency-Key`; retried requests reuse the original import and Agenda job,

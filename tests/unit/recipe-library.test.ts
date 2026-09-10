@@ -44,6 +44,47 @@ function recipe(id: string, overrides: Partial<RecipeDraftDocument> = {}) {
 }
 
 describe('findRecipeLibrary', () => {
+  it('includes an imported recipe saved by the current user', async () => {
+    const lists = query<ListDocument>([])
+    const shares = query<RecipeShareDocument>([])
+    const saves = query<RecipeSaveDocument>([])
+    const recipes = query<RecipeDraftDocument>([
+      recipe('imported-1', {
+        origin: 'imported',
+        importReviewStatus: 'approved',
+        visibility: 'public',
+        sourceName: 'Example Recipes',
+      }),
+    ])
+    const db = {
+      collection: vi.fn((name: string) => {
+        if (name === 'lists') return lists
+        if (name === 'recipe_shares') return shares
+        if (name === 'recipe_saves') return saves
+        if (name === 'recipes') return recipes
+        throw new Error(`Unexpected collection: ${name}`)
+      }),
+    } as unknown as Db
+
+    const result = await findRecipeLibrary(db, 'owner-1')
+
+    expect(result).toEqual([
+      {
+        recipe: expect.objectContaining({
+          id: 'imported-1',
+          origin: 'imported',
+          sourceName: 'Example Recipes',
+        }),
+        access: 'owned',
+        sharedListNames: [],
+      },
+    ])
+    expect(recipes.find).toHaveBeenCalledWith({
+      status: { $in: ['draft', 'usable'] },
+      $or: [{ ownerId: 'owner-1' }],
+    })
+  })
+
   it('includes owned recipes and current-member shared recipes with deduplicated list names', async () => {
     const lists = query<ListDocument>([
       {

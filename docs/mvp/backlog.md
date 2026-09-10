@@ -729,7 +729,7 @@ imported-content rights and provenance
       removal request and how contact information will be handled.
 - [x] A rate-limited report can identify an affected recipe or source and create
       a complaint with type, status, timestamps, and minimum necessary contacts.
-- [ ] Only administrators can view complaint contacts or transition a complaint
+- [x] Only administrators can view complaint contacts or transition a complaint
       through received, actioned, countered, restored, or closed states.
 - [ ] Administrative access to private data is exceptional, authorized, and
       auditable; contacts stay out of general logs and public APIs.

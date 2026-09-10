@@ -52,6 +52,12 @@ export const complaintStatusSchema = z.enum([
   'closed',
 ])
 
+export const complaintIdSchema = z.string().uuid('Enter a valid complaint id.')
+
+export const updateComplaintStatusSchema = z.object({
+  status: complaintStatusSchema,
+})
+
 export const createComplaintSchema = z
   .object({
     type: complaintTypeSchema,
@@ -91,6 +97,7 @@ export const createComplaintSchema = z
 export type ComplaintType = z.infer<typeof complaintTypeSchema>
 export type ComplaintStatus = z.infer<typeof complaintStatusSchema>
 export type CreateComplaint = z.infer<typeof createComplaintSchema>
+export type UpdateComplaintStatus = z.infer<typeof updateComplaintStatusSchema>
 
 export type ComplaintStatusEvent = {
   status: ComplaintStatus
@@ -156,4 +163,52 @@ export function toComplaintReceipt(document: ComplaintDocument) {
     status: document.status,
     receivedAt: document.receivedAt,
   }
+}
+
+export type AdminComplaintSummary = Omit<
+  ComplaintDocument,
+  '_id' | 'statusHistory'
+> & {
+  id: string
+  statusHistory: ComplaintStatusEvent[]
+}
+
+export function toAdminComplaintSummary(
+  document: ComplaintDocument,
+): AdminComplaintSummary {
+  return {
+    id: document._id,
+    ...(document.recipeId ? { recipeId: document.recipeId } : {}),
+    ...(document.sourceUrl ? { sourceUrl: document.sourceUrl } : {}),
+    type: document.type,
+    status: document.status,
+    description: document.description,
+    ...(document.contact ? { contact: document.contact } : {}),
+    receivedAt: document.receivedAt,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+    statusHistory: document.statusHistory,
+  }
+}
+
+const complaintTransitions: Record<
+  ComplaintStatus,
+  readonly ComplaintStatus[]
+> = {
+  received: ['actioned', 'countered', 'closed'],
+  actioned: ['countered', 'restored', 'closed'],
+  countered: ['actioned', 'restored', 'closed'],
+  restored: ['actioned', 'closed'],
+  closed: [],
+}
+
+export function canTransitionComplaint(
+  from: ComplaintStatus,
+  to: ComplaintStatus,
+) {
+  return from === to || complaintTransitions[from].includes(to)
+}
+
+export function complaintNextStatuses(status: ComplaintStatus) {
+  return complaintTransitions[status]
 }

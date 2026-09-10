@@ -196,7 +196,10 @@ contact; a process-local per-client limit protects the intake, public recipe
 IDs must resolve to visible public recipes, and only a receipt containing the
 complaint ID, received status, and timestamp is returned. Complaint contact
 data and source details remain in the restricted complaints collection for the
-administrative workflow.
+administrative workflow. Administrators can now review that restricted queue
+and move reports through guarded received, actioned, countered, restored, and
+closed states; each change records the administrator and timestamp in complaint
+history.
 The import extraction stage now runs through a typed replaceable adapter
 contract: bounded fetched HTML can produce a normalized candidate, a partial
 candidate with warnings, or an isolated typed failure. Selection tries

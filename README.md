@@ -25,6 +25,9 @@ the completing member in history before creating a clean active run; checklist
 state and current-run ordering are not copied forward.
 Connected list members now receive a typed completion handoff that identifies
 the completing member and refreshes them onto the newly created active run.
+Completion retries reuse their recorded receipt even after the active-run
+pointer has moved, so a dropped response cannot create a second history entry
+or replacement run.
 Every run mutation now carries the run identity it was created against; the
 server rejects stale writes before they can reach the replacement run. Queued
 offline writes for a completed run are left failed with a clear completion

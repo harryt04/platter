@@ -108,6 +108,45 @@ describe('RealtimeRunSync', () => {
     ).toHaveTextContent('A fresh shopping run is ready.')
   })
 
+  it('settles on the replacement run after a completion refresh', () => {
+    const { rerender } = render(
+      <RealtimeRunSync
+        currentUserId="member-1"
+        listId="list-1"
+        revision={4}
+        runId="run-1"
+      />,
+    )
+
+    act(() =>
+      realtime.handlers.get('run:completed')?.({
+        type: 'run.completed',
+        listId: 'list-1',
+        runId: 'run-1',
+        nextRunId: 'run-2',
+        operationId: 'completion-1',
+        completedByUserId: 'member-2',
+        occurredAt: '2026-09-10T12:00:00.000Z',
+      }),
+    )
+    expect(screen.getByText('Updating from another device')).toBeInTheDocument()
+
+    rerender(
+      <RealtimeRunSync
+        currentUserId="member-1"
+        listId="list-1"
+        revision={0}
+        runId="run-2"
+      />,
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent('Live updates on')
+    expect(
+      screen.queryByText(/A fresh shopping run is ready/),
+    ).not.toBeInTheDocument()
+    expect(refresh).toHaveBeenCalledOnce()
+  })
+
   it('ignores malformed and unrelated completion events', () => {
     render(
       <RealtimeRunSync

@@ -137,7 +137,6 @@ export async function POST(request: Request, context: RouteContext) {
   const list = await lists.findOne(listRoleFilter(listId, session.user.id))
   if (!list) return listNotFound()
   if (list.status !== 'active') return runUnavailable()
-  if (list.activeRunId !== parsed.data.runId) return completedRunProblem()
 
   try {
     const receipt = findCompletionReceipt(
@@ -149,6 +148,7 @@ export async function POST(request: Request, context: RouteContext) {
   } catch {
     return operationIdConflict()
   }
+  if (list.activeRunId !== parsed.data.runId) return completedRunProblem()
 
   const run = await runs.findOne({
     _id: parsed.data.runId,

@@ -570,7 +570,7 @@ and reconciliation; 23: Complete a shopping run atomically
       cached membership or base revision.
 - [x] On reconnection, queued old-run operations fail without mutating history
       and the UI explains that the run was completed on another device.
-- [ ] Completion and rejected-operation events reconcile without loops,
+- [x] Completion and rejected-operation events reconcile without loops,
       duplicate runs, or a false synchronized state.
 - [ ] Multi-client tests cover simultaneous completion, an offline shopper, and
       an account removed before its queue synchronizes.

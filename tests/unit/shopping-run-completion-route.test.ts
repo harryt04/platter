@@ -68,6 +68,7 @@ function databaseFor({
   listStatus = 'active' as const,
   currentRun = {},
   completionMutationReceipts,
+  activeRunId = 'run-1',
 }: {
   listMembers?: Array<{
     userId: string
@@ -77,13 +78,14 @@ function databaseFor({
   listStatus?: 'active' | 'archived'
   currentRun?: Record<string, unknown> | null
   completionMutationReceipts?: unknown[]
+  activeRunId?: string
 } = {}) {
   const list = {
     _id: 'list-1',
     name: 'Family',
     ownerIds: ['user-1'],
     status: listStatus,
-    activeRunId: 'run-1',
+    activeRunId,
     members: listMembers,
     ...(completionMutationReceipts ? { completionMutationReceipts } : {}),
   }
@@ -290,6 +292,7 @@ describe('POST /api/v1/lists/[listId]/complete', () => {
       activeRunId: 'run-2',
     }
     const database = databaseFor({
+      activeRunId: 'run-2',
       completionMutationReceipts: [
         {
           operationId: 'repeat',

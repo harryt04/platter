@@ -23,6 +23,12 @@ const item: GroceryItem = {
   contributions: [],
 }
 
+const overriddenItem: GroceryItem = {
+  ...item,
+  shoppingAmount: { min: '5.25' },
+  override: { min: '5.25' },
+}
+
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
@@ -76,5 +82,48 @@ describe('GroceryAmountOverrideForm', () => {
       screen.getByRole('button', { name: 'Set shopping amount' }),
     ).toBeDisabled()
     expect(screen.getByText(/archived list is read-only/i)).toBeInTheDocument()
+  })
+
+  it('shows both amounts and resets only an existing override', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          detail: 'Shopping amount for rice reset to calculated requirement.',
+          shoppingAmount: { min: '2' },
+          revision: 4,
+        }),
+        { status: 200 },
+      ),
+    )
+    render(
+      <GroceryAmountOverrideForm
+        baseRevision={3}
+        item={overriddenItem}
+        listId="list-1"
+      />,
+    )
+
+    expect(screen.getByDisplayValue('5.25')).toBeInTheDocument()
+    expect(screen.getByText('Calculated requirement: 2 lb')).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Reset shopping amount for rice' }),
+    )
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce())
+    const request = fetchMock.mock.calls[0]?.[1]
+    expect(request).toMatchObject({ method: 'DELETE' })
+    expect(JSON.parse(String(request?.body))).toMatchObject({
+      baseRevision: 3,
+    })
+    expect(screen.getByDisplayValue('2')).toBeInTheDocument()
+    expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it('does not render a reset action without an override', () => {
+    render(<GroceryAmountOverrideForm item={item} listId="list-1" />)
+
+    expect(
+      screen.queryByRole('button', { name: 'Reset shopping amount for rice' }),
+    ).not.toBeInTheDocument()
   })
 })

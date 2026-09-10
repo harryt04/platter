@@ -48,7 +48,7 @@ export type GroceryOverrideMutationReceipt = {
   operationId: string
   clientId: string
   target: string
-  kind: 'set'
+  kind: 'set' | 'remove'
   status: 200
   response: Record<string, unknown>
 }
@@ -78,6 +78,7 @@ export function createGroceryAmountOverrideDocument(
 export function groceryOverrideMutationReceiptFor(
   receipts: readonly GroceryOverrideMutationReceipt[] | undefined,
   metadata: { operationId: string; clientId: string },
+  kind: GroceryOverrideMutationReceipt['kind'],
   target: string,
 ) {
   const receipt = receipts?.find(
@@ -86,7 +87,7 @@ export function groceryOverrideMutationReceiptFor(
   if (!receipt) return null
   if (
     receipt.clientId !== metadata.clientId ||
-    receipt.kind !== 'set' ||
+    receipt.kind !== kind ||
     receipt.target !== target
   ) {
     throw new Error('The operation id is already used for another mutation.')

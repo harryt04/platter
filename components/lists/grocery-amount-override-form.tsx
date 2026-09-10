@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { RotateCcw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createMutationMetadata } from '@/lib/contracts/mutations'
 import type { GroceryItem } from '@/lib/recipes/groceries'
@@ -79,6 +80,46 @@ export function GroceryAmountOverrideForm({
     }
   }
 
+  async function reset() {
+    setPending(true)
+    setMessage(null)
+    setError(null)
+    try {
+      const response = await fetch(
+        `/api/v1/lists/${encodeURIComponent(listId)}/grocery-items/${encodeURIComponent(item.id)}/override`,
+        {
+          method: 'DELETE',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(createMutationMetadata(currentRevision)),
+        },
+      )
+      const body = (await response.json()) as {
+        detail?: string
+        revision?: number
+        shoppingAmount?: GroceryItem['shoppingAmount']
+      }
+      if (!response.ok) {
+        throw new Error(body.detail ?? 'The shopping amount could not reset.')
+      }
+      if (body.revision !== undefined) setMutationRevision(body.revision)
+      setAmount(
+        body.shoppingAmount?.min ?? item.calculatedRequirement?.min ?? '',
+      )
+      setMessage(
+        body.detail ?? 'Shopping amount reset to calculated requirement.',
+      )
+      router.refresh()
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'The shopping amount could not reset.',
+      )
+    } finally {
+      setPending(false)
+    }
+  }
+
   return (
     <form
       className="bg-muted/20 rounded-[var(--radius-control)] border p-3"
@@ -118,6 +159,18 @@ export function GroceryAmountOverrideForm({
         <Button disabled={!editable || pending || !amount.trim()} type="submit">
           {pending ? 'Saving…' : 'Set shopping amount'}
         </Button>
+        {item.override && (
+          <Button
+            aria-label={`Reset shopping amount for ${item.ingredientName}`}
+            disabled={!editable || pending}
+            onClick={reset}
+            type="button"
+            variant="outline"
+          >
+            <RotateCcw size={16} />
+            Reset to calculated amount
+          </Button>
+        )}
       </div>
       {!editable && (
         <p className="text-muted-foreground mt-2 text-xs">

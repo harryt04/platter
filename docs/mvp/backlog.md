@@ -405,7 +405,7 @@ actually intend to buy without corrupting recipe math.
 
 - [x] A member can replace the shopping amount with a smaller or larger amount
       while the calculated requirement and contributions remain unchanged.
-- [ ] The UI displays both values and offers a one-action reset only while an
+- [x] The UI displays both values and offers a one-action reset only while an
       override exists.
 - [ ] Serving, recipe-version, or contribution changes preserve an explicit
       override and warn with both the old intent and new calculated requirement.

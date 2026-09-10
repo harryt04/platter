@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { PATCH } from '@/app/api/v1/lists/[listId]/grocery-items/[itemId]/override/route'
+import {
+  DELETE,
+  PATCH,
+} from '@/app/api/v1/lists/[listId]/grocery-items/[itemId]/override/route'
 
 const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -198,5 +201,105 @@ describe('PATCH grocery amount override route', () => {
     )
     expect(stale.status).toBe(409)
     expect((await stale.json()).code).toBe('RUN_REVISION_CONFLICT')
+  })
+})
+
+describe('DELETE grocery amount override route', () => {
+  it('resets an override to the current calculated requirement', async () => {
+    const database = databaseFor({
+      groceryAmountOverrides: [
+        {
+          itemId: 'grocery:merged:rice:mass:lb',
+          quantity: { min: '5.25' },
+          preservedItem: {
+            ingredientName: 'rice',
+            normalizedIdentity: 'rice',
+            dimension: 'mass',
+            unit: { name: 'lb', dimension: 'mass' },
+          },
+          createdAt: '2026-09-10T12:00:00.000Z',
+          updatedAt: '2026-09-10T12:00:00.000Z',
+        },
+      ],
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await DELETE(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/grocery-items/item/override',
+        {
+          method: 'DELETE',
+          body: JSON.stringify(metadata('override-reset-1')),
+        },
+      ),
+      context(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      calculatedRequirement: { min: '2' },
+      shoppingAmount: { min: '2' },
+      revision: 4,
+      code: 'GROCERY_AMOUNT_RESET',
+    })
+    expect(database.runs.findOneAndUpdate).toHaveBeenCalledWith(
+      {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 3,
+        'groceryAmountOverrides.itemId': 'grocery:merged:rice:mass:lb',
+      },
+      expect.objectContaining({
+        $pull: {
+          groceryAmountOverrides: { itemId: 'grocery:merged:rice:mass:lb' },
+        },
+        $push: expect.objectContaining({
+          groceryOverrideMutationReceipts: expect.objectContaining({
+            operationId: 'override-reset-1',
+            kind: 'remove',
+          }),
+        }),
+        $inc: { revision: 1 },
+      }),
+      { returnDocument: 'after' },
+    )
+  })
+
+  it('replays a reset without writing twice', async () => {
+    const replay = {
+      revision: 4,
+      shoppingAmount: { min: '2' },
+      code: 'GROCERY_AMOUNT_RESET',
+    }
+    const database = databaseFor({
+      revision: 4,
+      groceryOverrideMutationReceipts: [
+        {
+          operationId: 'override-reset-replay',
+          clientId: 'client-1',
+          target: 'grocery-item:grocery:merged:rice:mass:lb:override',
+          kind: 'remove' as const,
+          status: 200 as const,
+          response: replay,
+        },
+      ],
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await DELETE(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/grocery-items/item/override',
+        {
+          method: 'DELETE',
+          body: JSON.stringify(metadata('override-reset-replay', 4)),
+        },
+      ),
+      context(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(replay)
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
   })
 })

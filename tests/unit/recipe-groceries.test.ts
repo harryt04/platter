@@ -176,6 +176,61 @@ describe('grocery generation', () => {
     })
   })
 
+  it('keeps cross-dimension and uncertain contributions separate', () => {
+    const items = generateGroceryItems({
+      selections: [
+        selection('volume', 'Chopped onions', '1', [
+          ingredient({
+            originalText: '1 cup onions',
+            quantity: '1',
+            unit: 'cup',
+          }),
+        ]),
+        selection('mass', 'Roasted onions', '1', [
+          ingredient({
+            originalText: '100 g onions',
+            quantity: '100',
+            unit: 'g',
+          }),
+        ]),
+        selection('uncertain', 'Unknown onions', '1', [
+          ingredient({
+            originalText: 'some onions',
+            quantity: '',
+            unit: '',
+            parserConfidence: 'low',
+          }),
+        ]),
+        selection('count', 'Onion bundles', '1', [
+          ingredient({
+            originalText: '1 bunch onions',
+            quantity: '1',
+            unit: 'bunch',
+          }),
+        ]),
+      ],
+    })
+
+    expect(items).toHaveLength(4)
+    expect(items.map((item) => item.dimension).sort()).toEqual([
+      'count',
+      'mass',
+      'unknown',
+      'volume',
+    ])
+    expect(
+      Object.fromEntries(
+        items.map((item) => [item.dimension, item.calculatedRequirement]),
+      ),
+    ).toEqual({
+      count: { min: '1' },
+      mass: { min: '100' },
+      unknown: null,
+      volume: { min: '1' },
+    })
+    expect(new Set(items.map((item) => item.id)).size).toBe(4)
+  })
+
   it('includes manual contributions and applies a stable shopping override without changing recipe math', () => {
     const manual = {
       id: 'manual-1',

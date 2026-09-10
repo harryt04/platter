@@ -345,7 +345,7 @@ selections while merging only facts that are safe to combine.
       people counts, manual additions, and overrides.
 - [x] High-confidence matches with compatible dimensions convert to a common
       calculation unit and merge without losing decimal precision.
-- [ ] Mass and volume do not convert without ingredient-specific data, and
+- [x] Mass and volume do not convert without ingredient-specific data, and
       uncertain identities or incompatible units remain separate.
 - [x] Each item exposes its calculated requirement and a readable breakdown of
       the amount contributed by every selection.

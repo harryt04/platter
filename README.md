@@ -31,7 +31,10 @@ offline writes for a completed run are left failed with a clear completion
 message rather than being replayed against the new checklist.
 List members can now browse completed shopping runs in stable date order with
 locale-formatted dates; the history view says which recipes were shopped for
-without implying that they were cooked or purchased.
+without implying that they were cooked or purchased. Each history entry now
+opens to an authorized detail view showing its completion date, completing
+member, immutable recipe versions, and people counts without retaining a final
+checklist.
 The ingredient parser now recognizes common quantity forms, preserves source
 text, records qualitative confidence and a stable normalized identity when the
 parse is sufficient, resolves a bounded set of high-confidence ingredient

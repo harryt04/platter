@@ -586,7 +586,7 @@ make those selections useful again without restoring an old checklist.
 
 - [x] Members can browse completed runs by list and locale-formatted completion
       date through stable pagination.
-- [ ] A history detail shows the completing member, completion date, selected
+- [x] A history detail shows the completing member, completion date, selected
       immutable recipe versions, and people counts—and no final checklist.
 - [ ] Copy says the recipes were shopped for and never infers that they were
       cooked or that every item was purchased.

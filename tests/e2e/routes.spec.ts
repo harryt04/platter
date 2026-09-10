@@ -302,6 +302,16 @@ test.describe('authenticated list workflow', () => {
     ).toBeVisible()
     await expect(page.getByText('Shopped for', { exact: true })).toBeVisible()
     await expect(page.locator('time')).toHaveCount(1)
+
+    await page.locator('time').first().click()
+    await expect(
+      page.getByRole('heading', { name: 'Completed shopping run' }),
+    ).toBeVisible()
+    await expect(page.getByText(/Completed by/)).toBeVisible()
+    await expect(
+      page.getByText('No recipes were selected for this shopping run.'),
+    ).toBeVisible()
+    await expect(page.getByText('Purchased', { exact: true })).toHaveCount(0)
   })
 
   test('checks and unchecks a grocery item independently while shopping', async ({

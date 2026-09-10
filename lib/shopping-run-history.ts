@@ -29,6 +29,13 @@ export type ShoppingRunHistorySearch = {
   pageSize?: number
 }
 
+const historyIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(200)
+  .refine((value) => !/[\u0000-\u001F\u007F]/.test(value))
+
 const historyCursorSchema = z.object({
   localDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   completedAt: z.string().datetime(),
@@ -51,6 +58,18 @@ export function decodeShoppingRunHistoryCursor(value: string) {
   } catch {
     return null
   }
+}
+
+/** Return one history entry only when it belongs to the already-authorized list. */
+export async function findShoppingRunHistory(
+  db: Db,
+  listId: string,
+  historyId: string,
+) {
+  if (!historyIdSchema.safeParse(historyId).success) return null
+  return db
+    .collection<ShoppingRunHistoryDocument>('shopping_run_history')
+    .findOne({ _id: historyId, listId })
 }
 
 /**

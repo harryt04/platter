@@ -2,6 +2,7 @@ import type { Db } from 'mongodb'
 import { describe, expect, it, vi } from 'vitest'
 import {
   decodeShoppingRunHistoryCursor,
+  findShoppingRunHistory,
   formatShoppingRunHistoryDate,
   searchShoppingRunHistory,
 } from '@/lib/shopping-run-history'
@@ -35,6 +36,32 @@ function history(
 }
 
 describe('shopping run history', () => {
+  it('finds one entry only within its authorized list', async () => {
+    const histories = {
+      findOne: vi
+        .fn()
+        .mockResolvedValue(
+          history('history-1', '2026-09-10', '2026-09-10T18:00:00.000Z'),
+        ),
+    }
+    const db = {
+      collection: vi.fn(() => histories),
+    } as unknown as Db
+
+    await expect(
+      findShoppingRunHistory(db, 'list-1', 'history-1'),
+    ).resolves.toMatchObject({ _id: 'history-1', listId: 'list-1' })
+    expect(histories.findOne).toHaveBeenCalledWith({
+      _id: 'history-1',
+      listId: 'list-1',
+    })
+
+    await expect(
+      findShoppingRunHistory(db, 'list-1', 'bad\u0000id'),
+    ).resolves.toBeNull()
+    expect(histories.findOne).toHaveBeenCalledOnce()
+  })
+
   it('returns a stable date-time-id page and cursor', async () => {
     const histories = query([
       history('history-1', '2026-09-10', '2026-09-10T18:00:00.000Z'),

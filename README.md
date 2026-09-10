@@ -166,7 +166,9 @@ source domain and title, source author, acquisition method and timestamp, the
 Schema.org importer, a SHA-256 content fingerprint, and unknown rights status;
 that provenance is copied to the immutable recipe version. Saving preserves the
 imported origin and pending review state, is safe to retry, and never adds the
-recipe to an active shopping run.
+recipe to an active shopping run. Preview saves now compare canonical URLs and
+content fingerprints against approved public imports and link the user to an
+existing public recipe instead of silently creating a duplicate.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

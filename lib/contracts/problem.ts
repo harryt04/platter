@@ -7,6 +7,13 @@ export const problemSchema = z.object({
   detail: z.string(),
   code: z.string(),
   fields: z.record(z.string(), z.array(z.string())).optional(),
+  existingRecipe: z
+    .object({
+      id: z.string().min(1),
+      title: z.string().min(1),
+      sourceUrl: z.string().url().optional(),
+    })
+    .optional(),
 })
 
 export type Problem = z.infer<typeof problemSchema>

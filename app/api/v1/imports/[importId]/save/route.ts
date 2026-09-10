@@ -21,6 +21,7 @@ import {
   recipeImportIdSchema,
   type RecipeImportDocument,
 } from '@/lib/recipe-imports'
+import { findExistingPublicImportedRecipe } from '@/lib/recipes/import-deduplication'
 import { z } from 'zod'
 
 const importPreviewSaveSchema = z.object({
@@ -158,6 +159,19 @@ export async function POST(
         },
         {},
       ),
+    })
+  }
+
+  const existingRecipe = await findExistingPublicImportedRecipe(db, source)
+  if (existingRecipe) {
+    return problemResponse({
+      type: 'https://platter.dev/problems/import-duplicate',
+      title: 'Public recipe already exists',
+      status: 409,
+      detail:
+        'A public recipe from this source already exists. Review it before saving another imported recipe.',
+      code: 'IMPORT_DUPLICATE',
+      existingRecipe,
     })
   }
 

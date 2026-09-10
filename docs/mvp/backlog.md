@@ -658,7 +658,7 @@ recipe data
 - [x] Saving records submitted and canonical URLs, source domain, source title
       and author when present, importer, timestamp, acquisition method, content
       fingerprint, version relationship, and known rights metadata.
-- [ ] Canonical URL and fingerprint checks reuse or propose the existing public
+- [x] Canonical URL and fingerprint checks reuse or propose the existing public
       recipe instead of silently creating a duplicate.
 - [ ] Materially different content may create a related immutable version, with
       the source and relationship visible before confirmation.

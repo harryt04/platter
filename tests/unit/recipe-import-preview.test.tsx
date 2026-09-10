@@ -127,4 +127,36 @@ describe('RecipeImportPreview', () => {
     expect(screen.getByLabelText('Ingredient name')).toHaveValue('')
     expect(screen.getByLabelText('Instruction 1')).toHaveValue('')
   })
+
+  it('links to an existing public recipe when the save is a duplicate', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          detail: 'A public recipe from this source already exists.',
+          existingRecipe: { id: 'existing-recipe', title: 'Existing soup' },
+        }),
+        {
+          status: 409,
+          headers: { 'content-type': 'application/problem+json' },
+        },
+      ),
+    )
+    render(
+      <RecipeImportPreview
+        candidate={candidate}
+        importId="b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7"
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Save private recipe draft' }),
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /public recipe from this source already exists/i,
+    )
+    expect(
+      screen.getByRole('link', { name: 'Open existing recipe' }),
+    ).toHaveAttribute('href', '/recipes/existing-recipe')
+  })
 })

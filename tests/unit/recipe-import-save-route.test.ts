@@ -51,6 +51,7 @@ const source = {
 
 function setup(
   importDocument: typeof source & { savedRecipeId?: string } = source,
+  existingRecipe: Record<string, unknown> | null = null,
 ) {
   const imports = {
     findOne: vi.fn().mockResolvedValue(importDocument),
@@ -58,6 +59,7 @@ function setup(
     updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
   }
   const recipes = {
+    findOne: vi.fn().mockResolvedValue(existingRecipe),
     insertOne: vi.fn().mockResolvedValue({ acknowledged: true }),
   }
   const versions = {
@@ -173,6 +175,37 @@ describe('POST /api/v1/imports/[importId]/save', () => {
 
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ recipeId: savedRecipeId })
+    expect(recipes.insertOne).not.toHaveBeenCalled()
+    expect(versions.insertOne).not.toHaveBeenCalled()
+  })
+
+  it('proposes an existing approved public import instead of creating a duplicate', async () => {
+    const existingRecipe = {
+      _id: 'existing-public-recipe',
+      title: 'Existing soup',
+      sourceUrl: source.canonicalUrl,
+    }
+    const { recipes, versions } = setup(source, existingRecipe)
+
+    const response = await POST(
+      request({
+        title: 'Another copy of soup',
+        typicalPeopleFed: 4,
+        ingredients: source.preview.ingredients,
+        instructions: source.preview.instructions,
+      }),
+      { params: Promise.resolve({ importId }) },
+    )
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({
+      code: 'IMPORT_DUPLICATE',
+      existingRecipe: {
+        id: existingRecipe._id,
+        title: existingRecipe.title,
+        sourceUrl: existingRecipe.sourceUrl,
+      },
+    })
     expect(recipes.insertOne).not.toHaveBeenCalled()
     expect(versions.insertOne).not.toHaveBeenCalled()
   })

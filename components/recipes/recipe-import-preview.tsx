@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { ArrowDown, ArrowUp, Save } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -78,6 +79,10 @@ export function RecipeImportPreview({
   )
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [existingRecipe, setExistingRecipe] = React.useState<{
+    id: string
+    title: string
+  } | null>(null)
   const timeFields = [
     {
       id: 'import-preview-prep-time',
@@ -141,12 +146,15 @@ export function RecipeImportPreview({
         detail?: string
         recipe?: { id: string }
         recipeId?: string
+        existingRecipe?: { id: string; title: string }
       }
       if (!response.ok) {
+        setExistingRecipe(body.existingRecipe ?? null)
         throw new Error(
           body.detail ?? 'The imported recipe could not be saved.',
         )
       }
+      setExistingRecipe(null)
       const recipeId = body.recipe?.id ?? body.recipeId
       if (recipeId) router.push(`/recipes/${recipeId}/edit`)
     } catch (caught) {
@@ -537,6 +545,18 @@ export function RecipeImportPreview({
           <p className="text-destructive text-sm" role="alert">
             {error}
           </p>
+        )}
+        {existingRecipe && (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <p className="text-muted-foreground text-sm">
+              Existing recipe: {existingRecipe.title}
+            </p>
+            <Button asChild variant="outline">
+              <Link href={`/recipes/${existingRecipe.id}`}>
+                Open existing recipe
+              </Link>
+            </Button>
+          </div>
         )}
         <Button disabled={busy || Boolean(savedRecipeId)} type="submit">
           <Save aria-hidden size={16} />

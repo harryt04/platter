@@ -97,6 +97,9 @@ export default async function ListPage({
             <Button variant="outline" asChild>
               <Link href={`/lists/${listId}/members`}>Manage members</Link>
             </Button>
+            <Button variant="outline" asChild>
+              <Link href={`/lists/${listId}/history`}>Shopping history</Link>
+            </Button>
             {list.status === 'active' ? (
               <Button asChild>
                 <Link href={`/lists/${listId}/review`}>Review at home</Link>

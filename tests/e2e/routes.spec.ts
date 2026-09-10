@@ -86,7 +86,7 @@ test.describe('authenticated list workflow', () => {
       .getByRole('textbox', { name: 'List name' })
       .fill(`Checklist access ${Date.now()}`)
     await page.getByRole('button', { name: 'Create list' }).click()
-    await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
+    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
     const listUrl = page.url()
     const checklistUrl = `${listUrl}/shop`
 
@@ -143,7 +143,7 @@ test.describe('authenticated list workflow', () => {
     const twoPeopleList = `Scale two ${Date.now()}`
     await page.getByRole('textbox', { name: 'List name' }).fill(twoPeopleList)
     await page.getByRole('button', { name: 'Create list' }).click()
-    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+    await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
 
     await page.goto('/lists/new')
     const sixPeopleList = `Scale six ${Date.now()}`
@@ -263,6 +263,45 @@ test.describe('authenticated list workflow', () => {
     await expect(
       page.getByText('This shopping run has no grocery items yet.'),
     ).toBeVisible()
+  })
+
+  test('browses completed shopping runs by list and date', async ({ page }) => {
+    await page.goto('/sign-in')
+    await page
+      .getByRole('textbox', { name: 'Email' })
+      .fill(process.env.E2E_USER_EMAIL!)
+    await page.getByLabel('Password').fill(process.env.E2E_USER_PASSWORD!)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await expect(page).toHaveURL(/\/lists$/)
+
+    await page.goto('/lists/new')
+    await page
+      .getByRole('textbox', { name: 'List name' })
+      .fill(`History browse ${Date.now()}`)
+    await page.getByRole('button', { name: 'Create list' }).click()
+    await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
+    const listUrl = page.url()
+
+    await page.getByRole('link', { name: 'Start shopping' }).click()
+    await page.getByRole('button', { name: 'Complete shopping run' }).click()
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Complete shopping run' })
+      .click()
+    await expect(
+      page.getByText('Run completed. A fresh shopping run is ready.', {
+        exact: true,
+      }),
+    ).toBeVisible()
+
+    await page.goto(listUrl)
+    await page.getByRole('link', { name: 'Shopping history' }).click()
+    await expect(page).toHaveURL(/\/lists\/[^/]+\/history$/)
+    await expect(
+      page.getByRole('heading', { name: 'Completed runs' }),
+    ).toBeVisible()
+    await expect(page.getByText('Shopped for', { exact: true })).toBeVisible()
+    await expect(page.locator('time')).toHaveCount(1)
   })
 
   test('checks and unchecks a grocery item independently while shopping', async ({

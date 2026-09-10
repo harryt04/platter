@@ -584,7 +584,7 @@ make those selections useful again without restoring an old checklist.
 
 **Status:** ready-for-agent
 
-- [ ] Members can browse completed runs by list and locale-formatted completion
+- [x] Members can browse completed runs by list and locale-formatted completion
       date through stable pagination.
 - [ ] A history detail shows the completing member, completion date, selected
       immutable recipe versions, and people counts—and no final checklist.

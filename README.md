@@ -29,6 +29,9 @@ Every run mutation now carries the run identity it was created against; the
 server rejects stale writes before they can reach the replacement run. Queued
 offline writes for a completed run are left failed with a clear completion
 message rather than being replayed against the new checklist.
+List members can now browse completed shopping runs in stable date order with
+locale-formatted dates; the history view says which recipes were shopped for
+without implying that they were cooked or purchased.
 The ingredient parser now recognizes common quantity forms, preserves source
 text, records qualitative confidence and a stable normalized identity when the
 parse is sufficient, resolves a bounded set of high-confidence ingredient

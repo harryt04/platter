@@ -52,7 +52,7 @@ they can create and manage without exposing one list to members of another.
 - [x] An archived or deleted list rejects new shopping operations.
 - [x] List IDs are treated as untrusted, and server-side authorization prevents
       access leakage between independently shared lists.
-- [ ] Integration and browser tests cover creation of three lists, lifecycle
+- [x] Integration and browser tests cover creation of three lists, lifecycle
       changes, permissions, and active-run uniqueness.
 
 ## 02: Invite users to a list

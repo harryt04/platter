@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { io } from 'socket.io-client'
 import { clientEnv } from '@/lib/env/client'
 import {
+  realtimeRunCompletionEventSchema,
   realtimeRunMutationEventSchema,
   type RealtimeRunMutationEvent,
 } from '@/lib/contracts/mutations'
@@ -95,10 +96,15 @@ export function RealtimeRunSync({
   const pendingRemoteChanges = useRef<RealtimeRunMutationEvent['type'][]>([])
   const announcementTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const announcementId = useRef(0)
+  const handledCompletion = useRef<string | null>(null)
   const [state, setState] = useState<ConnectionState>('connecting')
   const [announcement, setAnnouncement] = useState<{
     id: number
     message: string
+  } | null>(null)
+  const [completion, setCompletion] = useState<{
+    completedByUserId: string
+    nextRunId: string
   } | null>(null)
 
   useEffect(() => {
@@ -121,6 +127,21 @@ export function RealtimeRunSync({
     const handleDisconnect = () => setState('disconnected')
     const handleConnectError = () => setState('unavailable')
     const handleFoundationError = () => setState('unavailable')
+    const handleCompletion = (payload: unknown) => {
+      const parsed = realtimeRunCompletionEventSchema.safeParse(payload)
+      if (!parsed.success) return
+      const event = parsed.data
+      if (event.listId !== listId || event.runId !== runId) return
+      if (event.operationId === handledCompletion.current) return
+      handledCompletion.current = event.operationId
+      refreshPending.current = true
+      setCompletion({
+        completedByUserId: event.completedByUserId,
+        nextRunId: event.nextRunId,
+      })
+      setState('syncing')
+      router.refresh()
+    }
     const handleMutation = (payload: unknown) => {
       const parsed = realtimeRunMutationEventSchema.safeParse(payload)
       if (!parsed.success) return
@@ -160,6 +181,7 @@ export function RealtimeRunSync({
     socket.on('disconnect', handleDisconnect)
     socket.on('connect_error', handleConnectError)
     socket.on('foundation:error', handleFoundationError)
+    socket.on('run:completed', handleCompletion)
     socket.on('run:mutation', handleMutation)
 
     return () => {
@@ -167,6 +189,7 @@ export function RealtimeRunSync({
       socket.off('disconnect', handleDisconnect)
       socket.off('connect_error', handleConnectError)
       socket.off('foundation:error', handleFoundationError)
+      socket.off('run:completed', handleCompletion)
       socket.off('run:mutation', handleMutation)
       socket.disconnect()
       if (announcementTimer.current !== null) {
@@ -186,6 +209,12 @@ export function RealtimeRunSync({
       >
         {connectionCopy(state)}
       </p>
+      {completion && completion.nextRunId !== runId && (
+        <p className="text-warning text-xs" role="status">
+          Member {completion.completedByUserId} completed this run. A fresh
+          shopping run is ready.
+        </p>
+      )}
       <p
         aria-atomic="true"
         aria-live="polite"

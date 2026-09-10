@@ -80,6 +80,59 @@ describe('RealtimeRunSync', () => {
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1))
   })
 
+  it('refreshes once when another member completes the current run', async () => {
+    render(
+      <RealtimeRunSync
+        currentUserId="member-1"
+        listId="list-1"
+        revision={4}
+        runId="run-1"
+      />,
+    )
+
+    const completion = {
+      type: 'run.completed',
+      listId: 'list-1',
+      runId: 'run-1',
+      nextRunId: 'run-2',
+      operationId: 'completion-1',
+      completedByUserId: 'member-2',
+      occurredAt: '2026-09-10T12:00:00.000Z',
+    }
+    act(() => realtime.handlers.get('run:completed')?.(completion))
+    act(() => realtime.handlers.get('run:completed')?.(completion))
+
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(
+      screen.getByText(/Member member-2 completed this run/),
+    ).toHaveTextContent('A fresh shopping run is ready.')
+  })
+
+  it('ignores malformed and unrelated completion events', () => {
+    render(
+      <RealtimeRunSync
+        currentUserId="member-1"
+        listId="list-1"
+        revision={4}
+        runId="run-1"
+      />,
+    )
+
+    act(() => {
+      realtime.handlers.get('run:completed')?.({
+        type: 'run.completed',
+        listId: 'other-list',
+        runId: 'run-1',
+        nextRunId: 'run-2',
+        operationId: 'completion-1',
+        completedByUserId: 'member-2',
+        occurredAt: 'not-a-date',
+      })
+    })
+
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
   it('does not refresh for malformed events or an event from another run', () => {
     render(
       <RealtimeRunSync

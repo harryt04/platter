@@ -70,6 +70,16 @@ export interface RealtimeRunMutationEvent {
   occurredAt: IsoDateTime
 }
 
+export interface RealtimeRunCompletionEvent {
+  type: 'run.completed'
+  listId: EntityId
+  runId: EntityId
+  nextRunId: EntityId
+  operationId: string
+  completedByUserId: string
+  occurredAt: IsoDateTime
+}
+
 const realtimeRunMutationEventTypes = [
   'grocery.purchased.marked',
   'grocery.purchased.undone',
@@ -100,6 +110,18 @@ export const realtimeRunMutationEventSchema = z
     revision: z.number().int().nonnegative(),
     operationId: z.string().min(1),
     actorId: z.string().min(1),
+    occurredAt: z.string().datetime(),
+  })
+  .strict()
+
+export const realtimeRunCompletionEventSchema = z
+  .object({
+    type: z.literal('run.completed'),
+    listId: z.string().min(1),
+    runId: z.string().min(1),
+    nextRunId: z.string().min(1),
+    operationId: z.string().min(1),
+    completedByUserId: z.string().min(1),
     occurredAt: z.string().datetime(),
   })
   .strict()

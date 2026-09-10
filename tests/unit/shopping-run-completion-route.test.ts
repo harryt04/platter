@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST } from '@/app/api/v1/lists/[listId]/complete/route'
 
-const { getSession, getConnectedDatabase, getMongoClient } = vi.hoisted(() => ({
+const {
+  getSession,
+  getConnectedDatabase,
+  getMongoClient,
+  publishRunCompletionEvent,
+} = vi.hoisted(() => ({
   getSession: vi.fn(),
   getConnectedDatabase: vi.fn(),
   getMongoClient: vi.fn(),
+  publishRunCompletionEvent: vi.fn(),
 }))
 
 vi.mock('@/lib/auth/authorization', () => ({ getSession }))
@@ -12,6 +18,7 @@ vi.mock('@/lib/db/mongo-client', () => ({
   getConnectedDatabase,
   getMongoClient,
 }))
+vi.mock('@/lib/realtime/events', () => ({ publishRunCompletionEvent }))
 
 const owner = {
   userId: 'user-1',
@@ -219,6 +226,16 @@ describe('POST /api/v1/lists/[listId]/complete', () => {
         },
       }),
       { session: expect.anything(), returnDocument: 'after' },
+    )
+    expect(publishRunCompletionEvent).toHaveBeenCalledWith(
+      database.db,
+      expect.objectContaining({
+        listId: 'list-1',
+        runId: 'run-1',
+        nextRunId: body.activeRunId,
+        operationId: 'complete-1',
+        completedByUserId: 'user-1',
+      }),
     )
   })
 

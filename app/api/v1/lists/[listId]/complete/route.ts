@@ -14,6 +14,7 @@ import {
   type ShoppingRunHistoryDocument,
 } from '@/lib/shopping-run-history'
 import { z } from 'zod'
+import { publishRunCompletionEvent } from '@/lib/realtime/events'
 
 type RouteContext = { params: Promise<{ listId: string }> }
 
@@ -230,6 +231,19 @@ export async function POST(request: Request, context: RouteContext) {
       return operationIdConflict()
     }
     return revisionConflict()
+  }
+
+  try {
+    await publishRunCompletionEvent(db, {
+      listId,
+      runId: run._id,
+      nextRunId: nextRun._id,
+      operationId: parsed.data.operationId,
+      completedByUserId: session.user.id,
+      now,
+    })
+  } catch {
+    // The transaction is authoritative; a realtime outage must not undo it.
   }
 
   return Response.json(response)

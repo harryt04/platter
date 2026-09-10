@@ -3,6 +3,7 @@ import { Emitter } from '@socket.io/mongo-emitter'
 import { entityId, isoDateTime } from '@/lib/contracts/ids'
 import type {
   RealtimeEvent,
+  RealtimeRunCompletionEvent,
   RealtimeRunMutationEvent,
 } from '@/lib/contracts/mutations'
 
@@ -53,6 +54,42 @@ export async function publishRunMutationEvent(
   createRealtimeEmitter(db)
     .in(`list:${input.listId}`)
     .emit('run:mutation', event)
+  return event
+}
+
+type RunCompletionEventInput = Omit<
+  RealtimeRunCompletionEvent,
+  'type' | 'listId' | 'runId' | 'nextRunId' | 'occurredAt'
+> & {
+  listId: string
+  runId: string
+  nextRunId: string
+  now?: Date
+}
+
+/** Notify connected list members that the old run is closed and a new one exists. */
+export async function publishRunCompletionEvent(
+  db: Db,
+  input: RunCompletionEventInput,
+): Promise<RealtimeRunCompletionEvent> {
+  const now = input.now ?? new Date()
+  const event: RealtimeRunCompletionEvent = {
+    type: 'run.completed',
+    listId: entityId(input.listId),
+    runId: entityId(input.runId),
+    nextRunId: entityId(input.nextRunId),
+    operationId: input.operationId,
+    completedByUserId: input.completedByUserId,
+    occurredAt: isoDateTime(now),
+  }
+
+  await db.collection('realtime_events').insertOne({
+    ...event,
+    createdAt: now,
+  })
+  createRealtimeEmitter(db)
+    .in(`list:${input.listId}`)
+    .emit('run:completed', event)
   return event
 }
 

@@ -23,6 +23,8 @@ now confirm an active run through an atomic transition that retains only
 versioned recipe selections, people counts, completion time, local date, and
 the completing member in history before creating a clean active run; checklist
 state and current-run ordering are not copied forward.
+Connected list members now receive a typed completion handoff that identifies
+the completing member and refreshes them onto the newly created active run.
 The ingredient parser now recognizes common quantity forms, preserves source
 text, records qualitative confidence and a stable normalized identity when the
 parse is sufficient, resolves a bounded set of high-confidence ingredient

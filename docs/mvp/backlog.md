@@ -562,9 +562,9 @@ including a shopper who reconnects after continuing locally.
 **Blocked by:** 21: Synchronize connected shoppers; 22: Support offline shopping
 and reconciliation; 23: Complete a shopping run atomically
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] Connected clients promptly receive completion and open or offer the new
+- [x] Connected clients promptly receive completion and open or offer the new
       active run with the completing member identified.
 - [ ] The server rejects all later writes to the completed run, regardless of
       cached membership or base revision.

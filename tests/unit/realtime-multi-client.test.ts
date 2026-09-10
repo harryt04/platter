@@ -2,7 +2,10 @@ import { createServer, type Server as HttpServer } from 'node:http'
 import { afterEach, describe, expect, it } from 'vitest'
 import { io as createClient, type Socket } from 'socket.io-client'
 import { createRealtimeApplication } from '@/lib/realtime/application'
-import type { RealtimeRunMutationEvent } from '@/lib/contracts/mutations'
+import type {
+  RealtimeRunCompletionEvent,
+  RealtimeRunMutationEvent,
+} from '@/lib/contracts/mutations'
 import { entityId, isoDateTime } from '@/lib/contracts/ids'
 
 const listId = entityId('list-1')
@@ -136,6 +139,32 @@ describe('realtime multi-client boundary', () => {
     await new Promise((resolve) => setTimeout(resolve, 20))
     expect(ownerEvents).toEqual([differentItemChange, sameItemChange])
     expect(editorEvents).toEqual([differentItemChange, sameItemChange])
+  })
+
+  it('fans out run completion with the replacement run and completing member', async () => {
+    const owner = await joinList('owner-1')
+    const editor = await joinList('editor-1')
+    const ownerEvent = waitForEvent<RealtimeRunCompletionEvent>(
+      owner,
+      'run:completed',
+    )
+    const editorEvent = waitForEvent<RealtimeRunCompletionEvent>(
+      editor,
+      'run:completed',
+    )
+    const completion: RealtimeRunCompletionEvent = {
+      type: 'run.completed',
+      listId,
+      runId,
+      nextRunId: entityId('run-2'),
+      operationId: 'completion-1',
+      completedByUserId: 'owner-1',
+      occurredAt: isoDateTime('2026-09-10T12:00:00.000Z'),
+    }
+    realtime?.to(`list:${listId}`).emit('run:completed', completion)
+
+    await expect(ownerEvent).resolves.toEqual(completion)
+    await expect(editorEvent).resolves.toEqual(completion)
   })
 
   it('does not replay a disconnection gap and delivers the next authoritative event after reconnect', async () => {

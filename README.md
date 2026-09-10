@@ -18,7 +18,11 @@ with authenticated deep links and independent read state.
 The notification contract is membership-only: purchased checks and routine
 grocery edits have no supported notification event or delivery path.
 Archived lists preserve read access to their shopping run while disabling
-shopping changes such as completion and amount resets.
+shopping changes such as completion and amount resets. Owners and editors can
+now confirm an active run through an atomic transition that retains only
+versioned recipe selections, people counts, completion time, local date, and
+the completing member in history before creating a clean active run; checklist
+state and current-run ordering are not copied forward.
 The ingredient parser now recognizes common quantity forms, preserves source
 text, records qualitative confidence and a stable normalized identity when the
 parse is sufficient, resolves a bounded set of high-confidence ingredient

@@ -60,6 +60,13 @@ export const updateListSchema = z.object({ name: listNameSchema })
 export type ListRole = 'owner' | 'editor'
 export type ListStatus = 'active' | 'archived' | 'deleted'
 
+export type CompletionMutationReceipt = {
+  operationId: string
+  clientId: string
+  status: 200
+  response: Record<string, unknown>
+}
+
 export type ListMember = {
   userId: string
   role: ListRole
@@ -103,6 +110,7 @@ export type ListDocument = {
   status: ListStatus
   activeRunId: string
   members: ListMember[]
+  completionMutationReceipts?: CompletionMutationReceipt[]
   createdAt: IsoDateTime
   updatedAt: IsoDateTime
 }

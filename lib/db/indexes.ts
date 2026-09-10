@@ -65,4 +65,7 @@ export async function ensureSharedIndexes(db: Db) {
       { listId: 1, state: 1 },
       { unique: true, partialFilterExpression: { state: 'active' } },
     )
+  await db
+    .collection('shopping_run_history')
+    .createIndex({ listId: 1, localDate: -1, completedAt: -1 })
 }

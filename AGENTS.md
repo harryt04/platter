@@ -10,7 +10,9 @@ temporary shared grocery ordering, and the active-checklist membership,
 Purchased, connected realtime, and first user-scoped offline snapshot and
 optimistic mutation-queue slices are implemented; the remaining offline
 reconciliation, correction,
-collaboration, and feature workflows are still planned in the backlog.
+collaboration, and feature workflows are still planned in the backlog. Active
+shopping-run completion now atomically creates minimal history and a clean
+replacement run; connected completion synchronization remains planned.
 
 - `README.md` — project overview and documentation entry point.
 - `docs/mvp/prd.md` — main product rules, data model, planned technology, and acceptance checks.

@@ -1,6 +1,5 @@
 import { GroceryRow } from '@/components/patterns/grocery-row'
 import { SyncStatus } from '@/components/states/sync-status'
-import { Button } from '@/components/ui/button'
 import {
   ContentContainer,
   PageHeader,
@@ -29,6 +28,7 @@ import { groupGroceryItemsByCategoryOrder } from '@/lib/recipes/grocery-categori
 import { PurchasedButton } from '@/components/lists/purchased-button'
 import { RealtimeRunSync } from '@/components/states/realtime-run-sync'
 import { OfflineRunSnapshotWriter } from '@/components/states/offline-snapshot-writers'
+import { CompleteShoppingRunButton } from '@/components/lists/complete-shopping-run-button'
 
 export default async function ShopPage({
   params,
@@ -97,11 +97,12 @@ export default async function ShopPage({
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <ShoppingModeNavigation listId={listId} mode="shopping" />
-            <Button disabled={isReadOnly} className="w-full sm:w-auto">
-              {isReadOnly
-                ? 'Shopping unavailable while archived'
-                : 'Complete shopping run'}
-            </Button>
+            <CompleteShoppingRunButton
+              baseRevision={run?.revision}
+              disabled={isReadOnly || !run}
+              listId={listId}
+              listName={list.name}
+            />
           </div>
         }
       />

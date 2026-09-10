@@ -222,6 +222,49 @@ test.describe('authenticated list workflow', () => {
     await expect(page).toHaveURL(/\/lists\/[^/]+\/review$/)
   })
 
+  test('confirms completion and opens a clean shopping run', async ({
+    page,
+  }) => {
+    await page.goto('/sign-in')
+    await page
+      .getByRole('textbox', { name: 'Email' })
+      .fill(process.env.E2E_USER_EMAIL!)
+    await page.getByLabel('Password').fill(process.env.E2E_USER_PASSWORD!)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await expect(page).toHaveURL(/\/lists$/)
+
+    await page.goto('/lists/new')
+    await page
+      .getByRole('textbox', { name: 'List name' })
+      .fill(`Complete run ${Date.now()}`)
+    await page.getByRole('button', { name: 'Create list' }).click()
+    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+
+    await page.getByRole('link', { name: 'Start shopping' }).click()
+    await expect(
+      page.getByRole('button', { name: 'Complete shopping run' }),
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Complete shopping run' }).click()
+    await expect(
+      page.getByText(
+        /starts one empty shopping run.*purchased and already-have states are not/i,
+      ),
+    ).toBeVisible()
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Complete shopping run' })
+      .click()
+
+    await expect(
+      page.getByText('Run completed. A fresh shopping run is ready.', {
+        exact: true,
+      }),
+    ).toBeVisible()
+    await expect(
+      page.getByText('This shopping run has no grocery items yet.'),
+    ).toBeVisible()
+  })
+
   test('checks and unchecks a grocery item independently while shopping', async ({
     page,
   }) => {

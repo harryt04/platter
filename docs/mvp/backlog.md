@@ -538,20 +538,20 @@ purchase history.
 
 **Blocked by:** 20: Shop with the active checklist
 
-**Status:** ready-for-agent
+**Status:** implemented
 
-- [ ] An owner or editor can confirm completion; viewers, non-members, archived
+- [x] An owner or editor can confirm completion; viewers, non-members, archived
       lists, and deleted lists cannot complete or mutate a run.
-- [ ] Completion atomically makes the old run immutable and creates exactly one
+- [x] Completion atomically makes the old run immutable and creates exactly one
       new empty active run for the list.
-- [ ] Retained history contains only list, completion timestamp and local date,
+- [x] Retained history contains only list, completion timestamp and local date,
       completing member, immutable recipe-version references, and desired people.
-- [ ] Final grocery items, contributions, purchased states, already-have states,
+- [x] Final grocery items, contributions, purchased states, already-have states,
       overrides, pantry facts, and custom ordering are not retained as product
       history or copied into the next run.
-- [ ] Concurrent and repeated completion requests are idempotent and cannot
+- [x] Concurrent and repeated completion requests are idempotent and cannot
       create multiple active runs.
-- [ ] Integration tests cover transaction failure, retry, old-run rejection,
+- [x] Integration tests cover transaction failure, retry, old-run rejection,
       exact retention, and new-run emptiness.
 
 ## 24: Synchronize run completion across devices

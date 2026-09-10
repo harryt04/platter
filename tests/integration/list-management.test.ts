@@ -2,9 +2,11 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Db } from 'mongodb'
 import { DELETE, PATCH } from '@/app/api/v1/lists/[listId]/route'
 import { GET, POST } from '@/app/api/v1/lists/route'
+import { POST as completeShoppingRun } from '@/app/api/v1/lists/[listId]/complete/route'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import type { ListDocument, ShoppingRunDocument } from '@/lib/lists'
+import type { ShoppingRunHistoryDocument } from '@/lib/shopping-run-history'
 
 const { getSession } = vi.hoisted(() => ({ getSession: vi.fn() }))
 
@@ -63,6 +65,9 @@ describe('Mongo-backed list management workflow', () => {
     await db.collection<ShoppingRunDocument>('shopping_runs').deleteMany({
       listId: { $in: createdListIds },
     })
+    await db
+      .collection<ShoppingRunHistoryDocument>('shopping_run_history')
+      .deleteMany({ listId: { $in: createdListIds } })
   })
 
   it('creates three isolated lists with one active run each', async () => {
@@ -204,5 +209,83 @@ describe('Mongo-backed list management workflow', () => {
         updatedAt: isoDateTime('2026-09-10T12:00:00.000Z'),
       }),
     ).rejects.toThrow(/duplicate key|E11000/i)
+  })
+
+  it('completes a run into minimal history and makes retries idempotent', async () => {
+    const listId = createdListIds[0]
+    expect(listId).toBeDefined()
+    getSession.mockReturnValue(session(ownerId))
+
+    const before = await db
+      .collection<ListDocument>('lists')
+      .findOne({ _id: listId })
+    const oldRunId = before?.activeRunId
+    expect(oldRunId).toBeDefined()
+    if (!oldRunId) throw new Error('Expected the list to have an active run.')
+    const responseBody = {
+      operationId: `${fixtureToken}-completion`,
+      clientId: `${fixtureToken}-client`,
+      baseRevision: 0,
+      localDate: '2026-09-10',
+    }
+    const response = await completeShoppingRun(
+      new Request(`http://localhost/api/v1/lists/${listId}/complete`, {
+        method: 'POST',
+        body: JSON.stringify(responseBody),
+      }),
+      { params: Promise.resolve({ listId }) },
+    )
+    expect(response.status).toBe(200)
+    const completion = await response.json()
+
+    const after = await db
+      .collection<ListDocument>('lists')
+      .findOne({ _id: listId })
+    expect(after?.activeRunId).toBe(completion.activeRunId)
+    expect(after?.activeRunId).not.toBe(before?.activeRunId)
+    expect(
+      await db.collection<ShoppingRunDocument>('shopping_runs').findOne({
+        _id: oldRunId,
+      }),
+    ).toBeNull()
+    const activeRun = await db
+      .collection<ShoppingRunDocument>('shopping_runs')
+      .findOne({ _id: completion.activeRunId })
+    expect(activeRun).toMatchObject({
+      listId,
+      state: 'active',
+      revision: 0,
+      recipeSelections: [],
+      groceryItems: [],
+      manualAdditions: [],
+      ordering: [],
+    })
+    const history = await db
+      .collection<ShoppingRunHistoryDocument>('shopping_run_history')
+      .findOne({ _id: completion.historyId })
+    expect(history).toBeDefined()
+    expect(Object.keys(history ?? {}).sort()).toEqual([
+      '_id',
+      'completedAt',
+      'completedByUserId',
+      'listId',
+      'localDate',
+      'recipeSelections',
+    ])
+
+    const retry = await completeShoppingRun(
+      new Request(`http://localhost/api/v1/lists/${listId}/complete`, {
+        method: 'POST',
+        body: JSON.stringify(responseBody),
+      }),
+      { params: Promise.resolve({ listId }) },
+    )
+    expect(retry.status).toBe(200)
+    expect(await retry.json()).toEqual(completion)
+    expect(
+      await db
+        .collection<ShoppingRunHistoryDocument>('shopping_run_history')
+        .countDocuments({ listId }),
+    ).toBe(1)
   })
 })

@@ -98,6 +98,26 @@ const optionalIngredientText = (max: number) =>
 
 const ingredientParserConfidenceSchema = z.enum(['high', 'medium', 'low'])
 
+export const recipeOriginSchema = z.enum(['authored', 'imported'])
+export const recipeImportReviewStatusSchema = z.enum([
+  'not-required',
+  'pending',
+  'approved',
+  'rejected',
+])
+export const recipeVisibilitySchema = z.enum([
+  'private',
+  'list-shared',
+  'public',
+  'suppressed',
+])
+
+export type RecipeOrigin = z.infer<typeof recipeOriginSchema>
+export type RecipeImportReviewStatus = z.infer<
+  typeof recipeImportReviewStatusSchema
+>
+export type RecipeVisibility = z.infer<typeof recipeVisibilitySchema>
+
 export const recipeIngredientSchema = z.object({
   originalText: requiredIngredientText('line', 500),
   quantity: optionalIngredientText(50),
@@ -206,7 +226,9 @@ export type RecipeDraft = {
   title: string
   description?: string
   status: 'draft' | 'usable'
-  visibility: 'private'
+  origin: RecipeOrigin
+  importReviewStatus: RecipeImportReviewStatus
+  visibility: RecipeVisibility
   typicalPeopleFed?: number
   prepTimeMinutes?: number
   cookingTimeMinutes?: number
@@ -228,7 +250,15 @@ export type RecipeDraft = {
   updatedAt: IsoDateTime
 }
 
-export type RecipeDraftDocument = Omit<RecipeDraft, 'id'> & { _id: string }
+export type RecipeDraftDocument = Omit<
+  RecipeDraft,
+  'id' | 'origin' | 'importReviewStatus'
+> & {
+  _id: string
+  /** Legacy documents predate the explicit import review contract. */
+  origin?: RecipeOrigin
+  importReviewStatus?: RecipeImportReviewStatus
+}
 
 export function recipeDrafts(collection: Collection<RecipeDraftDocument>) {
   return collection
@@ -244,6 +274,36 @@ export function privateDraftFilter(ownerId: string, draftId?: string) {
     status: { $in: ['draft', 'usable'] as const },
     visibility: 'private' as const,
   }
+}
+
+/**
+ * Public recipe reads must use this filter so importer state cannot be
+ * bypassed by a future discovery or detail query.
+ */
+export function publicRecipeFilter(recipeId?: string) {
+  return {
+    ...(recipeId ? { _id: recipeId } : {}),
+    status: 'usable' as const,
+    visibility: 'public' as const,
+    $or: [
+      { origin: { $exists: false } },
+      { origin: 'authored' as const },
+      { origin: 'imported' as const, importReviewStatus: 'approved' as const },
+    ],
+  }
+}
+
+export function isPubliclyRenderableRecipe(
+  recipe: Pick<
+    RecipeDraftDocument,
+    'status' | 'visibility' | 'origin' | 'importReviewStatus'
+  >,
+) {
+  return (
+    recipe.status === 'usable' &&
+    recipe.visibility === 'public' &&
+    (recipe.origin !== 'imported' || recipe.importReviewStatus === 'approved')
+  )
 }
 
 export function isUsableRecipe(
@@ -262,6 +322,8 @@ export function createDraftDocument(
   ownerId: string,
   title: string,
   details: {
+    origin?: RecipeOrigin
+    importReviewStatus?: RecipeImportReviewStatus
     description?: string
     typicalPeopleFed?: number
     prepTimeMinutes?: number
@@ -295,6 +357,8 @@ export function createDraftDocument(
     status: isUsableRecipe(details.typicalPeopleFed, ingredients)
       ? 'usable'
       : 'draft',
+    origin: details.origin ?? 'authored',
+    importReviewStatus: details.importReviewStatus ?? 'not-required',
     visibility: 'private',
     ...(details.typicalPeopleFed === undefined
       ? {}
@@ -349,6 +413,11 @@ export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
       ? {}
       : { description: document.description }),
     status: document.status,
+    origin: document.origin ?? 'authored',
+    importReviewStatus:
+      document.origin === 'imported'
+        ? (document.importReviewStatus ?? 'pending')
+        : 'not-required',
     visibility: document.visibility,
     ...(document.typicalPeopleFed === undefined
       ? {}

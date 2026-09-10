@@ -3,13 +3,18 @@ import {
   createDraftDocument,
   createDraftSchema,
   draftOwnerFilter,
+  isPubliclyRenderableRecipe,
   isUsableRecipe,
   privateDraftFilter,
+  publicRecipeFilter,
+  recipeImportReviewStatusSchema,
   recipeIngredientSchema,
   recipeInstructionSchema,
   recipeImageProvenanceSchema,
   recipeMetadataSchema,
   recipeNutritionSchema,
+  recipeOriginSchema,
+  recipeVisibilitySchema,
   typicalPeopleFedSchema,
   toRecipeDraft,
   updateDraftSchema,
@@ -52,6 +57,66 @@ describe('recipe drafts', () => {
       status: { $in: ['draft', 'usable'] },
       visibility: 'private',
     })
+  })
+
+  it('requires imported recipes to pass review before public rendering', () => {
+    expect(
+      isPubliclyRenderableRecipe({
+        status: 'usable',
+        visibility: 'public',
+        origin: 'imported',
+        importReviewStatus: 'pending',
+      }),
+    ).toBe(false)
+    expect(
+      isPubliclyRenderableRecipe({
+        status: 'usable',
+        visibility: 'public',
+        origin: 'imported',
+        importReviewStatus: 'approved',
+      }),
+    ).toBe(true)
+    expect(
+      isPubliclyRenderableRecipe({
+        status: 'usable',
+        visibility: 'private',
+        origin: 'imported',
+        importReviewStatus: 'approved',
+      }),
+    ).toBe(false)
+    expect(
+      isPubliclyRenderableRecipe({
+        status: 'draft',
+        visibility: 'public',
+        origin: 'authored',
+        importReviewStatus: 'not-required',
+      }),
+    ).toBe(false)
+  })
+
+  it('builds a public query that excludes unreviewed imported content', () => {
+    expect(publicRecipeFilter('recipe-1')).toEqual({
+      _id: 'recipe-1',
+      status: 'usable',
+      visibility: 'public',
+      $or: [
+        { origin: { $exists: false } },
+        { origin: 'authored' },
+        { origin: 'imported', importReviewStatus: 'approved' },
+      ],
+    })
+  })
+
+  it('normalizes legacy recipe documents to authored, not-required state', () => {
+    const legacy = createDraftDocument('user-1', 'Soup')
+    const normalized = toRecipeDraft(legacy)
+    expect(normalized.origin).toBe('authored')
+    expect(normalized.importReviewStatus).toBe('not-required')
+    expect(recipeOriginSchema.safeParse('imported').success).toBe(true)
+    expect(recipeImportReviewStatusSchema.safeParse('pending').success).toBe(
+      true,
+    )
+    expect(recipeVisibilitySchema.safeParse('suppressed').success).toBe(true)
   })
 
   it('keeps a recipe in draft state until yield and a structured ingredient exist', () => {

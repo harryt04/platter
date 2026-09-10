@@ -26,6 +26,8 @@ amount, and performs high-precision locale-aware mass and volume conversions
 with round-trip test coverage; grocery calculations, collaboration, and
 moderation remain intentionally deferred to the feature lanes described in the
 [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
+Public recipe reads also have a shared visibility guard: imported content must
+be approved after review, usable, and explicitly public before it can render.
 
 ## Documentation
 

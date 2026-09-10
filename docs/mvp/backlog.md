@@ -169,7 +169,7 @@ mobile-friendly editor and make its usable state explicit.
       and keyboard-accessible controls.
 - [x] User-authored recipe content is validated and sanitized at the recipe
       boundary, and rendered as text rather than interpreted markup.
-- [ ] Active imported content is never rendered before the importer has
+- [x] Active imported content is never rendered before the importer has
       completed its review and visibility checks.
 - [x] Tests cover partial saves, validation recovery, ordering, and the
       draft-to-usable transition.

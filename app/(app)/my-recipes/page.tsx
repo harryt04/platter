@@ -13,7 +13,11 @@ export default async function MyRecipesPage() {
   const db = await getConnectedDatabase()
   const documents = await db
     .collection<RecipeDraftDocument>('recipes')
-    .find({ ownerId: session.user.id, status: 'draft', visibility: 'private' })
+    .find({
+      ownerId: session.user.id,
+      status: { $in: ['draft', 'usable'] },
+      visibility: 'private',
+    })
     .sort({ updatedAt: -1 })
     .toArray()
   const drafts = documents.map(toRecipeDraft)
@@ -45,14 +49,18 @@ export default async function MyRecipesPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="font-data text-muted-foreground text-xs tracking-widest uppercase">
-                      Private draft
+                      {draft.status === 'usable'
+                        ? 'Ready to use'
+                        : 'Private draft'}
                     </p>
                     <CardTitle className="font-display mt-2 text-2xl">
                       {draft.title}
                     </CardTitle>
                   </div>
                   <span className="bg-muted rounded-full px-2 py-1 text-xs">
-                    Needs details
+                    {draft.status === 'usable'
+                      ? 'Usable recipe'
+                      : 'Needs details'}
                   </span>
                 </div>
               </CardHeader>

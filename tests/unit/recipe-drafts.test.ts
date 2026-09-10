@@ -3,7 +3,10 @@ import {
   createDraftDocument,
   createDraftSchema,
   draftOwnerFilter,
+  isUsableRecipe,
   privateDraftFilter,
+  recipeIngredientSchema,
+  typicalPeopleFedSchema,
   toRecipeDraft,
 } from '@/lib/recipes/drafts'
 
@@ -26,6 +29,7 @@ describe('recipe drafts', () => {
       title: 'Tomato soup',
       status: 'draft',
       visibility: 'private',
+      ingredients: [],
     })
     expect(toRecipeDraft(draft).id).toBe(draft._id)
     expect(draft.createdAt).toBe(draft.updatedAt)
@@ -40,8 +44,32 @@ describe('recipe drafts', () => {
     expect(privateDraftFilter('user-1', 'draft-1')).toEqual({
       _id: 'draft-1',
       ownerId: 'user-1',
-      status: 'draft',
+      status: { $in: ['draft', 'usable'] },
       visibility: 'private',
     })
+  })
+
+  it('keeps a recipe in draft state until yield and a structured ingredient exist', () => {
+    const ingredient = recipeIngredientSchema.parse({
+      originalText: '  2 yellow onions, diced\u0000 ',
+      quantity: '2',
+      unit: 'each',
+      ingredientName: '  Yellow onions ',
+      preparationNote: 'diced',
+      optional: false,
+    })
+
+    expect(isUsableRecipe(undefined, [ingredient])).toBe(false)
+    expect(isUsableRecipe(0, [ingredient])).toBe(false)
+    expect(isUsableRecipe(4, [])).toBe(false)
+    expect(isUsableRecipe(4, [ingredient])).toBe(true)
+    expect(
+      createDraftDocument('user-1', 'Soup', {
+        typicalPeopleFed: 4,
+        ingredients: [ingredient],
+      }).status,
+    ).toBe('usable')
+    expect(ingredient.originalText).toBe('2 yellow onions, diced')
+    expect(typicalPeopleFedSchema.safeParse(2.5).success).toBe(false)
   })
 })

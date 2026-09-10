@@ -141,15 +141,15 @@ mobile-friendly editor and make its usable state explicit.
 
 **Blocked by:** 05: Create and save recipe drafts
 
-**Status:** ready-for-agent
+**Status:** in progress
 
 - [ ] The editor supports title, description, typical people fed, ordered
       ingredients, ordered instructions, times, cuisine, meal type, tags,
       dietary labels, household notes, source, attribution, image provenance,
       and optional nutrition data.
-- [ ] Each ingredient supports original text, quantity, unit, ingredient name,
+- [x] Each ingredient supports original text, quantity, unit, ingredient name,
       preparation note, and optional flag.
-- [ ] A recipe becomes usable only with a positive valid typical yield and at
+- [x] A recipe becomes usable only with a positive valid typical yield and at
       least one structured ingredient; invalid or zero yield leaves it a draft.
 - [ ] Ordered fields can be added, edited, removed, and reordered with pointer
       and keyboard-accessible controls.

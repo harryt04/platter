@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth/authorization'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
 import {
+  isUsableRecipe,
   privateDraftFilter,
   toRecipeDraft,
   updateDraftSchema,
@@ -48,14 +49,14 @@ function invalidJson(detail = 'Send a JSON object with a recipe title.') {
   })
 }
 
-function invalidTitle(issues: string[]) {
+function invalidDraft(issues: string[], fields: Record<string, string[]>) {
   return problemResponse({
     type: 'https://platter.dev/problems/validation-failed',
-    title: 'Check the recipe title',
+    title: 'Check the recipe details',
     status: 422,
-    detail: 'A recipe draft needs a title.',
+    detail: 'Fix the highlighted recipe details and try again.',
     code: 'VALIDATION_FAILED',
-    fields: { title: issues },
+    fields: fields ?? { title: issues },
   })
 }
 
@@ -87,18 +88,65 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const parsed = updateDraftSchema.safeParse(body)
   if (!parsed.success) {
-    return invalidTitle(parsed.error.issues.map((issue) => issue.message))
+    const fields = parsed.error.issues.reduce<Record<string, string[]>>(
+      (result, issue) => {
+        const field = issue.path[0]?.toString() ?? 'recipe'
+        result[field] = [...(result[field] ?? []), issue.message]
+        return result
+      },
+      {},
+    )
+    return invalidDraft(
+      parsed.error.issues.map((issue) => issue.message),
+      fields,
+    )
   }
 
+  const nextTypicalPeopleFed =
+    'typicalPeopleFed' in parsed.data
+      ? (parsed.data.typicalPeopleFed ?? undefined)
+      : draft.typicalPeopleFed
+  const nextIngredients =
+    'ingredients' in parsed.data
+      ? parsed.data.ingredients
+      : (draft.ingredients ?? [])
+  const status = isUsableRecipe(nextTypicalPeopleFed, nextIngredients)
   const updatedAt = isoDateTime(new Date())
   const db = await getConnectedDatabase()
+  const setFields: Partial<RecipeDraftDocument> = {
+    status: status ? 'usable' : 'draft',
+    updatedAt,
+  }
+  const unsetFields: Record<string, ''> = {}
+  if ('title' in parsed.data && parsed.data.title !== undefined) {
+    setFields.title = parsed.data.title
+  }
+  if ('ingredients' in parsed.data && parsed.data.ingredients !== undefined) {
+    setFields.ingredients = parsed.data.ingredients
+  }
+  if ('typicalPeopleFed' in parsed.data) {
+    if (parsed.data.typicalPeopleFed === null) {
+      unsetFields.typicalPeopleFed = ''
+    } else if (parsed.data.typicalPeopleFed !== undefined) {
+      setFields.typicalPeopleFed = parsed.data.typicalPeopleFed
+    }
+  }
   await db
     .collection<RecipeDraftDocument>('recipes')
     .updateOne(privateDraftFilter(session.user.id, recipeId), {
-      $set: { title: parsed.data.title, updatedAt },
+      $set: setFields,
+      ...(Object.keys(unsetFields).length > 0 ? { $unset: unsetFields } : {}),
     })
+
+  const updatedDraft = { ...draft, ...setFields }
+  if (
+    'typicalPeopleFed' in parsed.data &&
+    parsed.data.typicalPeopleFed === null
+  ) {
+    delete updatedDraft.typicalPeopleFed
+  }
   return Response.json({
-    recipe: toRecipeDraft({ ...draft, title: parsed.data.title, updatedAt }),
+    recipe: toRecipeDraft(updatedDraft),
   })
 }
 

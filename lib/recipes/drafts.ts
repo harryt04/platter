@@ -13,15 +13,54 @@ const recipeTitleSchema = z
   .min(1, 'Enter a recipe title.')
   .max(200, 'Recipe titles must be 200 characters or fewer.')
 
+const cleanText = (value: string) =>
+  value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim()
+
+const requiredIngredientText = (label: string, max: number) =>
+  z
+    .string({ error: `Enter an ingredient ${label}.` })
+    .transform(cleanText)
+    .pipe(z.string().min(1, `Enter an ingredient ${label}.`).max(max))
+
+const optionalIngredientText = (max: number) =>
+  z.string().transform(cleanText).pipe(z.string().max(max)).optional()
+
+export const recipeIngredientSchema = z.object({
+  originalText: requiredIngredientText('line', 500),
+  quantity: optionalIngredientText(50),
+  unit: optionalIngredientText(50),
+  ingredientName: requiredIngredientText('name', 200),
+  preparationNote: optionalIngredientText(200),
+  optional: z.boolean().default(false),
+})
+
+export const typicalPeopleFedSchema = z
+  .number({ error: 'Enter how many people this recipe feeds.' })
+  .int('Typical yield must be a whole number.')
+  .positive('Typical yield must be greater than zero.')
+  .max(1000, 'Typical yield must be 1,000 people or fewer.')
+
+export type RecipeIngredient = z.infer<typeof recipeIngredientSchema>
+
 export const createDraftSchema = z.object({ title: recipeTitleSchema })
-export const updateDraftSchema = createDraftSchema
+export const updateDraftSchema = z
+  .object({
+    title: recipeTitleSchema.optional(),
+    typicalPeopleFed: typicalPeopleFedSchema.nullable().optional(),
+    ingredients: z.array(recipeIngredientSchema).max(100).optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: 'Provide at least one recipe field to update.',
+  })
 
 export type RecipeDraft = {
   id: EntityId
   ownerId: string
   title: string
-  status: 'draft'
+  status: 'draft' | 'usable'
   visibility: 'private'
+  typicalPeopleFed?: number
+  ingredients: RecipeIngredient[]
   createdAt: IsoDateTime
   updatedAt: IsoDateTime
 }
@@ -39,22 +78,45 @@ export function draftOwnerFilter(ownerId: string, draftId?: string) {
 export function privateDraftFilter(ownerId: string, draftId?: string) {
   return {
     ...draftOwnerFilter(ownerId, draftId),
-    status: 'draft' as const,
+    status: { $in: ['draft', 'usable'] as const },
     visibility: 'private' as const,
   }
+}
+
+export function isUsableRecipe(
+  typicalPeopleFed: number | undefined,
+  ingredients: RecipeIngredient[] | undefined,
+) {
+  return (
+    typeof typicalPeopleFed === 'number' &&
+    Number.isInteger(typicalPeopleFed) &&
+    typicalPeopleFed > 0 &&
+    (ingredients?.length ?? 0) > 0
+  )
 }
 
 export function createDraftDocument(
   ownerId: string,
   title: string,
+  details: {
+    typicalPeopleFed?: number
+    ingredients?: RecipeIngredient[]
+  } = {},
 ): RecipeDraftDocument {
   const now = isoDateTime(new Date())
+  const ingredients = details.ingredients ?? []
   return {
     _id: crypto.randomUUID(),
     ownerId,
     title,
-    status: 'draft',
+    status: isUsableRecipe(details.typicalPeopleFed, ingredients)
+      ? 'usable'
+      : 'draft',
     visibility: 'private',
+    ...(details.typicalPeopleFed === undefined
+      ? {}
+      : { typicalPeopleFed: details.typicalPeopleFed }),
+    ingredients,
     createdAt: now,
     updatedAt: now,
   }
@@ -67,6 +129,10 @@ export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
     title: document.title,
     status: document.status,
     visibility: document.visibility,
+    ...(document.typicalPeopleFed === undefined
+      ? {}
+      : { typicalPeopleFed: document.typicalPeopleFed }),
+    ingredients: document.ingredients ?? [],
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
   }

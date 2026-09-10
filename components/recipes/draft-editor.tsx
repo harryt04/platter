@@ -12,20 +12,51 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import type { RecipeIngredient } from '@/lib/recipes/drafts'
+
+type IngredientForm = RecipeIngredient
+
+const blankIngredient = (): IngredientForm => ({
+  originalText: '',
+  quantity: '',
+  unit: '',
+  ingredientName: '',
+  preparationNote: '',
+  optional: false,
+})
 
 export function DraftEditor({
   recipeId,
   initialTitle = '',
+  initialTypicalPeopleFed,
+  initialIngredients = [],
 }: {
   recipeId?: string
   initialTitle?: string
+  initialTypicalPeopleFed?: number
+  initialIngredients?: RecipeIngredient[]
 }) {
   const router = useRouter()
   const [title, setTitle] = useState(initialTitle)
+  const [typicalPeopleFed, setTypicalPeopleFed] = useState(
+    initialTypicalPeopleFed?.toString() ?? '',
+  )
+  const [ingredients, setIngredients] =
+    useState<IngredientForm[]>(initialIngredients)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  function updateIngredient(index: number, changes: Partial<IngredientForm>) {
+    setIngredients((current) =>
+      current.map((ingredient, itemIndex) =>
+        itemIndex === index ? { ...ingredient, ...changes } : ingredient,
+      ),
+    )
+  }
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -37,7 +68,16 @@ export function DraftEditor({
         {
           method: recipeId ? 'PATCH' : 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ title }),
+          body: JSON.stringify(
+            recipeId
+              ? {
+                  title,
+                  typicalPeopleFed:
+                    typicalPeopleFed === '' ? null : Number(typicalPeopleFed),
+                  ingredients,
+                }
+              : { title },
+          ),
         },
       )
       if (!response.ok) {
@@ -84,9 +124,173 @@ export function DraftEditor({
               autoFocus
             />
             <p className="text-muted-foreground text-xs">
-              Private until you choose to share or publish it.
+              Private until you choose to share or publish it. A title alone
+              stays a draft.
             </p>
           </div>
+          {recipeId && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="typical-people-fed">Typical people fed</Label>
+                <Input
+                  id="typical-people-fed"
+                  name="typicalPeopleFed"
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputMode="numeric"
+                  value={typicalPeopleFed}
+                  onChange={(event) => setTypicalPeopleFed(event.target.value)}
+                  placeholder="4"
+                />
+                <p className="text-muted-foreground text-xs">
+                  Use a positive whole number. This recipe becomes usable when
+                  it also has an ingredient.
+                </p>
+              </div>
+              <fieldset className="space-y-4">
+                <legend className="text-sm font-medium">Ingredients</legend>
+                <p className="text-muted-foreground text-xs">
+                  Keep the original line alongside the structured details so the
+                  recipe stays easy to check later.
+                </p>
+                {ingredients.map((ingredient, index) => (
+                  <div
+                    className="border-border space-y-4 rounded-[var(--radius-card)] border p-4"
+                    key={index}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-medium">
+                        Ingredient {index + 1}
+                      </h3>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setIngredients((current) =>
+                            current.filter(
+                              (_, itemIndex) => itemIndex !== index,
+                            ),
+                          )
+                        }
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`ingredient-line-${index}`}>
+                        Original ingredient line
+                      </Label>
+                      <Textarea
+                        id={`ingredient-line-${index}`}
+                        value={ingredient.originalText}
+                        onChange={(event) =>
+                          updateIngredient(index, {
+                            originalText: event.target.value,
+                          })
+                        }
+                        placeholder="2 yellow onions, diced"
+                        required
+                      />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor={`ingredient-quantity-${index}`}>
+                          Quantity{' '}
+                          <span className="text-muted-foreground">
+                            (optional)
+                          </span>
+                        </Label>
+                        <Input
+                          id={`ingredient-quantity-${index}`}
+                          value={ingredient.quantity ?? ''}
+                          onChange={(event) =>
+                            updateIngredient(index, {
+                              quantity: event.target.value,
+                            })
+                          }
+                          placeholder="2"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`ingredient-unit-${index}`}>
+                          Unit{' '}
+                          <span className="text-muted-foreground">
+                            (optional)
+                          </span>
+                        </Label>
+                        <Input
+                          id={`ingredient-unit-${index}`}
+                          value={ingredient.unit ?? ''}
+                          onChange={(event) =>
+                            updateIngredient(index, {
+                              unit: event.target.value,
+                            })
+                          }
+                          placeholder="lb, cup, or each"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`ingredient-name-${index}`}>
+                        Ingredient name
+                      </Label>
+                      <Input
+                        id={`ingredient-name-${index}`}
+                        value={ingredient.ingredientName}
+                        onChange={(event) =>
+                          updateIngredient(index, {
+                            ingredientName: event.target.value,
+                          })
+                        }
+                        placeholder="Yellow onions"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`ingredient-preparation-${index}`}>
+                        Preparation note{' '}
+                        <span className="text-muted-foreground">
+                          (optional)
+                        </span>
+                      </Label>
+                      <Input
+                        id={`ingredient-preparation-${index}`}
+                        value={ingredient.preparationNote ?? ''}
+                        onChange={(event) =>
+                          updateIngredient(index, {
+                            preparationNote: event.target.value,
+                          })
+                        }
+                        placeholder="diced"
+                      />
+                    </div>
+                    <label className="flex min-h-11 items-center gap-3 text-sm">
+                      <Checkbox
+                        checked={ingredient.optional}
+                        onChange={(event) =>
+                          updateIngredient(index, {
+                            optional: event.target.checked,
+                          })
+                        }
+                      />
+                      Optional ingredient
+                    </label>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    setIngredients((current) => [...current, blankIngredient()])
+                  }
+                >
+                  Add ingredient
+                </Button>
+              </fieldset>
+            </>
+          )}
           {error && (
             <p className="text-destructive text-sm" role="alert">
               {error}

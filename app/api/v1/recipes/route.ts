@@ -23,7 +23,11 @@ export async function GET() {
   const db = await getConnectedDatabase()
   const drafts = await db
     .collection<RecipeDraftDocument>('recipes')
-    .find({ ownerId: session.user.id, status: 'draft', visibility: 'private' })
+    .find({
+      ownerId: session.user.id,
+      status: { $in: ['draft', 'usable'] },
+      visibility: 'private',
+    })
     .sort({ updatedAt: -1 })
     .toArray()
 

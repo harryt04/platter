@@ -28,7 +28,12 @@ export default async function EditRecipePage({
         title="Edit recipe"
         description="Keep shaping this recipe. It remains private until you explicitly share or publish it."
       />
-      <DraftEditor recipeId={recipeId} initialTitle={draft.title} />
+      <DraftEditor
+        recipeId={recipeId}
+        initialTitle={draft.title}
+        initialTypicalPeopleFed={draft.typicalPeopleFed}
+        initialIngredients={draft.ingredients}
+      />
     </ContentContainer>
   )
 }

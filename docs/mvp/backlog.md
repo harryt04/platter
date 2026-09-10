@@ -467,7 +467,7 @@ current run
 
 **Status:** in progress
 
-- [ ] All current list members can open the categorized checklist, while
+- [x] All current list members can open the categorized checklist, while
       non-members and public visitors cannot.
 - [x] A one-tap check or uncheck updates `Purchased` independently of `Already
       have` and records the acting member.

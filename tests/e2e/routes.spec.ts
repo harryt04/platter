@@ -12,6 +12,18 @@ test('@a11y discovery has one page heading', async ({ page }) => {
   await expect(page.locator('h1')).toHaveCount(1)
 })
 
+test('public visitors are sent to sign in before opening a checklist', async ({
+  page,
+}) => {
+  await page.goto('/lists/public-checklist/shop')
+  await expect(page).toHaveURL(
+    /\/sign-in\?returnTo=%2Flists%2Fpublic-checklist%2Fshop$/,
+  )
+  await expect(
+    page.getByRole('heading', { name: 'Welcome back' }),
+  ).toBeVisible()
+})
+
 test.describe('authenticated list workflow', () => {
   test.skip(
     !process.env.E2E_USER_EMAIL || !process.env.E2E_USER_PASSWORD,
@@ -56,6 +68,59 @@ test.describe('authenticated list workflow', () => {
     await expect(
       page.getByRole('button', { name: 'Start shopping' }),
     ).toBeVisible()
+  })
+
+  test('lets a member open the categorized checklist but denies a non-member', async ({
+    page,
+  }) => {
+    await page.goto('/sign-in')
+    await page
+      .getByRole('textbox', { name: 'Email' })
+      .fill(process.env.E2E_USER_EMAIL!)
+    await page.getByLabel('Password').fill(process.env.E2E_USER_PASSWORD!)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await expect(page).toHaveURL(/\/lists$/)
+
+    await page.goto('/lists/new')
+    await page
+      .getByRole('textbox', { name: 'List name' })
+      .fill(`Checklist access ${Date.now()}`)
+    await page.getByRole('button', { name: 'Create list' }).click()
+    await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
+    const listUrl = page.url()
+    const checklistUrl = `${listUrl}/shop`
+
+    await page.goto(checklistUrl)
+    await expect(
+      page.getByRole('heading', { name: 'Shopping run' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Grocery items', exact: true }),
+    ).toBeVisible()
+
+    const browser = page.context().browser()
+    expect(browser).toBeTruthy()
+    const outsiderContext = await browser!.newContext()
+    const outsiderPage = await outsiderContext.newPage()
+    try {
+      await outsiderPage.goto('/sign-up')
+      await outsiderPage.getByLabel('Name').fill('Checklist outsider')
+      await outsiderPage
+        .getByLabel('Email')
+        .fill(`checklist-outsider-${Date.now()}@localhost.test`)
+      await outsiderPage
+        .getByLabel('Password')
+        .fill('ChecklistOutsiderPassword!2026')
+      await outsiderPage.getByRole('button', { name: 'Create account' }).click()
+      await expect(outsiderPage).toHaveURL(/\/lists$/)
+
+      await outsiderPage.goto(checklistUrl)
+      await expect(
+        outsiderPage.getByRole('heading', { name: 'Page not found' }),
+      ).toBeVisible()
+    } finally {
+      await outsiderContext.close()
+    }
   })
 
   test('adds a four-person recipe for two and six people with explicit actions', async ({

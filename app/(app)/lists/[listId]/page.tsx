@@ -27,13 +27,18 @@ export default async function ListPage({
         title={list.name}
         description="Your current recipe selections and shopping run summary."
         action={
-          list.status === 'active' ? (
-            <Button asChild>
-              <Link href={`/lists/${listId}/review`}>Review at home</Link>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link href={`/lists/${listId}/members`}>Manage members</Link>
             </Button>
-          ) : (
-            <Badge variant="outline">Archived</Badge>
-          )
+            {list.status === 'active' ? (
+              <Button asChild>
+                <Link href={`/lists/${listId}/review`}>Review at home</Link>
+              </Button>
+            ) : (
+              <Badge variant="outline">Archived</Badge>
+            )}
+          </div>
         }
       />
       {list.status === 'archived' && (

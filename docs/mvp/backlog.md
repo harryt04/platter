@@ -62,9 +62,9 @@ let the recipient understand and accept that invitation safely.
 
 **Blocked by:** 01: Create and manage lists
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] An owner can inspect, resend, and revoke an invitation for a specific
+- [x] An owner can inspect, resend, and revoke an invitation for a specific
       list; editors and non-members cannot.
 - [x] Invitation tokens are unguessable, stored safely, scoped to one list, and
       expire after the configured period.

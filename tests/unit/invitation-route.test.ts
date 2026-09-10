@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
-import { POST } from '@/app/api/v1/lists/[listId]/invitations/route'
+import { GET, POST } from '@/app/api/v1/lists/[listId]/invitations/route'
+import {
+  DELETE,
+  POST as RESEND,
+} from '@/app/api/v1/lists/[listId]/invitations/[invitationId]/route'
 
 const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -29,6 +33,22 @@ const list = {
 
 function context(listId: string) {
   return { params: Promise.resolve({ listId }) }
+}
+
+const invitation = {
+  _id: '550e8400-e29b-41d4-a716-446655440000',
+  listId: 'list-1',
+  inviterId: 'owner-1',
+  email: 'guest@example.com',
+  tokenHash: 'stored-hash',
+  status: 'pending' as const,
+  expiresAt: '2026-09-17T12:00:00.000Z' as `${string}`,
+  createdAt: '2026-09-10T12:00:00.000Z' as `${string}`,
+  updatedAt: '2026-09-10T12:00:00.000Z' as `${string}`,
+}
+
+function invitationContext(listId = 'list-1', invitationId = invitation._id) {
+  return { params: Promise.resolve({ listId, invitationId }) }
 }
 
 describe('POST /api/v1/lists/[listId]/invitations', () => {
@@ -148,5 +168,171 @@ describe('POST /api/v1/lists/[listId]/invitations', () => {
       createHash('sha256').update(token).digest('hex'),
     )
     expect(stored).not.toHaveProperty('token')
+  })
+})
+
+describe('GET /api/v1/lists/[listId]/invitations', () => {
+  it('returns invitation metadata only to an owner', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    const invitationCollection = {
+      find: vi.fn().mockReturnValue({
+        sort: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue([invitation]),
+        }),
+      }),
+    }
+    const listCollection = { findOne: vi.fn().mockResolvedValue(list) }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi
+        .fn()
+        .mockReturnValueOnce(listCollection)
+        .mockReturnValue(invitationCollection),
+    })
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/lists/list-1/invitations'),
+      context('list-1'),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      invitations: [
+        {
+          id: invitation._id,
+          listId: 'list-1',
+          email: 'guest@example.com',
+          status: 'pending',
+          expiresAt: invitation.expiresAt,
+        },
+      ],
+    })
+    expect(invitationCollection.find).toHaveBeenCalledWith({ listId: 'list-1' })
+  })
+
+  it('hides invitation metadata from editors', async () => {
+    getSession.mockResolvedValue({ user: { id: 'editor-1' } })
+    const collection = { findOne: vi.fn().mockResolvedValue(null) }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/lists/list-1/invitations'),
+      context('list-1'),
+    )
+
+    expect(response.status).toBe(404)
+    expect((await response.json()).code).toBe('LIST_NOT_FOUND')
+  })
+})
+
+describe('invitation management routes', () => {
+  it('resends a pending invitation with a rotated token and fresh expiry', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    const invitationCollection = {
+      findOne: vi.fn().mockResolvedValue(invitation),
+      findOneAndUpdate: vi.fn().mockImplementation(async (_filter, update) => ({
+        ...invitation,
+        ...update.$set,
+      })),
+    }
+    const listCollection = { findOne: vi.fn().mockResolvedValue(list) }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi
+        .fn()
+        .mockReturnValueOnce(listCollection)
+        .mockReturnValue(invitationCollection),
+    })
+
+    const response = await RESEND(
+      new Request('http://localhost/api/v1/lists/list-1/invitations/id', {
+        method: 'POST',
+      }),
+      invitationContext(),
+    )
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.invitation).toMatchObject({
+      id: invitation._id,
+      email: invitation.email,
+      status: 'pending',
+    })
+    expect(body.invitation.inviteUrl).toMatch(
+      /^http:\/\/localhost:3000\/invitations\/[A-Za-z0-9_-]{43}$/,
+    )
+    const update = invitationCollection.findOneAndUpdate.mock.calls[0][1]
+    expect(update.$set.tokenHash).not.toBe(invitation.tokenHash)
+    expect(update.$set.expiresAt).not.toBe(invitation.expiresAt)
+  })
+
+  it('revokes a pending invitation and does not expose its token', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    const invitationCollection = {
+      findOne: vi.fn().mockResolvedValue(invitation),
+      findOneAndUpdate: vi.fn().mockResolvedValue({
+        ...invitation,
+        status: 'revoked',
+      }),
+    }
+    const listCollection = { findOne: vi.fn().mockResolvedValue(list) }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi
+        .fn()
+        .mockReturnValueOnce(listCollection)
+        .mockReturnValue(invitationCollection),
+    })
+
+    const response = await DELETE(
+      new Request('http://localhost/api/v1/lists/list-1/invitations/id', {
+        method: 'DELETE',
+      }),
+      invitationContext(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      invitation: {
+        id: invitation._id,
+        listId: invitation.listId,
+        email: invitation.email,
+        status: 'revoked',
+        expiresAt: invitation.expiresAt,
+      },
+    })
+    expect(invitationCollection.findOneAndUpdate).toHaveBeenCalledWith(
+      {
+        _id: invitation._id,
+        listId: invitation.listId,
+        status: 'pending',
+      },
+      expect.objectContaining({
+        $set: expect.objectContaining({ status: 'revoked' }),
+      }),
+      { returnDocument: 'after' },
+    )
+  })
+
+  it('rejects management for an accepted invitation', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    const invitationCollection = {
+      findOne: vi.fn().mockResolvedValue({ ...invitation, status: 'accepted' }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi
+        .fn()
+        .mockReturnValueOnce({ findOne: vi.fn().mockResolvedValue(list) })
+        .mockReturnValueOnce(invitationCollection),
+    })
+
+    const response = await RESEND(
+      new Request('http://localhost/api/v1/lists/list-1/invitations/id', {
+        method: 'POST',
+      }),
+      invitationContext(),
+    )
+
+    expect(response.status).toBe(409)
+    expect((await response.json()).code).toBe('INVITATION_NOT_PENDING')
   })
 })

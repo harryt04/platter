@@ -13,13 +13,38 @@ import {
 
 type RouteContext = { params: Promise<{ listId: string }> }
 
-function authenticationRequired() {
+function authenticationRequired(action = 'manage invitations') {
   return problemResponse({
     type: 'https://platter.dev/problems/authentication-required',
     title: 'Authentication required',
     status: 401,
-    detail: 'Sign in to invite someone to a list.',
+    detail: `Sign in to ${action} for a list.`,
     code: 'AUTHENTICATION_REQUIRED',
+  })
+}
+
+export async function GET(_request: Request, context: RouteContext) {
+  const session = await getSession()
+  if (!session) return authenticationRequired('view invitations')
+
+  const { listId } = await context.params
+  if (!listIdSchema.safeParse(listId).success) return listNotFound()
+
+  const db = await getConnectedDatabase()
+  const list = await db
+    .collection<ListDocument>('lists')
+    .findOne(listOwnerFilter(listId, session.user.id))
+  if (!list) return listNotFound()
+
+  const documents = await invitations(
+    db.collection<InvitationDocument>('list_invitations'),
+  )
+    .find({ listId })
+    .sort({ createdAt: -1 })
+    .toArray()
+
+  return Response.json({
+    invitations: documents.map((document) => toInvitationSummary(document)),
   })
 }
 

@@ -16,6 +16,10 @@ export const createInvitationSchema = z.object({
     .max(320, 'Email addresses must be 320 characters or fewer.'),
 })
 
+export const invitationIdSchema = z
+  .string()
+  .uuid('Enter a valid invitation id.')
+
 export type InvitationStatus = 'pending' | 'accepted' | 'revoked'
 
 export type InvitationDocument = {
@@ -36,7 +40,7 @@ export type InvitationSummary = {
   email: string
   status: InvitationStatus
   expiresAt: IsoDateTime
-  inviteUrl: string
+  inviteUrl?: string
 }
 
 export function invitations(collection: Collection<InvitationDocument>) {
@@ -78,14 +82,15 @@ export function createInvitationDocument(
 
 export function toInvitationSummary(
   document: InvitationDocument,
-  inviteUrl: string,
+  inviteUrl?: string,
 ): InvitationSummary {
-  return {
+  const summary: InvitationSummary = {
     id: document._id as EntityId,
     listId: document.listId as EntityId,
     email: document.email,
     status: document.status,
     expiresAt: document.expiresAt,
-    inviteUrl,
   }
+  if (inviteUrl) summary.inviteUrl = inviteUrl
+  return summary
 }

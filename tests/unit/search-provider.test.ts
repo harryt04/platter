@@ -3,12 +3,9 @@ import { MongoRecipeSearchProvider } from '@/lib/search/mongo-provider'
 
 function createDatabase(documents: object[] = []) {
   const cursor = {
-    project: vi.fn().mockReturnThis(),
-    sort: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
     toArray: vi.fn().mockResolvedValue(documents),
   }
-  const collection = { find: vi.fn().mockReturnValue(cursor) }
+  const collection = { aggregate: vi.fn().mockReturnValue(cursor) }
   return {
     db: { collection: vi.fn().mockReturnValue(collection) },
     collection,
@@ -23,16 +20,28 @@ describe('MongoRecipeSearchProvider', () => {
       text: 'soup',
     })
 
-    expect(collection.find).toHaveBeenCalledWith({
-      status: 'usable',
-      visibility: 'public',
-      $or: [
-        { origin: { $exists: false } },
-        { origin: 'authored' },
-        { origin: 'imported', importReviewStatus: 'approved' },
-      ],
-      $text: { $search: 'soup' },
+    const pipeline = collection.aggregate.mock.calls[0][0]
+    expect(pipeline[0]).toEqual({
+      $match: {
+        status: 'usable',
+        visibility: 'public',
+        $or: [
+          { origin: { $exists: false } },
+          { origin: 'authored' },
+          { origin: 'imported', importReviewStatus: 'approved' },
+        ],
+        $text: { $search: 'soup' },
+      },
     })
+    expect(pipeline).toContainEqual({
+      $lookup: {
+        from: 'recipe_saves',
+        localField: '_id',
+        foreignField: 'recipeId',
+        as: 'engagementSaves',
+      },
+    })
+    expect(pipeline).toContainEqual({ $sort: { rankScore: -1, _id: 1 } })
   })
 
   it('scopes private searches to an owner and permits only private drafts', async () => {
@@ -44,10 +53,12 @@ describe('MongoRecipeSearchProvider', () => {
       filters: { visibility: 'private' },
     })
 
-    expect(collection.find).toHaveBeenCalledWith({
-      ownerId: 'user-1',
-      status: { $in: ['draft', 'usable'] },
-      visibility: 'private',
+    expect(collection.aggregate.mock.calls[0][0][0]).toEqual({
+      $match: {
+        ownerId: 'user-1',
+        status: { $in: ['draft', 'usable'] },
+        visibility: 'private',
+      },
     })
   })
 
@@ -59,9 +70,11 @@ describe('MongoRecipeSearchProvider', () => {
       filters: { visibility: 'private' },
     })
 
-    expect(collection.find).toHaveBeenCalledWith({
-      _id: { $in: [] },
-      $text: { $search: 'soup' },
+    expect(collection.aggregate.mock.calls[0][0][0]).toEqual({
+      $match: {
+        _id: { $in: [] },
+        $text: { $search: 'soup' },
+      },
     })
   })
 
@@ -85,7 +98,7 @@ describe('MongoRecipeSearchProvider', () => {
           rightsStatus: 'licensed',
         },
         visibility: 'public',
-        score: 4.25,
+        rankScore: 6.25,
       },
       {
         _id: 'recipe-2',
@@ -112,7 +125,7 @@ describe('MongoRecipeSearchProvider', () => {
         sourceUrl: 'https://example.com/soup',
         sourceAuthor: 'Alex Rivera',
         attribution: 'Adapted with permission.',
-        score: '4.25',
+        score: '6.25',
         visibility: 'public',
         typicalPeopleFed: 4,
         summary: 'A quick soup.',
@@ -132,5 +145,97 @@ describe('MongoRecipeSearchProvider', () => {
         visibility: 'public',
       },
     ])
+  })
+
+  it('uses completeness and capped saves as deterministic ranking inputs', async () => {
+    const { db, collection } = createDatabase()
+
+    await new MongoRecipeSearchProvider(db as never).searchRecipes({
+      text: '',
+      pageSize: 7,
+    })
+
+    const pipeline = collection.aggregate.mock.calls[0][0]
+    expect(pipeline).toContainEqual({
+      $set: {
+        completenessScore: {
+          $add: [
+            {
+              $cond: [
+                { $gt: [{ $size: { $ifNull: ['$ingredients', []] } }, 0] },
+                1,
+                0,
+              ],
+            },
+            {
+              $cond: [
+                { $gt: [{ $size: { $ifNull: ['$instructions', []] } }, 0] },
+                1,
+                0,
+              ],
+            },
+            {
+              $cond: [
+                { $gt: [{ $ifNull: ['$typicalPeopleFed', 0] }, 0] },
+                1,
+                0,
+              ],
+            },
+            {
+              $cond: [
+                { $gt: [{ $strLenCP: { $ifNull: ['$sourceName', ''] } }, 0] },
+                1,
+                0,
+              ],
+            },
+            {
+              $cond: [
+                { $gt: [{ $strLenCP: { $ifNull: ['$description', ''] } }, 0] },
+                1,
+                0,
+              ],
+            },
+            {
+              $cond: [
+                { $gt: [{ $strLenCP: { $ifNull: ['$sourceUrl', ''] } }, 0] },
+                1,
+                0,
+              ],
+            },
+            {
+              $cond: [
+                { $gt: [{ $strLenCP: { $ifNull: ['$attribution', ''] } }, 0] },
+                1,
+                0,
+              ],
+            },
+            {
+              $cond: [
+                { $gt: [{ $strLenCP: { $ifNull: ['$image.url', ''] } }, 0] },
+                1,
+                0,
+              ],
+            },
+          ],
+        },
+      },
+    })
+    expect(pipeline).toContainEqual({
+      $sort: { rankScore: -1, _id: 1 },
+    })
+    expect(pipeline).toContainEqual({
+      $set: {
+        rankScore: {
+          $add: [
+            0,
+            { $multiply: ['$completenessScore', 0.25] },
+            {
+              $multiply: [{ $min: [{ $size: '$engagementSaves' }, 10] }, 0.05],
+            },
+          ],
+        },
+      },
+    })
+    expect(pipeline).toContainEqual({ $limit: 7 })
   })
 })

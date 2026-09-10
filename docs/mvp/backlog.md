@@ -256,7 +256,7 @@ search while keeping source attribution and visibility rules intact.
       by title, ingredient, source, cuisine, tag, and dietary label when present.
 - [x] Results show title, permitted image, source, typical yield, and concise
       summary metadata with visible attribution.
-- [ ] Ranking favors title and ingredient matches, completeness, and allowed
+- [x] Ranking favors title and ingredient matches, completeness, and allowed
       engagement signals without hiding or outweighing source identity.
 - [ ] Filters compose with stable cursor pagination or progressive loading and
       never return private, shared-only, draft, or suppressed recipes.

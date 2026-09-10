@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { loadEnvFile } from 'node:process'
 
 const optionalString = z.preprocess(
   (value) => (value === '' ? undefined : value),
@@ -9,7 +10,9 @@ const serverSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
     .default('development'),
-  MONGODB_URI: z.string().default('mongodb://localhost:27017/?replicaSet=rs0'),
+  MONGODB_URI: z
+    .string()
+    .default('mongodb://127.0.0.1:27017/?directConnection=true'),
   MONGODB_DATABASE: z.string().default('platter_development'),
   BETTER_AUTH_SECRET: z.preprocess(
     (value) => (value === '' ? undefined : value),
@@ -41,9 +44,27 @@ export type ServerEnv = z.infer<typeof serverSchema>
 
 let cached: ServerEnv | undefined
 
+function loadLocalEnvFiles() {
+  for (const file of ['.env.local', '.env']) {
+    try {
+      loadEnvFile(file)
+    } catch (error) {
+      if (
+        !error ||
+        typeof error !== 'object' ||
+        !('code' in error) ||
+        error.code !== 'ENOENT'
+      ) {
+        throw error
+      }
+    }
+  }
+}
+
 export function serverEnv(): ServerEnv {
   if (cached) return cached
 
+  loadLocalEnvFiles()
   const parsed = serverSchema.safeParse(process.env)
   if (!parsed.success) {
     throw new Error(`Invalid server environment: ${parsed.error.message}`)

@@ -8,7 +8,7 @@ const password = process.env.E2E_USER_PASSWORD
 async function main() {
   if (!password)
     throw new Error(
-      'Missing E2E_USER_PASSWORD in .env.test.local or CI environment',
+      'Missing E2E_USER_PASSWORD in the local environment or CI environment',
     )
   try {
     const result = await auth.api.signUpEmail({

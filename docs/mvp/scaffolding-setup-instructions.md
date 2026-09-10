@@ -242,7 +242,7 @@ Create `.env.example` with names and safe local defaults where possible. Keep
 | --- | --- | --- |
 | `APP_URL` | Canonical application URL | Required; local default `http://localhost:3000`. |
 | `NODE_ENV` | Runtime environment | Supplied by the runtime. |
-| `MONGODB_URI` | Mongo replica-set connection | Required; local URI names `rs0`. |
+| `MONGODB_URI` | Mongo replica-set connection | Required; local URI targets the published Mongo port with a direct connection to the single-node `rs0` replica set. |
 | `MONGODB_DATABASE` | Explicit database name | Required; local default `platter_development`. |
 | `BETTER_AUTH_SECRET` | Better Auth encryption/signing secret | Required; example contains no value. |
 | `BETTER_AUTH_URL` | Better Auth base URL | Required; same local origin as the web app. |
@@ -254,7 +254,7 @@ Create `.env.example` with names and safe local defaults where possible. Keep
 | `ALLOWED_ORIGINS` | Web/realtime origin allowlist | Required outside tests. |
 | `POSTHOG_ENABLED` | Explicit analytics opt-in | Default `false`. |
 | `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` | Optional PostHog settings | Required only when enabled. |
-| `E2E_USER_NAME`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` | Local agent/browser account | Present only in ignored `.env.test.local`. |
+| `E2E_USER_NAME`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` | Local agent/browser account | Read from an ignored local `.env` or `.env.local`; fresh clones must populate these values locally. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Future Google sign-in | Documented and unset; no Google button until configured. |
 
 Validate environment variables once in `lib/env`, with separate server-only and
@@ -270,9 +270,11 @@ Docker Compose must:
 4. retain data across normal `services:down`; and
 5. expose a separate test database without embedding production credentials.
 
-The test-user seed reads credentials from `.env.test.local`, creates or updates
-only that local account, and never prints the password. CI creates an ephemeral
-credential instead of relying on a developer's file.
+The test-user seed reads credentials from the loaded local environment (normally
+`.env` or `.env.local`), creates or updates only that local account, and never
+prints the password. CI creates an ephemeral credential instead of relying on a
+developer's file. Keep these values out of commits and other shared
+documentation.
 
 **Complete when:** a new contributor can copy `.env.example`, supply one local
 auth secret, start services, initialize the database, seed a test user, and run

@@ -64,8 +64,15 @@ export function SidebarHeader({
   children,
   className,
 }: React.HTMLAttributes<HTMLDivElement>) {
+  const { open } = useSidebar()
   return (
-    <div className={cn('flex min-h-16 items-center px-3', className)}>
+    <div
+      className={cn(
+        'flex min-h-16 items-center px-3',
+        !open && 'justify-center px-0 [&_.sidebar-label]:hidden',
+        className,
+      )}
+    >
       {children}
     </div>
   )
@@ -129,29 +136,20 @@ export function SidebarMenuButton({
   asChild?: boolean
 }) {
   const { open } = useSidebar()
-  return asChild ? (
-    <div
-      className={cn(
-        'rounded-md',
-        active &&
-          'bg-[var(--sidebar-accent)] text-[var(--sidebar-accent-foreground)]',
-        !open && '[&_.sidebar-label]:hidden',
-      )}
-    >
-      {children}
-    </div>
-  ) : (
-    <button
-      className={cn(
-        'flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm hover:bg-[var(--sidebar-accent)]',
-        active &&
-          'bg-[var(--sidebar-accent)] text-[var(--sidebar-accent-foreground)]',
-        !open && 'justify-center px-0 [&_.sidebar-label]:hidden',
-      )}
-    >
-      {children}
-    </button>
+  const className = cn(
+    'flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm hover:bg-[var(--sidebar-accent)]',
+    active &&
+      'bg-[var(--sidebar-accent)] text-[var(--sidebar-accent-foreground)]',
+    !open && 'justify-center px-0 [&_.sidebar-label]:hidden',
   )
+
+  if (asChild && React.isValidElement<{ className?: string }>(children)) {
+    return React.cloneElement(children, {
+      className: cn(className, children.props.className),
+    })
+  }
+
+  return <button className={className}>{children}</button>
 }
 export function SidebarTrigger() {
   const { open, setOpen, isMobile } = useSidebar()

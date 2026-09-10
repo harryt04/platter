@@ -8,8 +8,8 @@
   "scripts": {
     "dev": "concurrently -k -n web,realtime,worker \"npm:dev:web\" \"npm:dev:realtime\" \"npm:dev:worker\"",
     "dev:web": "next dev",
-    "dev:realtime": "tsx watch server/realtime/index.ts",
-    "dev:worker": "tsx watch server/worker/index.ts",
+    "dev:realtime": "node --import ./scripts/load-env.mjs ./node_modules/tsx/dist/cli.mjs watch server/realtime/index.ts",
+    "dev:worker": "node --import ./scripts/load-env.mjs ./node_modules/tsx/dist/cli.mjs watch server/worker/index.ts",
     "services:up": "docker compose up -d",
     "services:down": "docker compose down",
     "build": "next build --webpack && tsup --config tsup.config.ts",
@@ -26,9 +26,9 @@
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
     "test:a11y": "playwright test --grep @a11y",
-    "db:indexes": "tsx scripts/db/indexes.ts",
-    "db:migrate": "tsx scripts/db/migrate.ts",
-    "db:seed:test-user": "tsx scripts/seed/test-user.ts",
+    "db:indexes": "node --import ./scripts/load-env.mjs ./node_modules/tsx/dist/cli.mjs scripts/db/indexes.ts",
+    "db:migrate": "node --import ./scripts/load-env.mjs ./node_modules/tsx/dist/cli.mjs scripts/db/migrate.ts",
+    "db:seed:test-user": "node --import ./scripts/load-env.mjs ./node_modules/tsx/dist/cli.mjs scripts/seed/test-user.ts",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build",
     "ci": "npm run check"
   },

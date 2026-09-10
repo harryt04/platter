@@ -113,4 +113,42 @@ describe('PurchasedButton', () => {
     expect(screen.getByText('Pending sync')).toBeInTheDocument()
     expect(refresh).not.toHaveBeenCalled()
   })
+
+  it('can undo an offline purchase before synchronization', async () => {
+    offline.browserIsOffline.mockReturnValue(true)
+    offline.queueBrowserMutation.mockResolvedValue({ operationId: 'op-1' })
+
+    render(
+      <PurchasedButton
+        baseRevision={3}
+        ingredientName="rice"
+        itemId="grocery:rice"
+        listId="list-1"
+        marked={false}
+        runId="run-1"
+        userId="user-1"
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mark rice purchased' }))
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Undo purchased for rice' }),
+      ).toBeInTheDocument(),
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Undo purchased for rice' }),
+    )
+    await waitFor(() =>
+      expect(offline.queueBrowserMutation).toHaveBeenCalledTimes(2),
+    )
+    expect(offline.queueBrowserMutation.mock.calls[1]?.[0]).toMatchObject({
+      kind: 'grocery.purchased.undo',
+      payload: { itemId: 'grocery:rice', purchased: false },
+    })
+    expect(
+      screen.getByRole('button', { name: 'Mark rice purchased' }),
+    ).toBeInTheDocument()
+  })
 })

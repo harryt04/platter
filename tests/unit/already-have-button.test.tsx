@@ -122,4 +122,44 @@ describe('AlreadyHaveButton', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Pending sync')).toBeInTheDocument()
   })
+
+  it('can undo an offline already-have decision before synchronization', async () => {
+    offline.browserIsOffline.mockReturnValue(true)
+    offline.queueBrowserMutation.mockResolvedValue({ operationId: 'op-1' })
+
+    render(
+      <AlreadyHaveButton
+        baseRevision={3}
+        ingredientName="rice"
+        itemId="grocery:rice"
+        listId="list-1"
+        marked={false}
+        runId="run-1"
+        userId="user-1"
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mark rice already have' }),
+    )
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Undo already have for rice' }),
+      ).toBeInTheDocument(),
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Undo already have for rice' }),
+    )
+    await waitFor(() =>
+      expect(offline.queueBrowserMutation).toHaveBeenCalledTimes(2),
+    )
+    expect(offline.queueBrowserMutation.mock.calls[1]?.[0]).toMatchObject({
+      kind: 'grocery.already-have.undo',
+      payload: { itemId: 'grocery:rice', alreadyHave: false },
+    })
+    expect(
+      screen.getByRole('button', { name: 'Mark rice already have' }),
+    ).toBeInTheDocument()
+  })
 })

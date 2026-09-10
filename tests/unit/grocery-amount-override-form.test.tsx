@@ -211,4 +211,40 @@ describe('GroceryAmountOverrideForm', () => {
     expect(screen.getByText('Pending sync')).toBeInTheDocument()
     expect(refresh).not.toHaveBeenCalled()
   })
+
+  it('resets an offline amount override locally while queuing the reset', async () => {
+    offline.browserIsOffline.mockReturnValue(true)
+    offline.queueBrowserMutation.mockResolvedValue({ operationId: 'op-1' })
+
+    render(
+      <GroceryAmountOverrideForm
+        baseRevision={3}
+        item={overriddenItem}
+        listId="list-1"
+        runId="run-1"
+        userId="user-1"
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Reset shopping amount for rice' }),
+    )
+
+    await waitFor(() =>
+      expect(offline.queueBrowserMutation).toHaveBeenCalledOnce(),
+    )
+    expect(offline.queueBrowserMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        listId: 'list-1',
+        runId: 'run-1',
+        baseRevision: 3,
+        kind: 'grocery.amount-override.reset',
+        payload: { itemId: overriddenItem.id },
+      }),
+    )
+    expect(screen.getByLabelText('Shopping amount for rice')).toHaveValue(2)
+    expect(screen.getByText('Pending sync')).toBeInTheDocument()
+    expect(refresh).not.toHaveBeenCalled()
+  })
 })

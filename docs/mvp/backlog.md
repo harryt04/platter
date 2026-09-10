@@ -517,7 +517,7 @@ and synchronize it honestly and safely when connectivity returns.
 - [x] Offline Purchased, Already have, and shopping-amount changes are stored
       as user-scoped pending operations with immediate local control feedback;
       reconnect synchronization remains a separate step below.
-- [ ] Offline users can check or uncheck, mark or undo `Already have`, and adjust
+- [x] Offline users can check or uncheck, mark or undo `Already have`, and adjust
       shopping amounts with immediate local feedback.
 - [x] Each queued operation has a unique operation ID, client ID, base revision,
       attempt count, and visible pending, syncing, failed, or synced state.

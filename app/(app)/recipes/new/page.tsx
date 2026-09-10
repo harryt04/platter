@@ -1,11 +1,15 @@
-import { PlaceholderPage } from '@/components/states/placeholder-page'
+import { DraftEditor } from '@/components/recipes/draft-editor'
+import { ContentContainer, PageHeader } from '@/components/shell/page-header'
+
 export default function NewRecipePage() {
   return (
-    <PlaceholderPage
-      title="Create a recipe"
-      description="Capture a title, yield, ingredients, directions, and source details. Save a draft when the details need review."
-      action="Back to my recipes"
-      actionHref="/my-recipes"
-    />
+    <ContentContainer>
+      <PageHeader
+        eyebrow="Private recipe"
+        title="Create a recipe"
+        description="Start with the name of a dish. Your draft stays private while you build it."
+      />
+      <DraftEditor />
+    </ContentContainer>
   )
 }

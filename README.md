@@ -4,10 +4,10 @@ Platter is a mobile-first recipe-to-grocery app you can install on your device. 
 
 ## Project status
 
-The foundation scaffold is in place. Product behavior such as recipe parsing,
-persistence, ingredient normalization, grocery calculations, collaboration,
-and moderation remains intentionally deferred to the feature lanes described in
-the [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
+The foundation scaffold and private title-only recipe drafts are in place.
+Product behavior such as recipe parsing, ingredient normalization, grocery
+calculations, collaboration, and moderation remains intentionally deferred to
+the feature lanes described in the [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
 
 ## Documentation
 
@@ -68,6 +68,7 @@ For the ignored local browser account, create `.env.test.local` with
 | `npm run test:e2e` / `test:a11y` | Run production Playwright or tagged accessibility tests. |
 | `npm run db:indexes` / `db:migrate` | Reconcile indexes or apply the migration ledger. |
 | `npm run check` | Format check, lint, typecheck, tests, and build. |
+| `npm run ci` | Alias for the merge-ready local check. |
 
 See [deployment notes](docs/mvp/deployment.md) for reverse proxy, MongoDB,
 SMTP, analytics, and future Google OAuth guidance.

@@ -122,15 +122,15 @@ a title and safely return to it later.
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** implemented
 
-- [ ] A signed-in user can create, view, rename, and delete their own private
+- [x] A signed-in user can create, view, rename, and delete their own private
       recipe draft.
-- [ ] A title is sufficient to save a draft, but a draft cannot be added to a
+- [x] A title is sufficient to save a draft, but a draft cannot be added to a
       shopping run or exposed through public discovery.
-- [ ] Other users cannot read or mutate the draft merely by knowing its ID.
-- [ ] Deletion uses a named confirmation and returns focus appropriately.
-- [ ] Persistence, authorization, validation, empty-state, and mobile editor
+- [x] Other users cannot read or mutate the draft merely by knowing its ID.
+- [x] Deletion uses a named confirmation and returns focus appropriately.
+- [x] Persistence, authorization, validation, empty-state, and mobile editor
       behavior have automated coverage.
 
 ## 06: Edit complete structured recipes

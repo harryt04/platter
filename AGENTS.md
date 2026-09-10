@@ -3,8 +3,9 @@
 ## Repository Structure
 
 This repo contains the Platter foundation scaffold and product/design plans for
-a mobile-first recipe-to-grocery app. Recipe parsing, persistence, calculations,
-and feature workflows are not implemented in the foundation.
+a mobile-first recipe-to-grocery app. Private title-only recipe draft
+persistence is implemented; recipe parsing, calculations, and the remaining
+feature workflows are still planned in the backlog.
 
 - `README.md` — project overview and documentation entry point.
 - `docs/mvp/prd.md` — main product rules, data model, planned technology, and acceptance checks.

@@ -10,7 +10,8 @@ notes, source attribution, and image provenance, plus list management,
 owner-managed active members, owner-only invitation management, and recipient
 invitation acceptance, ownership-safe member leaving, and recipient invitation
 acceptance with bounded invitation attempts are in place. Recipe drafts also accept optional
-informational nutrition values per person.
+informational nutrition values per person. Signed-in users also receive
+in-product notifications for invitations and member role or removal changes.
 Product behavior such as recipe
 parsing, ingredient normalization, grocery calculations, collaboration, and
 moderation remains intentionally deferred to the feature lanes described in the

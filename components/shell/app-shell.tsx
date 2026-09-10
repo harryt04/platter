@@ -5,6 +5,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 import { OfflineBanner } from '@/components/states/offline-banner'
+import { NotificationBell } from '@/components/notifications/notification-bell'
 
 export function AppShell({
   children,
@@ -22,6 +23,7 @@ export function AppShell({
           <div className="font-data text-muted-foreground text-xs tracking-widest uppercase">
             Prepared utility
           </div>
+          <NotificationBell />
         </header>
         <OfflineBanner />
         <div className="flex-1">{children}</div>

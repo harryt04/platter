@@ -4,6 +4,7 @@ import { problemResponse } from '@/lib/contracts/problem'
 import { listIdSchema, toPlatterList, type ListDocument } from '@/lib/lists'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { z } from 'zod'
+import { safelyCreateUserNotification } from '@/lib/notifications'
 
 type RouteContext = {
   params: Promise<{ listId: string; memberId: string }>
@@ -181,6 +182,13 @@ export async function PATCH(request: Request, context: RouteContext) {
     (candidate) => candidate.userId === memberId,
   )
   if (!member) return memberNotFound()
+  await safelyCreateUserNotification(db, {
+    userId: memberId,
+    event: 'role-changed',
+    listId: updated._id,
+    listName: updated.name,
+    role: member.role,
+  })
   return Response.json({ member, list: toPlatterList(updated) })
 }
 
@@ -220,6 +228,13 @@ export async function DELETE(_request: Request, context: RouteContext) {
       { returnDocument: 'after' },
     )
   if (!updated) return memberNotFound()
+
+  await safelyCreateUserNotification(await getConnectedDatabase(), {
+    userId: memberId,
+    event: 'removed',
+    listId: updated._id,
+    listName: updated.name,
+  })
 
   return Response.json({ list: toPlatterList(updated) })
 }

@@ -107,7 +107,7 @@ ownership
 
 **Status:** ready-for-agent
 
-- [ ] A signed-in user receives an in-product notification for a new invitation
+- [x] A signed-in user receives an in-product notification for a new invitation
       and material membership or ownership changes affecting them.
 - [ ] Notifications link to the relevant list or invitation and can be marked
       read without changing the underlying membership state.

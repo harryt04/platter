@@ -11,6 +11,7 @@ import {
   toInvitationSummary,
   type InvitationDocument,
 } from '@/lib/invitations'
+import { notifyExistingUserByEmail } from '@/lib/notifications'
 
 type RouteContext = { params: Promise<{ listId: string }> }
 
@@ -132,6 +133,12 @@ export async function POST(request: Request, context: RouteContext) {
   await invitations(
     db.collection<InvitationDocument>('list_invitations'),
   ).insertOne(document)
+  await notifyExistingUserByEmail(db, document.email, {
+    event: 'invitation',
+    listId: list._id,
+    listName: list.name,
+    invitationId: document._id,
+  }).catch(() => false)
 
   const inviteUrl = new URL(`/invitations/${token}`, env.APP_URL).toString()
   return Response.json(

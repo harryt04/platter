@@ -92,6 +92,17 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
       },
       { upsert: true },
     )
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      { _id: expect.any(String) },
+      {
+        $setOnInsert: expect.objectContaining({
+          recipeId: 'recipe-1',
+          status: 'usable',
+          versionNumber: 2,
+        }),
+      },
+      { upsert: true },
+    )
   })
 
   it('preserves instruction order and sanitizes saved steps', async () => {

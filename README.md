@@ -72,6 +72,11 @@ version identity, preserving selection order and duplicates without falling
 back to a later mutable recipe version.
 Mongo-backed integration coverage now verifies private, list-shared, and public
 visibility boundaries alongside historical version resolution.
+List owners and editors can now add an accessible usable recipe to an active
+shopping run for a positive whole-person count. Each selection stores its
+immutable recipe version and a high-precision desired-to-typical scale factor;
+public recipe details expose the list and serving-count action for signed-in
+members.
 The signed-in recipe library now combines authored recipes with usable recipes
 shared through the member's current lists, and shared entries remain read-only.
 Signed-in users can also save public recipes to that library without adding

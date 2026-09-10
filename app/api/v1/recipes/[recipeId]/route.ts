@@ -289,6 +289,16 @@ export async function PATCH(request: Request, context: RouteContext) {
     await db
       .collection<RecipeDraftDocument>('recipes')
       .insertOne(updatedVariant)
+    const currentVariantVersion = createRecipeVersionDocument(updatedVariant)
+    const { _id: currentVariantVersionId, ...currentVariantVersionContent } =
+      currentVariantVersion
+    await recipeVersions(
+      db.collection<RecipeVersionDocument>('recipe_versions'),
+    ).updateOne(
+      { _id: currentVariantVersionId },
+      { $setOnInsert: currentVariantVersionContent },
+      { upsert: true },
+    )
     return Response.json({ recipe: toRecipeDraft(updatedVariant) })
   }
   const updateResult = await db
@@ -325,6 +335,15 @@ export async function PATCH(request: Request, context: RouteContext) {
   for (const field of recipeMetadataFields) {
     if (field in unsetFields) Reflect.deleteProperty(updatedDraft, field)
   }
+  const currentVersion = createRecipeVersionDocument(updatedDraft)
+  const { _id: currentVersionId, ...currentVersionContent } = currentVersion
+  await recipeVersions(
+    db.collection<RecipeVersionDocument>('recipe_versions'),
+  ).updateOne(
+    { _id: currentVersionId },
+    { $setOnInsert: currentVersionContent },
+    { upsert: true },
+  )
   return Response.json({
     recipe: toRecipeDraft(updatedDraft),
   })

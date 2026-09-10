@@ -294,11 +294,11 @@ number of people and immediately see correctly scaled grocery requirements.
 **Blocked by:** 01: Create and manage lists; 07: Parse and correct ingredient
 lines; 08: Version recipes and control visibility
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] An owner or editor can select an accessible usable recipe for a positive
+- [x] An owner or editor can select an accessible usable recipe for a positive
       whole number of people; invalid values and drafts are rejected.
-- [ ] The selection pins an immutable recipe version and computes scale as
+- [x] The selection pins an immutable recipe version and computes scale as
       desired people divided by typical people fed.
 - [ ] Decimal calculations retain sufficient precision and do not accumulate
       friendly-display rounding; count suggestions never alter source facts.

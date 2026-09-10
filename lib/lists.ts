@@ -7,6 +7,7 @@ import {
   type IsoDateTime,
 } from '@/lib/contracts/ids'
 import { getConnectedDatabase, getMongoClient } from '@/lib/db/mongo-client'
+import type { RecipeSelectionDocument } from '@/lib/recipes/selections'
 
 const listNameSchema = z
   .string({ error: 'Enter a list name.' })
@@ -40,7 +41,7 @@ export type ShoppingRunDocument = {
   listId: string
   state: 'active'
   revision: number
-  recipeSelections: unknown[]
+  recipeSelections: RecipeSelectionDocument[]
   groceryItems: unknown[]
   manualAdditions: unknown[]
   ordering: unknown[]

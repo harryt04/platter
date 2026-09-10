@@ -7,8 +7,10 @@ import { PublicRecipeAuthPrompt } from '@/components/recipes/public-recipe-auth-
 import { PublicRecipeIngredients } from '@/components/recipes/public-recipe-ingredients'
 import { PublicRecipeProvenance } from '@/components/recipes/public-recipe-provenance'
 import { SavePublicRecipeButton } from '@/components/recipes/save-public-recipe-button'
+import { AddRecipeToListForm } from '@/components/recipes/add-recipe-to-list-form'
 import { getSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
+import { listMembershipFilter, type ListDocument } from '@/lib/lists'
 import {
   publicRecipeFilter,
   toRecipeDraftForViewer,
@@ -34,6 +36,16 @@ export default async function RecipePage({
         recipeId,
       })
     : null
+  const memberLists = session
+    ? await db
+        .collection<ListDocument>('lists')
+        .find({
+          ...listMembershipFilter(session.user.id),
+          status: 'active',
+        })
+        .sort({ updatedAt: -1 })
+        .toArray()
+    : []
   const imageIsPermitted =
     recipe.image &&
     ['user-owned', 'licensed', 'permission-granted'].includes(
@@ -53,6 +65,19 @@ export default async function RecipePage({
           <SavePublicRecipeButton
             initialSaved={Boolean(saved)}
             recipeId={recipe.id}
+          />
+        </div>
+      )}
+      {session && recipe.typicalPeopleFed && memberLists.length > 0 && (
+        <div className="mb-6">
+          <AddRecipeToListForm
+            defaultPeople={recipe.typicalPeopleFed}
+            lists={memberLists.map((list) => ({
+              id: list._id,
+              name: list.name,
+            }))}
+            recipeId={recipe.recipeId}
+            recipeTitle={recipe.title}
           />
         </div>
       )}

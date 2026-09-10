@@ -165,8 +165,10 @@ mobile-friendly editor and make its usable state explicit.
       least one structured ingredient; invalid or zero yield leaves it a draft.
 - [x] Ordered fields can be added, edited, removed, and reordered with pointer
       and keyboard-accessible controls.
-- [ ] User-authored content is validated and sanitized, and active imported
-      content is never rendered.
+- [x] User-authored recipe content is validated and sanitized at the recipe
+      boundary, and rendered as text rather than interpreted markup.
+- [ ] Active imported content is never rendered before the importer has
+      completed its review and visibility checks.
 - [x] Tests cover partial saves, validation recovery, ordering, and the
       draft-to-usable transition.
 

@@ -17,9 +17,9 @@ import {
 
 describe('recipe drafts', () => {
   it('accepts a trimmed title and rejects blank or oversized titles', () => {
-    expect(createDraftSchema.parse({ title: '  Tomato soup  ' }).title).toBe(
-      'Tomato soup',
-    )
+    expect(
+      createDraftSchema.parse({ title: '  Tomato soup\u0000  ' }).title,
+    ).toBe('Tomato soup')
     expect(createDraftSchema.safeParse({ title: ' ' }).success).toBe(false)
     expect(
       createDraftSchema.safeParse({ title: 'x'.repeat(201) }).success,

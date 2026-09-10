@@ -7,14 +7,18 @@ import {
   type IsoDateTime,
 } from '@/lib/contracts/ids'
 
-const recipeTitleSchema = z
-  .string({ error: 'Enter a recipe title.' })
-  .trim()
-  .min(1, 'Enter a recipe title.')
-  .max(200, 'Recipe titles must be 200 characters or fewer.')
-
 const cleanText = (value: string) =>
   value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim()
+
+const recipeTitleSchema = z
+  .string({ error: 'Enter a recipe title.' })
+  .transform(cleanText)
+  .pipe(
+    z
+      .string()
+      .min(1, 'Enter a recipe title.')
+      .max(200, 'Recipe titles must be 200 characters or fewer.'),
+  )
 
 const recipeDescriptionSchema = z
   .string({ error: 'Enter a recipe description.' })

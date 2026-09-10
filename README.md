@@ -157,12 +157,12 @@ fetch stage. The first extraction stage now recognizes Schema.org `Recipe`
 JSON-LD without executing source markup and maps bounded title, yield,
 ingredients, instructions, timing, classification, and source-attribution facts
 into the structured editor candidate shape; missing fields remain explicit
-warnings for review. Preview-ready imports now open an authenticated,
-owner-scoped editor where title, yield, ingredient structure, ordered
-instructions, source facts, attribution, and extracted metadata can be
-corrected before saving a private imported draft. Saving preserves the imported
-origin and pending review state, is safe to retry, and never adds the recipe to
-an active shopping run.
+warnings for review, while safe partial facts remain available. Preview-ready
+imports now open an authenticated, owner-scoped manual-completion editor when
+facts are missing, preserving the extracted title, ingredients, instructions,
+source facts, attribution, and metadata for correction before saving a private
+imported draft. Saving preserves the imported origin and pending review state,
+is safe to retry, and never adds the recipe to an active shopping run.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

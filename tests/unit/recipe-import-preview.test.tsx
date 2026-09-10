@@ -89,4 +89,42 @@ describe('RecipeImportPreview', () => {
       fetchMock.mockRestore()
     })
   })
+
+  it('keeps partial imports in a prefilled manual editor', () => {
+    render(
+      <RecipeImportPreview
+        candidate={{
+          ingredients: [],
+          instructions: [],
+          sourceUrl: candidate.sourceUrl,
+          sourceName: candidate.sourceName,
+          cuisine: 'Mediterranean',
+          warnings: [
+            'The source did not provide a usable title.',
+            'The source did not provide structured ingredients.',
+            'The source did not provide structured instructions.',
+          ],
+        }}
+        importId="b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7"
+      />,
+    )
+
+    expect(
+      screen.getByText(/preserved the safe recipe facts/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/no ingredients were extracted/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/no instructions were extracted/i),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Source name')).toHaveValue('Example Recipes')
+    expect(screen.getByLabelText('Cuisine')).toHaveValue('Mediterranean')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add ingredient' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add instruction' }))
+
+    expect(screen.getByLabelText('Ingredient name')).toHaveValue('')
+    expect(screen.getByLabelText('Instruction 1')).toHaveValue('')
+  })
 })

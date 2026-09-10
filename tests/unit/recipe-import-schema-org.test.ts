@@ -83,11 +83,19 @@ describe('Schema.org recipe import adapter', () => {
     const html = `<script type="application/ld+json">{
       "@type": "Recipe",
       "name": "No Yield Soup",
+      "recipeCuisine": "Mediterranean",
       "recipeIngredient": ["salt to taste"]
+      ,"keywords": "weeknight, soup",
+      "author": {"name": "Avery Cook"},
+      "publisher": {"name": "Example Recipes"}
     }</script>`
 
     expect(extractSchemaOrgRecipe(html, sourceUrl)).toMatchObject({
       title: 'No Yield Soup',
+      cuisine: 'Mediterranean',
+      tags: ['weeknight', 'soup'],
+      sourceAuthor: 'Avery Cook',
+      sourceName: 'Example Recipes',
       ingredients: [
         expect.objectContaining({
           originalText: 'salt to taste',

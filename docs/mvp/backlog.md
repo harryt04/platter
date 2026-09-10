@@ -636,7 +636,7 @@ secure import
       structured editor.
 - [x] The preview lets the user correct title, typical yield, ingredient
       structure, ordered instructions, source facts, and attribution before save.
-- [ ] Partial extraction preserves every safe useful field and opens a prefilled
+- [x] Partial extraction preserves every safe useful field and opens a prefilled
       manual editor instead of discarding data.
 - [x] Hostile markup is sanitized and cannot execute or inject active content;
       unsupported editorial prose is not copied into the normalized record.

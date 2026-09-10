@@ -50,7 +50,7 @@ Recipe calculation, merging, and synchronization are the product’s core promis
 | Override retained after recalculation | `Your shopping amount stays at 2 lb. Your selected recipes now call for 3 lb.` |
 | Already have | `Marked already have. It’s hidden from your buy view.` |
 | Restore | `Added back to your buy view.` |
-| Imported data needs correction | `We found ingredients and instructions. Review the details before saving.` |
+| Imported data needs correction | `We preserved the safe recipe facts we could extract. Add or correct the missing fields before saving.` |
 | Offline operation | `Saved on this device. We’ll sync it when you’re back online.` |
 | Reconciliation | `This item changed while you were offline. Showing the latest shared version.` |
 | Shared destructive change | `Removing Tacos will remove 6 grocery contributions from the Family run.` |

@@ -177,6 +177,13 @@ export function RecipeImportPreview({
               className="border-warning/50 bg-warning/10 space-y-2 rounded-md border p-3 text-sm"
               role="status"
             >
+              <p className="font-medium">
+                Complete this imported recipe manually
+              </p>
+              <p>
+                We preserved the safe recipe facts we could extract. Add or
+                correct the missing fields below before saving.
+              </p>
               <p className="font-medium">Review these missing source facts</p>
               <ul className="list-disc space-y-1 pl-5">
                 {candidate.warnings.map((warning) => (
@@ -317,6 +324,12 @@ export function RecipeImportPreview({
           <CardTitle>Ingredients</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {ingredients.length === 0 && (
+            <p className="text-muted-foreground text-sm" role="status">
+              No ingredients were extracted. Add the ingredients manually to
+              save this recipe.
+            </p>
+          )}
           {ingredients.map((ingredient, index) => (
             <fieldset className="space-y-3 rounded-md border p-3" key={index}>
               <legend className="px-1 text-sm font-medium">
@@ -435,6 +448,12 @@ export function RecipeImportPreview({
           <CardTitle>Instructions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {instructions.length === 0 && (
+            <p className="text-muted-foreground text-sm" role="status">
+              No instructions were extracted. Add the cooking steps manually to
+              save this recipe.
+            </p>
+          )}
           {instructions.map((instruction, index) => (
             <fieldset className="space-y-2 rounded-md border p-3" key={index}>
               <legend className="px-1 text-sm font-medium">

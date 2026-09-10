@@ -21,7 +21,11 @@ import {
   recipeImportIdSchema,
   type RecipeImportDocument,
 } from '@/lib/recipe-imports'
-import { findExistingPublicImportedRecipe } from '@/lib/recipes/import-deduplication'
+import {
+  findExistingPublicImportedRecipe,
+  isExactImportedContent,
+  isRelatedImportedContent,
+} from '@/lib/recipes/import-deduplication'
 import { z } from 'zod'
 
 const importPreviewSaveSchema = z.object({
@@ -35,6 +39,7 @@ const importPreviewSaveSchema = z.object({
   instructions: z
     .array(recipeInstructionSchema)
     .max(100, 'Recipes can have 100 instructions or fewer.'),
+  acceptRelatedVersion: z.boolean().optional().default(false),
 })
 
 function authenticationRequired() {
@@ -80,6 +85,12 @@ function notReady() {
 function createImportProvenance(
   source: RecipeImportDocument,
   importedAt: ReturnType<typeof isoDateTime>,
+  relationship: 'source-original' | 'source-update' = 'source-original',
+  relatedRecipe?: {
+    id: string
+    versionId?: string
+    versionNumber?: number
+  },
 ): RecipeImportProvenanceDocument | undefined {
   if (!source.contentFingerprint) return undefined
 
@@ -110,7 +121,18 @@ function createImportProvenance(
     acquiredAt: source.acquiredAt ?? source.updatedAt,
     acquisitionMethod: source.acquisitionMethod ?? 'server-fetch',
     contentFingerprint: source.contentFingerprint,
-    versionRelationship: 'source-original',
+    versionRelationship: relationship,
+    ...(relatedRecipe
+      ? {
+          relatedRecipeId: relatedRecipe.id,
+          ...(relatedRecipe.versionId
+            ? { relatedVersionId: relatedRecipe.versionId }
+            : {}),
+          ...(relatedRecipe.versionNumber
+            ? { relatedVersionNumber: relatedRecipe.versionNumber }
+            : {}),
+        }
+      : {}),
     rightsStatus: source.rightsStatus ?? 'unknown',
   }
 }
@@ -163,7 +185,11 @@ export async function POST(
   }
 
   const existingRecipe = await findExistingPublicImportedRecipe(db, source)
-  if (existingRecipe) {
+  const isExactDuplicate =
+    existingRecipe && isExactImportedContent(source, existingRecipe)
+  const isRelatedVersion =
+    existingRecipe && isRelatedImportedContent(source, existingRecipe)
+  if (isExactDuplicate || (existingRecipe && !isRelatedVersion)) {
     return problemResponse({
       type: 'https://platter.dev/problems/import-duplicate',
       title: 'Public recipe already exists',
@@ -172,6 +198,25 @@ export async function POST(
         'A public recipe from this source already exists. Review it before saving another imported recipe.',
       code: 'IMPORT_DUPLICATE',
       existingRecipe,
+    })
+  }
+  if (isRelatedVersion && !parsed.data.acceptRelatedVersion) {
+    return problemResponse({
+      type: 'https://platter.dev/problems/import-related-version',
+      title: 'Source has a newer recipe version',
+      status: 409,
+      detail:
+        'This source has changed since the public recipe was imported. Confirm the related source version before saving it.',
+      code: 'IMPORT_RELATED_VERSION',
+      relatedRecipe: {
+        id: existingRecipe.id,
+        title: existingRecipe.title,
+        ...(existingRecipe.sourceUrl
+          ? { sourceUrl: existingRecipe.sourceUrl }
+          : {}),
+        versionNumber: existingRecipe.versionNumber ?? 1,
+        relationship: 'source-update',
+      },
     })
   }
 
@@ -192,7 +237,18 @@ export async function POST(
     dietaryLabels: parsed.data.dietaryLabels ?? undefined,
     image: parsed.data.image ?? undefined,
     nutrition: parsed.data.nutrition ?? undefined,
-    importProvenance: createImportProvenance(source, isoDateTime(new Date())),
+    importProvenance: createImportProvenance(
+      source,
+      isoDateTime(new Date()),
+      isRelatedVersion ? 'source-update' : 'source-original',
+      isRelatedVersion
+        ? {
+            id: existingRecipe.id,
+            versionId: existingRecipe.versionId,
+            versionNumber: existingRecipe.versionNumber,
+          }
+        : undefined,
+    ),
     ingredients: parsed.data.ingredients,
     instructions: parsed.data.instructions,
   })

@@ -168,7 +168,10 @@ that provenance is copied to the immutable recipe version. Saving preserves the
 imported origin and pending review state, is safe to retry, and never adds the
 recipe to an active shopping run. Preview saves now compare canonical URLs and
 content fingerprints against approved public imports and link the user to an
-existing public recipe instead of silently creating a duplicate.
+existing public recipe instead of silently creating a duplicate. When the
+canonical source has changed, the preview identifies the existing recipe and
+version, requires explicit confirmation, and records the new draft as a
+related source update without replacing the existing recipe.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

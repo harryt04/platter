@@ -660,7 +660,7 @@ recipe data
       fingerprint, version relationship, and known rights metadata.
 - [x] Canonical URL and fingerprint checks reuse or propose the existing public
       recipe instead of silently creating a duplicate.
-- [ ] Materially different content may create a related immutable version, with
+- [x] Materially different content may create a related immutable version, with
       the source and relationship visible before confirmation.
 - [ ] A successful import becomes discoverable to other users and appears in
       the importer's library, but never changes an active run automatically.

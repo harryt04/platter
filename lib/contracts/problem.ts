@@ -14,6 +14,15 @@ export const problemSchema = z.object({
       sourceUrl: z.string().url().optional(),
     })
     .optional(),
+  relatedRecipe: z
+    .object({
+      id: z.string().min(1),
+      title: z.string().min(1),
+      sourceUrl: z.string().url().optional(),
+      versionNumber: z.number().int().positive(),
+      relationship: z.literal('source-update'),
+    })
+    .optional(),
 })
 
 export type Problem = z.infer<typeof problemSchema>

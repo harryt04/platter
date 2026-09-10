@@ -209,4 +209,56 @@ describe('POST /api/v1/imports/[importId]/save', () => {
     expect(recipes.insertOne).not.toHaveBeenCalled()
     expect(versions.insertOne).not.toHaveBeenCalled()
   })
+
+  it('requires confirmation before saving a changed source as a related version', async () => {
+    const existingRecipe = {
+      _id: 'existing-public-recipe',
+      recipeId: 'existing-public-recipe',
+      versionId: 'existing-public-version-2',
+      versionNumber: 2,
+      title: 'Existing soup',
+      sourceUrl: source.canonicalUrl,
+      importProvenance: {
+        canonicalUrl: source.canonicalUrl,
+        contentFingerprint: `sha256:${'b'.repeat(64)}`,
+      },
+    }
+    const { recipes, versions } = setup(source, existingRecipe)
+    const body = {
+      title: 'Updated soup',
+      typicalPeopleFed: 4,
+      ingredients: source.preview.ingredients,
+      instructions: source.preview.instructions,
+    }
+
+    const proposal = await POST(request(body), {
+      params: Promise.resolve({ importId }),
+    })
+
+    expect(proposal.status).toBe(409)
+    expect(await proposal.json()).toMatchObject({
+      code: 'IMPORT_RELATED_VERSION',
+      relatedRecipe: {
+        id: existingRecipe._id,
+        title: existingRecipe.title,
+        versionNumber: 2,
+        relationship: 'source-update',
+      },
+    })
+    expect(recipes.insertOne).not.toHaveBeenCalled()
+
+    const confirmed = await POST(
+      request({ ...body, acceptRelatedVersion: true }),
+      { params: Promise.resolve({ importId }) },
+    )
+
+    expect(confirmed.status).toBe(201)
+    expect((await confirmed.json()).recipe.importProvenance).toMatchObject({
+      versionRelationship: 'source-update',
+      relatedRecipeId: existingRecipe._id,
+      relatedVersionId: existingRecipe.versionId,
+      relatedVersionNumber: existingRecipe.versionNumber,
+    })
+    expect(versions.insertOne).toHaveBeenCalledOnce()
+  })
 })

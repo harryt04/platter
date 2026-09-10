@@ -6,6 +6,10 @@ export type ExistingPublicImportedRecipe = {
   id: string
   title: string
   sourceUrl?: string
+  canonicalUrl?: string
+  contentFingerprint?: string
+  versionId?: string
+  versionNumber?: number
 }
 
 /**
@@ -39,7 +43,18 @@ export async function findExistingPublicImportedRecipe(
       importReviewStatus: 'approved',
       $or: identityFilters,
     },
-    { projection: { _id: 1, title: 1, sourceUrl: 1 } },
+    {
+      projection: {
+        _id: 1,
+        title: 1,
+        sourceUrl: 1,
+        recipeId: 1,
+        versionId: 1,
+        versionNumber: 1,
+        'importProvenance.canonicalUrl': 1,
+        'importProvenance.contentFingerprint': 1,
+      },
+    },
   )
 
   if (!recipe) return null
@@ -47,5 +62,46 @@ export async function findExistingPublicImportedRecipe(
     id: recipe._id,
     title: recipe.title,
     ...(recipe.sourceUrl ? { sourceUrl: recipe.sourceUrl } : {}),
+    ...(recipe.importProvenance?.canonicalUrl
+      ? { canonicalUrl: recipe.importProvenance.canonicalUrl }
+      : {}),
+    ...(recipe.importProvenance?.contentFingerprint
+      ? { contentFingerprint: recipe.importProvenance.contentFingerprint }
+      : {}),
+    ...(recipe.versionId ? { versionId: recipe.versionId } : {}),
+    ...(recipe.versionNumber ? { versionNumber: recipe.versionNumber } : {}),
   }
+}
+
+export function isExactImportedContent(
+  source: Pick<RecipeImportDocument, 'canonicalUrl' | 'contentFingerprint'>,
+  existing: ExistingPublicImportedRecipe,
+) {
+  if (
+    source.contentFingerprint &&
+    existing.contentFingerprint &&
+    source.contentFingerprint === existing.contentFingerprint
+  ) {
+    return true
+  }
+
+  return Boolean(
+    source.canonicalUrl &&
+    existing.canonicalUrl &&
+    source.canonicalUrl === existing.canonicalUrl &&
+    !source.contentFingerprint,
+  )
+}
+
+export function isRelatedImportedContent(
+  source: Pick<RecipeImportDocument, 'canonicalUrl' | 'contentFingerprint'>,
+  existing: ExistingPublicImportedRecipe,
+) {
+  return Boolean(
+    source.canonicalUrl &&
+    source.contentFingerprint &&
+    existing.canonicalUrl === source.canonicalUrl &&
+    existing.contentFingerprint &&
+    existing.contentFingerprint !== source.contentFingerprint,
+  )
 }

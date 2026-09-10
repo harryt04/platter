@@ -159,4 +159,54 @@ describe('RecipeImportPreview', () => {
       screen.getByRole('link', { name: 'Open existing recipe' }),
     ).toHaveAttribute('href', '/recipes/existing-recipe')
   })
+
+  it('requires confirmation before saving a changed source version', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          detail: 'Confirm the related source version.',
+          relatedRecipe: {
+            id: 'existing-recipe',
+            title: 'Existing soup',
+            versionNumber: 2,
+            sourceUrl: 'https://example.com/recipe',
+          },
+        }),
+        { status: 409 },
+      ),
+    )
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ recipe: { id: 'updated-recipe' } }), {
+        status: 201,
+      }),
+    )
+    render(
+      <RecipeImportPreview
+        candidate={candidate}
+        importId="b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7"
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Save private recipe draft' }),
+    )
+    expect(
+      await screen.findByText('This source has changed'),
+    ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Confirm related source version' }),
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Save related source version' }),
+    )
+
+    await vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(
+        JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body)),
+      ).toMatchObject({ acceptRelatedVersion: true })
+      expect(push).toHaveBeenCalledWith('/recipes/updated-recipe/edit')
+    })
+  })
 })

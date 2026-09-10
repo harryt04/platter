@@ -253,7 +253,10 @@ export type RecipeImportProvenanceDocument = {
   acquiredAt: IsoDateTime
   acquisitionMethod: 'server-fetch'
   contentFingerprint: string
-  versionRelationship: 'source-original'
+  versionRelationship: 'source-original' | 'source-update'
+  relatedRecipeId?: string
+  relatedVersionId?: string
+  relatedVersionNumber?: number
   rightsStatus: 'unknown' | 'licensed' | 'permission-granted'
 }
 

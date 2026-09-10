@@ -83,6 +83,14 @@ export function RecipeImportPreview({
     id: string
     title: string
   } | null>(null)
+  const [relatedRecipe, setRelatedRecipe] = React.useState<{
+    id: string
+    title: string
+    versionNumber: number
+    sourceUrl?: string
+  } | null>(null)
+  const [acceptedRelatedVersion, setAcceptedRelatedVersion] =
+    React.useState(false)
   const timeFields = [
     {
       id: 'import-preview-prep-time',
@@ -140,6 +148,7 @@ export function RecipeImportPreview({
           dietaryLabels: splitLabels(dietaryLabels),
           ingredients,
           instructions,
+          acceptRelatedVersion: acceptedRelatedVersion,
         }),
       })
       const body = (await response.json()) as {
@@ -147,14 +156,22 @@ export function RecipeImportPreview({
         recipe?: { id: string }
         recipeId?: string
         existingRecipe?: { id: string; title: string }
+        relatedRecipe?: {
+          id: string
+          title: string
+          versionNumber: number
+          sourceUrl?: string
+        }
       }
       if (!response.ok) {
         setExistingRecipe(body.existingRecipe ?? null)
+        setRelatedRecipe(body.relatedRecipe ?? null)
         throw new Error(
           body.detail ?? 'The imported recipe could not be saved.',
         )
       }
       setExistingRecipe(null)
+      setRelatedRecipe(null)
       const recipeId = body.recipe?.id ?? body.recipeId
       if (recipeId) router.push(`/recipes/${recipeId}/edit`)
     } catch (caught) {
@@ -558,9 +575,42 @@ export function RecipeImportPreview({
             </Button>
           </div>
         )}
+        {relatedRecipe && (
+          <div
+            className="border-warning/50 bg-warning/10 space-y-3 rounded-md border p-3"
+            role="alert"
+          >
+            <p className="font-medium">This source has changed</p>
+            <p className="text-sm">
+              The source matches {relatedRecipe.title}, version{' '}
+              {relatedRecipe.versionNumber}, but its content fingerprint is
+              different. Confirming will save a related immutable source
+              version; it will not replace the existing recipe.
+            </p>
+            {relatedRecipe.sourceUrl && (
+              <p className="font-data text-muted-foreground text-xs break-all">
+                {relatedRecipe.sourceUrl}
+              </p>
+            )}
+            <Button
+              onClick={() => {
+                setAcceptedRelatedVersion(true)
+                setError(null)
+              }}
+              type="button"
+              variant="outline"
+            >
+              Confirm related source version
+            </Button>
+          </div>
+        )}
         <Button disabled={busy || Boolean(savedRecipeId)} type="submit">
           <Save aria-hidden size={16} />
-          {busy ? 'Saving recipe…' : 'Save private recipe draft'}
+          {busy
+            ? 'Saving recipe…'
+            : acceptedRelatedVersion
+              ? 'Save related source version'
+              : 'Save private recipe draft'}
         </Button>
       </div>
     </form>

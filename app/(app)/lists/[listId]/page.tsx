@@ -18,6 +18,7 @@ import {
   type RecipeShareDocument,
 } from '@/lib/recipes/drafts'
 import { generateGroceryItems } from '@/lib/recipes/groceries'
+import { RealtimeRunSync } from '@/components/states/realtime-run-sync'
 
 export default async function ListPage({
   params,
@@ -97,6 +98,11 @@ export default async function ListPage({
           owner unarchives it.
         </p>
       )}
+      <RealtimeRunSync
+        listId={listId}
+        revision={run?.revision ?? 0}
+        runId={run?._id ?? list.activeRunId}
+      />
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>

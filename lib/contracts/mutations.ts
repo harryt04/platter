@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import type { DecimalString, EntityId, IsoDateTime } from './ids'
 
 export interface MutationMetadata {
@@ -68,6 +69,40 @@ export interface RealtimeRunMutationEvent {
   actorId: string
   occurredAt: IsoDateTime
 }
+
+const realtimeRunMutationEventTypes = [
+  'grocery.purchased.marked',
+  'grocery.purchased.undone',
+  'grocery.already-have.marked',
+  'grocery.already-have.undone',
+  'grocery.amount-override.set',
+  'grocery.amount-override.reset',
+  'grocery.manual-item.added',
+  'grocery.manual-item.updated',
+  'grocery.manual-item.removed',
+  'grocery.category.changed',
+  'grocery.item.moved',
+  'grocery.category.moved',
+  'grocery.merge-split',
+  'recipe.selection.added',
+  'recipe.selection.people-changed',
+  'recipe.selection.removed',
+  'recipe.selection.duplicated',
+  'recipe.selection.repinned',
+] as const
+
+/** Validate untrusted Socket.IO payloads before they can trigger a refresh. */
+export const realtimeRunMutationEventSchema = z
+  .object({
+    type: z.enum(realtimeRunMutationEventTypes),
+    listId: z.string().min(1),
+    runId: z.string().min(1),
+    revision: z.number().int().nonnegative(),
+    operationId: z.string().min(1),
+    actorId: z.string().min(1),
+    occurredAt: z.string().datetime(),
+  })
+  .strict()
 
 export interface QueuedOperation {
   operationId: string

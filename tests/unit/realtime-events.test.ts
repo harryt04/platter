@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { publishRunMutationEvent } from '@/lib/realtime/events'
+import { realtimeRunMutationEventSchema } from '@/lib/contracts/mutations'
 
 const { Emitter } = vi.hoisted(() => ({
   Emitter: vi.fn(),
@@ -8,6 +9,24 @@ const { Emitter } = vi.hoisted(() => ({
 vi.mock('@socket.io/mongo-emitter', () => ({ Emitter }))
 
 describe('realtime run mutation events', () => {
+  it('accepts the content-free client event envelope and rejects extra content', () => {
+    const event = {
+      type: 'grocery.purchased.marked',
+      listId: 'list-1',
+      runId: 'run-1',
+      revision: 7,
+      operationId: 'operation-1',
+      actorId: 'member-1',
+      occurredAt: '2026-09-10T12:00:00.000Z',
+    }
+
+    expect(realtimeRunMutationEventSchema.safeParse(event).success).toBe(true)
+    expect(
+      realtimeRunMutationEventSchema.safeParse({ ...event, ingredient: 'rice' })
+        .success,
+    ).toBe(false)
+  })
+
   it('persists and publishes a typed, content-free event to the list room', async () => {
     const insertOne = vi.fn().mockResolvedValue({ acknowledged: true })
     const emit = vi.fn()

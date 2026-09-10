@@ -26,6 +26,7 @@ import { GroceryCategoryOrderSection } from '@/components/lists/grocery-category
 import { ShoppingModeNavigation } from '@/components/lists/shopping-mode-navigation'
 import { groupGroceryItemsByCategoryOrder } from '@/lib/recipes/grocery-categories'
 import { PurchasedButton } from '@/components/lists/purchased-button'
+import { RealtimeRunSync } from '@/components/states/realtime-run-sync'
 
 export default async function ReviewPage({
   params,
@@ -79,6 +80,11 @@ export default async function ReviewPage({
           unarchives it.
         </p>
       )}
+      <RealtimeRunSync
+        listId={listId}
+        revision={run?.revision ?? 0}
+        runId={run?._id ?? list.activeRunId}
+      />
       <PageSection title="Grocery items">
         {groceryItems.length > 0 ? (
           <div className="space-y-6">

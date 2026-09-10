@@ -494,7 +494,7 @@ active checklist
       mutation advances an authoritative run revision and emits a typed event.
 - [x] Realtime handshakes and every room join authenticate the session and
       authorize current membership; knowing a list ID grants no access.
-- [ ] A second connected client reflects accepted changes within two seconds at
+- [x] A second connected client reflects accepted changes within two seconds at
       the 95th percentile under the expected test load.
 - [ ] Missed, duplicate, and out-of-order events cause snapshot or delta recovery
       rather than treating events as durable state.

@@ -27,6 +27,7 @@ import { GroceryItemOrderControls } from '@/components/lists/grocery-item-order-
 import { GroceryCategoryOrderSection } from '@/components/lists/grocery-category-order-section'
 import { groupGroceryItemsByCategoryOrder } from '@/lib/recipes/grocery-categories'
 import { PurchasedButton } from '@/components/lists/purchased-button'
+import { RealtimeRunSync } from '@/components/states/realtime-run-sync'
 
 export default async function ShopPage({
   params,
@@ -97,6 +98,11 @@ export default async function ShopPage({
       )}
       <div className="mb-6">
         <SyncStatus state="synced" />
+        <RealtimeRunSync
+          listId={listId}
+          revision={run?.revision ?? 0}
+          runId={run?._id ?? list.activeRunId}
+        />
       </div>
       <PageSection title="Grocery items">
         {buyGroceryItems.length > 0 ? (

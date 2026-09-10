@@ -167,8 +167,10 @@ visitors are sent to sign in and non-members receive a not-found response.
 Accepted checklist and shared grocery mutations now advance the active-run
 revision and publish content-free typed events with the list, run, operation,
 actor, and authoritative revision. Event delivery is best effort after the
-database write; the active run remains the source of truth while connected
-client recovery is completed in the realtime collaboration work. Realtime
+database write; the active run remains the source of truth. Connected list,
+review, and shopping views join the authorized list room and refresh when a
+newer matching active-run event arrives, so another shopper's accepted change
+is reflected without manual reload. Realtime
 handshakes and every list-room join revalidate the Better Auth session before
 checking current list membership, so a known list ID cannot grant access.
 The active run also shares a temporary within-category item order: members can

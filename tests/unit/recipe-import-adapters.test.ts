@@ -133,6 +133,31 @@ describe('recipe import adapter contract', () => {
     expect(siteAdapter.extract).toHaveBeenCalledOnce()
   })
 
+  it('falls through to generic extraction when an enabled site adapter fails', () => {
+    const siteAdapter = {
+      adapterId: 'generic-html' as const,
+      supports: () => true,
+      extract: vi.fn().mockReturnValue({
+        failure: { code: 'ADAPTER_FAILED' as const },
+      }),
+    }
+
+    const result = selectRecipeImportAdapter(
+      {
+        ...content,
+        body: '<h1>Fallback soup</h1><span itemprop="recipeIngredient">1 cup carrots</span>',
+      },
+      { supportedAdapters: [siteAdapter] },
+    )
+
+    expect(result).toMatchObject({
+      kind: 'partial',
+      adapterId: 'generic-html',
+      candidate: { title: 'Fallback soup' },
+    })
+    expect(siteAdapter.extract).toHaveBeenCalledOnce()
+  })
+
   it('skips disabled site adapters and uses generic HTML facts', () => {
     const disabledAdapter = {
       adapterId: 'generic-html' as const,

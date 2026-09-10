@@ -46,3 +46,32 @@ If a refresh receives HTTP 404 or 410, the import is terminally marked with
 `SOURCE_UNAVAILABLE`; the saved normalized recipe and its provenance remain
 available, while the current recipe record records the source status and check
 time. A later successful refresh marks the source available again.
+
+### Adapter contract, fallback order, and fixtures
+
+The adapter boundary is intentionally narrow: `RecipeImportAdapterContent`
+contains only the final URL, response content type, bounded response body, and
+byte length from the SSRF-safe fetch stage. An adapter must return one of:
+
+- a normalized candidate that is ready for review;
+- a partial candidate with explicit warnings; or
+- a typed failure that is isolated to the current import.
+
+Selection is deterministic. It tries the built-in `schema-org-json-ld` adapter,
+then enabled site adapters in registry order, and finally `generic-html`.
+Schema.org or site-adapter failures do not bypass the fetch boundary, and a
+disabled or failed adapter never blocks manual recipes, saved recipes,
+discovery, or shopping. The worker reads
+`RECIPE_IMPORT_DISABLED_ADAPTERS` from the process environment; changing that
+setting requires restarting the worker process. The web process, realtime
+process, and core shopping paths do not depend on an adapter being enabled.
+
+The executable contract and fallback tests live in
+[`tests/unit/recipe-import-adapters.test.ts`](../../tests/unit/recipe-import-adapters.test.ts);
+worker-level deployment configuration and isolated-failure tests live in
+[`tests/unit/recipe-import-worker.test.ts`](../../tests/unit/recipe-import-worker.test.ts).
+Those tests use inline synthetic HTML and JSON-LD authored for Platter. They
+copy no external recipe prose, images, or datasets, and therefore carry no
+third-party license or attribution requirement. Any future external fixture
+must record its source, license or permission, and attribution next to the
+fixture before it is added to the test suite.

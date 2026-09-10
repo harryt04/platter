@@ -689,7 +689,7 @@ imports
       the typed job registry without duplicate saves.
 - [x] A disappeared source leaves the normalized recipe and provenance intact
       and can be marked unavailable when detected.
-- [ ] Adapter contract, fallback order, deployment behavior, and fixture rights
+- [x] Adapter contract, fallback order, deployment behavior, and fixture rights
       are documented and tested.
 
 ## 30: Enforce imported-content rights and provenance

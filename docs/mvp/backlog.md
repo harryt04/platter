@@ -446,7 +446,7 @@ order while allowing that list's members to adapt it temporarily.
 
 - [x] Every grocery item receives a documented default category, with uncertain
       or uncategorized items placed in `Other`.
-- [ ] Categories use the default store-adjacency order and items use a stable
+- [x] Categories use the default store-adjacency order and items use a stable
       deterministic order within each category.
 - [ ] Members can recategorize items and reorder categories or items for the
       current run using pointer, keyboard, and button-based controls.

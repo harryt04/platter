@@ -22,6 +22,10 @@ import { notFound } from 'next/navigation'
 import { GroceryAmountOverrideForm } from '@/components/lists/grocery-amount-override-form'
 import { ManualGroceryItems } from '@/components/lists/manual-grocery-items'
 import { ShoppingModeNavigation } from '@/components/lists/shopping-mode-navigation'
+import {
+  groupGroceryItemsByDefaultCategory,
+  groceryCategoryDefinitions,
+} from '@/lib/recipes/grocery-categories'
 
 export default async function ShopPage({
   params,
@@ -57,6 +61,7 @@ export default async function ShopPage({
   const buyGroceryItems = groceryItems.filter(
     (item) => !alreadyHaveItemIds.has(item.id),
   )
+  const groceryItemGroups = groupGroceryItemsByDefaultCategory(buyGroceryItems)
 
   return (
     <ContentContainer>
@@ -86,26 +91,37 @@ export default async function ShopPage({
       </div>
       <PageSection title="Grocery items">
         {buyGroceryItems.length > 0 ? (
-          <div className="space-y-3">
-            {buyGroceryItems.map((item) => (
-              <div className="space-y-2" key={item.id}>
-                <GroceryRow
-                  item={item}
-                  category="Other"
-                  mergeSuggestions={mergeSuggestions.filter(
-                    (suggestion) => suggestion.left.id === item.id,
-                  )}
-                  baseRevision={run?.revision}
-                  listId={listId}
-                  editable={!isReadOnly}
-                />
-                <GroceryAmountOverrideForm
-                  baseRevision={run?.revision}
-                  editable={!isReadOnly}
-                  item={item}
-                  listId={listId}
-                />
-              </div>
+          <div className="space-y-6">
+            {groceryItemGroups.map(({ category, items }) => (
+              <section aria-labelledby={`${category}-heading`} key={category}>
+                <h3
+                  className="text-muted-foreground mb-3 text-sm font-semibold"
+                  id={`${category}-heading`}
+                >
+                  {groceryCategoryDefinitions[category].label}
+                </h3>
+                <div className="space-y-3">
+                  {items.map((item) => (
+                    <div className="space-y-2" key={item.id}>
+                      <GroceryRow
+                        item={item}
+                        mergeSuggestions={mergeSuggestions.filter(
+                          (suggestion) => suggestion.left.id === item.id,
+                        )}
+                        baseRevision={run?.revision}
+                        listId={listId}
+                        editable={!isReadOnly}
+                      />
+                      <GroceryAmountOverrideForm
+                        baseRevision={run?.revision}
+                        editable={!isReadOnly}
+                        item={item}
+                        listId={listId}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         ) : (

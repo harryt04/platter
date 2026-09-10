@@ -145,9 +145,11 @@ shopping amount field, while the precise calculated requirement remains visible
 and unchanged until they explicitly save an override.
 Every derived grocery item now receives a conservative documented default
 category such as Produce, Pantry, or Household; uncertain parser output and
-unrecognized ingredients remain in Other. The `Review at home` mode now shows
-calculated and shopping amounts, category, and contribution access for each
-grocery item. Members can mark an item
+unrecognized ingredients remain in Other. Active runs group categories along a
+documented typical-store route and use normalized ingredient names plus stable
+item IDs for a predictable order within each category. The `Review at home`
+mode now shows calculated and shopping amounts, category, and contribution
+access for each grocery item. Members can mark an item
 `Already have` without creating pantry inventory; it is hidden from the buy
 view and can be restored with its existing override and provenance intact. The
 review and shopping modes remain directly linked after shopping starts, with

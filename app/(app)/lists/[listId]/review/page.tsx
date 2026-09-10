@@ -21,6 +21,10 @@ import { GroceryAmountOverrideForm } from '@/components/lists/grocery-amount-ove
 import { ManualGroceryItems } from '@/components/lists/manual-grocery-items'
 import { AlreadyHaveButton } from '@/components/lists/already-have-button'
 import { ShoppingModeNavigation } from '@/components/lists/shopping-mode-navigation'
+import {
+  groupGroceryItemsByDefaultCategory,
+  groceryCategoryDefinitions,
+} from '@/lib/recipes/grocery-categories'
 
 export default async function ReviewPage({
   params,
@@ -50,6 +54,7 @@ export default async function ReviewPage({
       [],
   })
   const mergeSuggestions = findGroceryMergeSuggestions(groceryItems)
+  const groceryItemGroups = groupGroceryItemsByDefaultCategory(groceryItems)
 
   return (
     <ContentContainer>
@@ -67,39 +72,50 @@ export default async function ReviewPage({
       )}
       <PageSection title="Grocery items">
         {groceryItems.length > 0 ? (
-          <div className="space-y-3">
-            {groceryItems.map((item) => (
-              <div className="space-y-2" key={item.id}>
-                <GroceryRow
-                  item={item}
-                  category="Other"
-                  mergeSuggestions={mergeSuggestions.filter(
-                    (suggestion) => suggestion.left.id === item.id,
-                  )}
-                  baseRevision={run?.revision}
-                  listId={listId}
-                  editable={!isReadOnly}
-                  showCalculatedRequirement
-                />
-                <AlreadyHaveButton
-                  baseRevision={run?.revision}
-                  editable={!isReadOnly}
-                  ingredientName={item.ingredientName}
-                  itemId={item.id}
-                  listId={listId}
-                  marked={Boolean(
-                    run?.alreadyHaveItems?.some(
-                      (alreadyHave) => alreadyHave.itemId === item.id,
-                    ),
-                  )}
-                />
-                <GroceryAmountOverrideForm
-                  baseRevision={run?.revision}
-                  editable={!isReadOnly}
-                  item={item}
-                  listId={listId}
-                />
-              </div>
+          <div className="space-y-6">
+            {groceryItemGroups.map(({ category, items }) => (
+              <section aria-labelledby={`${category}-heading`} key={category}>
+                <h3
+                  className="text-muted-foreground mb-3 text-sm font-semibold"
+                  id={`${category}-heading`}
+                >
+                  {groceryCategoryDefinitions[category].label}
+                </h3>
+                <div className="space-y-3">
+                  {items.map((item) => (
+                    <div className="space-y-2" key={item.id}>
+                      <GroceryRow
+                        item={item}
+                        mergeSuggestions={mergeSuggestions.filter(
+                          (suggestion) => suggestion.left.id === item.id,
+                        )}
+                        baseRevision={run?.revision}
+                        listId={listId}
+                        editable={!isReadOnly}
+                        showCalculatedRequirement
+                      />
+                      <AlreadyHaveButton
+                        baseRevision={run?.revision}
+                        editable={!isReadOnly}
+                        ingredientName={item.ingredientName}
+                        itemId={item.id}
+                        listId={listId}
+                        marked={Boolean(
+                          run?.alreadyHaveItems?.some(
+                            (alreadyHave) => alreadyHave.itemId === item.id,
+                          ),
+                        )}
+                      />
+                      <GroceryAmountOverrideForm
+                        baseRevision={run?.revision}
+                        editable={!isReadOnly}
+                        item={item}
+                        listId={listId}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         ) : (

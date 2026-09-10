@@ -91,6 +91,42 @@ describe('grocery generation', () => {
     expect(items.every((item) => item.category)).toBe(true)
   })
 
+  it('returns generated items in the default category route and stable item order', () => {
+    const items = generateGroceryItems({
+      selections: [
+        selection('ordered', 'Dinner', '1', [
+          ingredient({
+            originalText: '1 cup flour',
+            ingredientName: 'flour',
+          }),
+          ingredient({
+            originalText: '1 each onions',
+            quantity: '1',
+            unit: 'each',
+            ingredientName: 'onions',
+          }),
+          ingredient({
+            originalText: '1 cup milk',
+            ingredientName: 'milk',
+          }),
+          ingredient({
+            originalText: '1 each apples',
+            quantity: '1',
+            unit: 'each',
+            ingredientName: 'apples',
+          }),
+        ]),
+      ],
+    })
+
+    expect(items.map((item) => item.ingredientName)).toEqual([
+      'apples',
+      'onions',
+      'milk',
+      'flour',
+    ])
+  })
+
   it('offers whole-unit guidance without changing the calculated requirement', () => {
     const [item] = generateGroceryItems({
       selections: [
@@ -805,8 +841,8 @@ it('offers deterministic optional suggestions without merging low-confidence ite
   expect(items).toHaveLength(3)
   expect(items.map((item) => item.id)).toEqual([
     'grocery:recipe:first:0',
-    'grocery:recipe:red:0',
     'grocery:recipe:second:0',
+    'grocery:recipe:red:0',
   ])
   expect(findGroceryMergeSuggestions(items)).toMatchObject([
     {

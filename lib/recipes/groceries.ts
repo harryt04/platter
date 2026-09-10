@@ -17,6 +17,7 @@ import type { RecipeSelectionDocument } from '@/lib/recipes/selections'
 import { scaleIngredientQuantity } from '@/lib/recipes/scaling'
 import {
   defaultGroceryCategory,
+  sortGroceryItemsByDefaultOrder,
   type GroceryCategory,
 } from '@/lib/recipes/grocery-categories'
 
@@ -503,7 +504,9 @@ export function generateGroceryItems({
       ),
     }))
 
-  return generatedItems.map(addPurchaseSuggestion)
+  return sortGroceryItemsByDefaultOrder(
+    generatedItems.map(addPurchaseSuggestion),
+  )
 }
 
 /**

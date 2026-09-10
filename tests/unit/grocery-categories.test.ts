@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  defaultGroceryCategoryOrder,
   defaultGroceryCategory,
+  groupGroceryItemsByDefaultCategory,
   groceryCategoryDefinitions,
+  sortGroceryItemsByDefaultOrder,
 } from '@/lib/recipes/grocery-categories'
 
 describe('default grocery categories', () => {
@@ -44,5 +47,44 @@ describe('default grocery categories', () => {
         parserConfidence: 'low',
       }),
     ).toBe('other')
+  })
+
+  it('uses the documented store route and deterministic item tie-breakers', () => {
+    const items = [
+      { id: 'zeta', category: 'other' as const, ingredientName: 'Zucchini' },
+      { id: 'onion-b', category: 'produce' as const, ingredientName: 'Onion' },
+      { id: 'flour', category: 'baking' as const, ingredientName: 'Flour' },
+      { id: 'onion-a', category: 'produce' as const, ingredientName: 'onion' },
+      { id: 'apple', category: 'produce' as const, ingredientName: 'Apple' },
+      { id: 'milk', category: 'dairy-eggs' as const, ingredientName: 'Milk' },
+    ]
+
+    expect(defaultGroceryCategoryOrder).toEqual([
+      'produce',
+      'meat-seafood',
+      'dairy-eggs',
+      'bakery',
+      'pantry',
+      'canned-goods',
+      'frozen',
+      'beverages',
+      'baking',
+      'household',
+      'other',
+    ])
+    expect(
+      sortGroceryItemsByDefaultOrder(items).map((item) => item.id),
+    ).toEqual(['apple', 'onion-a', 'onion-b', 'milk', 'flour', 'zeta'])
+    expect(
+      groupGroceryItemsByDefaultCategory(items).map(({ category, items }) => ({
+        category,
+        itemIds: items.map((item) => item.id),
+      })),
+    ).toEqual([
+      { category: 'produce', itemIds: ['apple', 'onion-a', 'onion-b'] },
+      { category: 'dairy-eggs', itemIds: ['milk'] },
+      { category: 'baking', itemIds: ['flour'] },
+      { category: 'other', itemIds: ['zeta'] },
+    ])
   })
 })

@@ -52,6 +52,84 @@ export const groceryCategoryDefinitions = {
 
 export type GroceryCategory = keyof typeof groceryCategoryDefinitions
 
+/**
+ * The default route through a typical grocery store. This is deliberately a
+ * product-level order rather than object-key insertion order, so generated
+ * runs remain predictable if category definitions change.
+ */
+export const defaultGroceryCategoryOrder = [
+  'produce',
+  'meat-seafood',
+  'dairy-eggs',
+  'bakery',
+  'pantry',
+  'canned-goods',
+  'frozen',
+  'beverages',
+  'baking',
+  'household',
+  'other',
+] as const satisfies readonly GroceryCategory[]
+
+const categoryOrder = new Map(
+  defaultGroceryCategoryOrder.map((category, index) => [category, index]),
+)
+
+type CategorizedGroceryItem = {
+  category: GroceryCategory
+  ingredientName: string
+  normalizedIdentity?: string
+  id: string
+}
+
+function compareText(left: string, right: string) {
+  if (left === right) return 0
+  return left < right ? -1 : 1
+}
+
+/**
+ * Sort items without relying on locale-sensitive collation. A normalized name
+ * makes the visible order easy to anticipate, and the generated item ID is a
+ * stable final tie-breaker for equivalent names.
+ */
+export function compareGroceryItemsByDefaultOrder<
+  T extends CategorizedGroceryItem,
+>(left: T, right: T) {
+  const categoryDifference =
+    categoryOrder.get(left.category)! - categoryOrder.get(right.category)!
+  if (categoryDifference !== 0) return categoryDifference
+
+  const identityDifference = compareText(
+    normalize(left.normalizedIdentity ?? left.ingredientName) ?? '',
+    normalize(right.normalizedIdentity ?? right.ingredientName) ?? '',
+  )
+  if (identityDifference !== 0) return identityDifference
+
+  return compareText(left.id, right.id)
+}
+
+export function sortGroceryItemsByDefaultOrder<
+  T extends CategorizedGroceryItem,
+>(items: readonly T[]) {
+  return [...items].sort(compareGroceryItemsByDefaultOrder)
+}
+
+export function groupGroceryItemsByDefaultCategory<
+  T extends CategorizedGroceryItem,
+>(items: readonly T[]) {
+  const itemsByCategory = new Map<GroceryCategory, T[]>()
+  for (const item of sortGroceryItemsByDefaultOrder(items)) {
+    const categoryItems = itemsByCategory.get(item.category) ?? []
+    categoryItems.push(item)
+    itemsByCategory.set(item.category, categoryItems)
+  }
+
+  return defaultGroceryCategoryOrder.flatMap((category) => {
+    const categoryItems = itemsByCategory.get(category)
+    return categoryItems ? [{ category, items: categoryItems }] : []
+  })
+}
+
 const categoryKeywords: ReadonlyArray<readonly [GroceryCategory, ...string[]]> =
   [
     [

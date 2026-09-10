@@ -109,6 +109,29 @@ describe('PATCH /api/v1/lists/[listId]', () => {
     expect((await response.json()).code).toBe('LIST_NOT_FOUND')
   })
 
+  it('does not let an editor archive a list', async () => {
+    getSession.mockResolvedValue({ user: { id: 'editor-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(null),
+      findOneAndUpdate: vi.fn(),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/lists/list-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'archived' }),
+      }),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(404)
+    expect((await response.json()).code).toBe('LIST_NOT_FOUND')
+    expect(collection.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
   it('archives a list through the owner-scoped status update', async () => {
     getSession.mockResolvedValue({ user: { id: 'user-1' } })
     const collection = {
@@ -201,6 +224,37 @@ describe('PATCH /api/v1/lists/[listId]', () => {
       expect.objectContaining({
         $set: expect.objectContaining({ status: 'deleted' }),
       }),
+      { returnDocument: 'after' },
+    )
+  })
+
+  it('does not let an editor delete a list', async () => {
+    getSession.mockResolvedValue({ user: { id: 'editor-1' } })
+    const collection = { findOneAndUpdate: vi.fn().mockResolvedValue(null) }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await DELETE(
+      new Request('http://localhost/api/v1/lists/list-1', {
+        method: 'DELETE',
+      }),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(404)
+    expect((await response.json()).code).toBe('LIST_NOT_FOUND')
+    expect(collection.findOneAndUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        members: {
+          $elemMatch: {
+            userId: 'editor-1',
+            role: 'owner',
+            invitationState: 'active',
+          },
+        },
+      }),
+      expect.anything(),
       { returnDocument: 'after' },
     )
   })

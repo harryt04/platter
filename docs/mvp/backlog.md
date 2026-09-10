@@ -86,13 +86,13 @@ ownership while preserving the rule that every live list has an owner.
 
 - [x] Owners can list members, remove editors, promote an editor to owner, and
       distinguish pending invitations from active membership.
-- [ ] Editors can use shopping features but cannot invite, remove, promote,
+- [x] Editors can use shopping features but cannot invite, remove, promote,
       rename, archive, or delete.
 - [ ] The last owner cannot leave, demote themselves, or be removed until
       ownership is transferred or the list is explicitly deleted.
 - [ ] A removed member immediately loses API, page, realtime-room, and future
       mutation authorization for that list.
-- [ ] Role enforcement is centralized through the established list-role helper
+- [x] Role enforcement is centralized through the established list-role helper
       and covered for every role boundary.
 
 ## 04: Notify users about membership changes

@@ -94,6 +94,23 @@ describe('member management routes', () => {
     ])
   })
 
+  it('does not let an editor promote a member', async () => {
+    getSession.mockResolvedValue({ user: { id: 'editor-1' } })
+    findListForRole.mockResolvedValue(null)
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/lists/list-1/members/owner-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ role: 'owner' }),
+      }),
+      context('owner-1'),
+    )
+
+    expect(response.status).toBe(404)
+    expect((await response.json()).code).toBe('LIST_NOT_FOUND')
+    expect(getConnectedDatabase).not.toHaveBeenCalled()
+  })
+
   it('promotes an editor while keeping owner ids and members in sync', async () => {
     getSession.mockResolvedValue({ user: { id: 'owner-1' } })
     findListForRole.mockResolvedValue({

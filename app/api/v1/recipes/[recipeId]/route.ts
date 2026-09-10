@@ -3,11 +3,14 @@ import { getSession } from '@/lib/auth/authorization'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
 import {
+  createRecipeVersionDocument,
   isUsableRecipe,
   privateDraftFilter,
+  recipeVersions,
   toRecipeDraft,
   updateDraftSchema,
   type RecipeDraftDocument,
+  type RecipeVersionDocument,
 } from '@/lib/recipes/drafts'
 
 type RouteContext = { params: Promise<{ recipeId: string }> }
@@ -75,6 +78,16 @@ function invalidDraft(issues: string[], fields: Record<string, string[]>) {
   })
 }
 
+function recipeVersionConflict() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/recipe-version-conflict',
+    title: 'Recipe changed elsewhere',
+    status: 409,
+    detail: 'This recipe changed elsewhere. Reload it before saving again.',
+    code: 'RECIPE_VERSION_CONFLICT',
+  })
+}
+
 export async function GET(_request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session) return authenticationRequired('Sign in to view your recipes.')
@@ -131,6 +144,8 @@ export async function PATCH(request: Request, context: RouteContext) {
   const setFields: Partial<RecipeDraftDocument> = {
     status: status ? 'usable' : 'draft',
     updatedAt,
+    versionId: crypto.randomUUID(),
+    versionNumber: (draft.versionNumber ?? 1) + 1,
   }
   const unsetFields: Record<string, ''> = {}
   if ('title' in parsed.data && parsed.data.title !== undefined) {
@@ -183,12 +198,28 @@ export async function PATCH(request: Request, context: RouteContext) {
       ;(setFields as Record<string, unknown>)[field] = value
     }
   }
-  await db
+  const previousVersion = createRecipeVersionDocument(draft)
+  const { _id: previousVersionId, ...previousVersionContent } = previousVersion
+  await recipeVersions(
+    db.collection<RecipeVersionDocument>('recipe_versions'),
+  ).updateOne(
+    { _id: previousVersionId },
+    { $setOnInsert: previousVersionContent },
+    { upsert: true },
+  )
+  const updateResult = await db
     .collection<RecipeDraftDocument>('recipes')
-    .updateOne(privateDraftFilter(session.user.id, recipeId), {
-      $set: setFields,
-      ...(Object.keys(unsetFields).length > 0 ? { $unset: unsetFields } : {}),
-    })
+    .updateOne(
+      {
+        ...privateDraftFilter(session.user.id, recipeId),
+        ...(draft.versionId ? { versionId: draft.versionId } : {}),
+      },
+      {
+        $set: setFields,
+        ...(Object.keys(unsetFields).length > 0 ? { $unset: unsetFields } : {}),
+      },
+    )
+  if (updateResult.matchedCount !== 1) return recipeVersionConflict()
 
   const updatedDraft = { ...draft, ...setFields }
   if (
@@ -246,6 +277,15 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
 
   const db = await getConnectedDatabase()
+  const previousVersion = createRecipeVersionDocument(draft)
+  const { _id: previousVersionId, ...previousVersionContent } = previousVersion
+  await recipeVersions(
+    db.collection<RecipeVersionDocument>('recipe_versions'),
+  ).updateOne(
+    { _id: previousVersionId },
+    { $setOnInsert: previousVersionContent },
+    { upsert: true },
+  )
   await db
     .collection<RecipeDraftDocument>('recipes')
     .deleteOne(privateDraftFilter(session.user.id, recipeId))

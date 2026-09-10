@@ -4,8 +4,11 @@ import { problemResponse } from '@/lib/contracts/problem'
 import {
   createDraftDocument,
   createDraftSchema,
+  createRecipeVersionDocument,
+  recipeVersions,
   toRecipeDraft,
   type RecipeDraftDocument,
+  type RecipeVersionDocument,
 } from '@/lib/recipes/drafts'
 
 export async function GET() {
@@ -74,5 +77,10 @@ export async function POST(request: Request) {
   const draft = createDraftDocument(session.user.id, parsed.data.title)
   const db = await getConnectedDatabase()
   await db.collection<RecipeDraftDocument>('recipes').insertOne(draft)
+  const version = createRecipeVersionDocument(draft)
+  const { _id: versionId, ...versionContent } = version
+  await recipeVersions(
+    db.collection<RecipeVersionDocument>('recipe_versions'),
+  ).insertOne({ _id: versionId, ...versionContent })
   return Response.json({ recipe: toRecipeDraft(draft) }, { status: 201 })
 }

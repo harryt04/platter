@@ -28,6 +28,9 @@ moderation remain intentionally deferred to the feature lanes described in the
 [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
 Public recipe reads also have a shared visibility guard: imported content must
 be approved after review, usable, and explicitly public before it can render.
+Recipes now have stable identities and incrementing immutable version IDs;
+editing or deleting a recipe snapshots the prior version for future run and
+history references.
 
 ## Documentation
 

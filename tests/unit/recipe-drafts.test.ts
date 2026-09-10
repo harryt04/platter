@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createDraftDocument,
   createDraftSchema,
+  createRecipeVersionDocument,
   draftOwnerFilter,
   isPubliclyRenderableRecipe,
   isUsableRecipe,
@@ -40,9 +41,27 @@ describe('recipe drafts', () => {
       status: 'draft',
       visibility: 'private',
       ingredients: [],
+      versionNumber: 1,
     })
+    expect(draft._id).not.toBe(draft.versionId)
     expect(toRecipeDraft(draft).id).toBe(draft._id)
+    expect(toRecipeDraft(draft).recipeId).toBe(draft._id)
+    expect(toRecipeDraft(draft).versionId).toBe(draft.versionId)
     expect(draft.createdAt).toBe(draft.updatedAt)
+  })
+
+  it('creates an immutable version snapshot without sharing the recipe identity', () => {
+    const draft = createDraftDocument('user-1', 'Tomato soup')
+    const version = createRecipeVersionDocument(draft)
+
+    expect(version).toMatchObject({
+      _id: draft.versionId,
+      recipeId: draft._id,
+      versionNumber: 1,
+      title: draft.title,
+      ingredients: draft.ingredients,
+    })
+    expect(version).not.toHaveProperty('versionId')
   })
 
   it('scopes every lookup to both the draft id and owner', () => {
@@ -109,6 +128,8 @@ describe('recipe drafts', () => {
 
   it('normalizes legacy recipe documents to authored, not-required state', () => {
     const legacy = createDraftDocument('user-1', 'Soup')
+    delete legacy.versionId
+    delete legacy.versionNumber
     const normalized = toRecipeDraft(legacy)
     expect(normalized.origin).toBe('authored')
     expect(normalized.importReviewStatus).toBe('not-required')
@@ -117,6 +138,9 @@ describe('recipe drafts', () => {
       true,
     )
     expect(recipeVisibilitySchema.safeParse('suppressed').success).toBe(true)
+    expect(normalized.recipeId).toBe(legacy._id)
+    expect(normalized.versionId).toBe(legacy._id)
+    expect(normalized.versionNumber).toBe(1)
   })
 
   it('keeps a recipe in draft state until yield and a structured ingredient exist', () => {

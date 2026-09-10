@@ -64,6 +64,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
       typicalPeopleFed: 4,
       ingredients: [{ ingredientName: 'onions' }],
       instructions: ['Stir the soup until smooth.'],
+      versionNumber: 2,
     })
     expect(collection.updateOne).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -79,6 +80,17 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
           instructions: ['Stir the soup until smooth.'],
         }),
       }),
+    )
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      { _id: 'recipe-1' },
+      {
+        $setOnInsert: expect.objectContaining({
+          recipeId: 'recipe-1',
+          versionNumber: 1,
+          title: 'Tomato soup',
+        }),
+      },
+      { upsert: true },
     )
   })
 
@@ -118,6 +130,35 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
         }),
       }),
     )
+  })
+
+  it('rejects a stale version instead of claiming an edit was saved', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue({
+        ...draft,
+        versionId: 'version-1',
+        versionNumber: 1,
+      }),
+      updateOne: vi
+        .fn()
+        .mockResolvedValueOnce({ acknowledged: true, upsertedCount: 0 })
+        .mockResolvedValueOnce({ acknowledged: true, matchedCount: 0 }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/recipes/recipe-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ title: 'New title' }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(409)
+    expect((await response.json()).code).toBe('RECIPE_VERSION_CONFLICT')
   })
 
   it('preserves parser metadata when a user corrects ingredient facts', async () => {

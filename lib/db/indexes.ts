@@ -10,6 +10,9 @@ export async function ensureSharedIndexes(db: Db) {
   await db.collection('realtime_events').createIndex({ listId: 1, revision: 1 })
   await db.collection('recipes').createIndex({ ownerId: 1, updatedAt: -1 })
   await db
+    .collection('recipe_versions')
+    .createIndex({ recipeId: 1, versionNumber: 1 }, { unique: true })
+  await db
     .collection('list_invitations')
     .createIndex({ tokenHash: 1 }, { unique: true })
   await db

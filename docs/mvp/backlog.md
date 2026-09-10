@@ -206,7 +206,7 @@ creator to decide who may discover or use each recipe.
 
 **Status:** ready-for-agent
 
-- [ ] Recipes have stable identities and immutable version identities, and
+- [x] Recipes have stable identities and immutable version identities, and
       edits never silently rewrite a version used by another person or run.
 - [ ] Manually authored recipes remain private by default and can be shared
       with selected lists or explicitly published.

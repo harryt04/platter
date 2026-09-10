@@ -222,6 +222,11 @@ export const updateDraftSchema = z
 
 export type RecipeDraft = {
   id: EntityId
+  /** Stable identity for the dish across immutable recipe versions. */
+  recipeId: EntityId
+  /** Identity of the currently editable immutable version. */
+  versionId: EntityId
+  versionNumber: number
   ownerId: string
   title: string
   description?: string
@@ -252,15 +257,43 @@ export type RecipeDraft = {
 
 export type RecipeDraftDocument = Omit<
   RecipeDraft,
-  'id' | 'origin' | 'importReviewStatus'
+  | 'id'
+  | 'recipeId'
+  | 'versionId'
+  | 'versionNumber'
+  | 'origin'
+  | 'importReviewStatus'
 > & {
   _id: string
+  /** Stable identity is the recipe document id. Legacy documents use _id. */
+  recipeId?: string
+  /** Legacy documents predate explicit recipe versioning. */
+  versionId?: string
+  versionNumber?: number
   /** Legacy documents predate the explicit import review contract. */
   origin?: RecipeOrigin
   importReviewStatus?: RecipeImportReviewStatus
 }
 
+/**
+ * Immutable copy of a recipe version. The current recipe document is a
+ * mutable pointer to the latest version; historical references use this
+ * collection instead of observing later edits.
+ */
+export type RecipeVersionDocument = Omit<
+  RecipeDraftDocument,
+  '_id' | 'recipeId' | 'versionId' | 'versionNumber'
+> & {
+  _id: string
+  recipeId: string
+  versionNumber: number
+}
+
 export function recipeDrafts(collection: Collection<RecipeDraftDocument>) {
+  return collection
+}
+
+export function recipeVersions(collection: Collection<RecipeVersionDocument>) {
   return collection
 }
 
@@ -349,6 +382,8 @@ export function createDraftDocument(
   const instructions = details.instructions ?? []
   return {
     _id: crypto.randomUUID(),
+    versionId: crypto.randomUUID(),
+    versionNumber: 1,
     ownerId,
     title,
     ...(details.description === undefined
@@ -404,9 +439,32 @@ export function createDraftDocument(
   }
 }
 
+export function createRecipeVersionDocument(
+  recipe: RecipeDraftDocument,
+): RecipeVersionDocument {
+  const {
+    _id: recipeId,
+    recipeId: _legacyRecipeId,
+    versionId: currentVersionId,
+    versionNumber: currentVersionNumber,
+    ...content
+  } = recipe
+  void _legacyRecipeId
+
+  return {
+    ...content,
+    _id: currentVersionId ?? recipeId,
+    recipeId,
+    versionNumber: currentVersionNumber ?? 1,
+  }
+}
+
 export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
   return {
     id: entityId(document._id),
+    recipeId: entityId(document.recipeId ?? document._id),
+    versionId: entityId(document.versionId ?? document._id),
+    versionNumber: document.versionNumber ?? 1,
     ownerId: document.ownerId,
     title: document.title,
     ...(document.description === undefined

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { parseIngredientLine } from '@/lib/recipes/ingredient-parser'
+import {
+  convertIngredientQuantity,
+  parseIngredientLine,
+} from '@/lib/recipes/ingredient-parser'
 
 describe('ingredient line parser', () => {
   it.each([
@@ -112,5 +115,65 @@ describe('ingredient line parser', () => {
       quantity: null,
       ingredientName: '1/0 cup sugar',
     })
+  })
+
+  it('parses decimal quantities using the requested locale', () => {
+    expect(
+      parseIngredientLine('1,5 kg farine', { locale: 'fr-FR' }),
+    ).toMatchObject({
+      quantity: { min: '1.5' },
+      unit: { name: 'kg', dimension: 'mass' },
+      ingredientName: 'farine',
+    })
+  })
+
+  it.each([
+    {
+      locale: 'en-US',
+      from: { name: 'lb', dimension: 'mass' as const },
+      to: { name: 'g', dimension: 'mass' as const },
+      expected: { min: '453.59237', max: '907.18474' },
+    },
+    {
+      locale: 'en-US',
+      from: { name: 'cup', dimension: 'volume' as const },
+      to: { name: 'ml', dimension: 'volume' as const },
+      expected: { min: '236.5882365' },
+    },
+    {
+      locale: 'en-GB',
+      from: { name: 'pint', dimension: 'volume' as const },
+      to: { name: 'ml', dimension: 'volume' as const },
+      expected: { min: '568.26125' },
+    },
+  ])(
+    'converts $from.name deterministically for $locale',
+    ({ locale, from, to, expected }) => {
+      expect(
+        convertIngredientQuantity(
+          { min: '1', max: from.name === 'lb' ? '2' : undefined },
+          from,
+          to,
+          locale,
+        ),
+      ).toEqual(expected)
+    },
+  )
+
+  it('rejects incompatible dimensions and non-equivalent count units', () => {
+    expect(
+      convertIngredientQuantity(
+        { min: '1' },
+        { name: 'kg', dimension: 'mass' },
+        { name: 'ml', dimension: 'volume' },
+      ),
+    ).toBeNull()
+    expect(
+      convertIngredientQuantity(
+        { min: '1' },
+        { name: 'can', dimension: 'count' },
+        { name: 'each', dimension: 'count' },
+      ),
+    ).toBeNull()
   })
 })

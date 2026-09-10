@@ -185,7 +185,7 @@ without losing their original wording or pretending uncertain data is exact.
 
 - [x] Parsing tolerates common fractions, Unicode fractions, ranges, missing
       quantities, package sizes, preparation notes, and optional ingredients.
-- [ ] Parsed units distinguish count, mass, volume, and unknown dimensions;
+- [x] Parsed units distinguish count, mass, volume, and unknown dimensions;
       conversions are locale-aware and deterministic.
 - [ ] The original line, parser confidence, and normalized identity are
       preserved alongside user corrections on the recipe version.

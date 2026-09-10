@@ -25,6 +25,10 @@ export type ParsedIngredientLine = {
   }
 }
 
+export type ParseIngredientOptions = {
+  locale?: string
+}
+
 const unicodeFractions: Record<string, string> = {
   '¼': '1/4',
   '½': '1/2',
@@ -47,11 +51,36 @@ const unicodeFractions: Record<string, string> = {
 }
 
 const fractionCharacterPattern = Object.keys(unicodeFractions).join('')
-const quantityAtomPattern = String.raw`(?:\d+(?:\.\d+)?(?:\s+\d+\s*/\s*\d+|\s*[${fractionCharacterPattern}])?|\d+\s*/\s*\d+|[${fractionCharacterPattern}])`
-const quantityPrefixPattern = new RegExp(
-  String.raw`^(${quantityAtomPattern})(?:\s*(?:-|–|—|to)\s*(${quantityAtomPattern}))?(?=\s|$)`,
-  'i',
-)
+const defaultLocale = 'en-US'
+
+function decimalSeparators(locale: string) {
+  try {
+    const parts = new Intl.NumberFormat(locale).formatToParts(1000.1)
+    const decimal = parts.find((part) => part.type === 'decimal')?.value ?? '.'
+    const group = parts.find((part) => part.type === 'group')?.value
+    return { decimal, group }
+  } catch {
+    return { decimal: '.', group: undefined }
+  }
+}
+
+function escapedPattern(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function quantityAtomPattern(locale: string) {
+  const { decimal } = decimalSeparators(locale)
+  const decimalPattern = escapedPattern(decimal)
+  return String.raw`(?:\d+(?:${decimalPattern}\d+)?(?:\s+\d+\s*/\s*\d+|\s*[${fractionCharacterPattern}])?|\d+\s*/\s*\d+|[${fractionCharacterPattern}])`
+}
+
+function quantityPrefixPattern(locale: string) {
+  const atom = quantityAtomPattern(locale)
+  return new RegExp(
+    String.raw`^(${atom})(?:\s*(?:-|–|—|to)\s*(${atom}))?(?=\s|$)`,
+    'i',
+  )
+}
 
 const units: Record<string, ParsedIngredientUnit> = {}
 
@@ -135,9 +164,16 @@ function decimalString(value: Decimal) {
   return value.toString()
 }
 
-function parseQuantity(value: string): ParsedIngredientQuantity | null {
+function parseQuantity(
+  value: string,
+  locale = defaultLocale,
+): ParsedIngredientQuantity | null {
   try {
-    const parsed = parseDecimal(value)
+    const { decimal, group } = decimalSeparators(locale)
+    const localized = value
+      .replaceAll(group ?? '\u0000', '')
+      .replace(decimal, '.')
+    const parsed = parseDecimal(localized)
     if (!parsed.isFinite()) return null
     return { min: decimalString(parsed) }
   } catch {
@@ -148,10 +184,11 @@ function parseQuantity(value: string): ParsedIngredientQuantity | null {
 function parseRange(
   min: string,
   max?: string,
+  locale = defaultLocale,
 ): ParsedIngredientQuantity | null {
-  const quantity = parseQuantity(min)
+  const quantity = parseQuantity(min, locale)
   if (!max) return quantity
-  const maximum = parseQuantity(max)
+  const maximum = parseQuantity(max, locale)
   if (!quantity || !maximum) return null
   return { ...quantity, max: maximum.min }
 }
@@ -176,15 +213,16 @@ function parseUnitPrefix(value: string) {
   return { unit: null, remainder: value }
 }
 
-function parsePackageSize(value: string) {
+function parsePackageSize(value: string, locale = defaultLocale) {
+  const atom = quantityAtomPattern(locale)
   const match = new RegExp(
-    String.raw`^\(\s*(${quantityAtomPattern})\s*-?\s*([^)]*?)\s*\)\s*`,
+    String.raw`^\(\s*(${atom})\s*-?\s*([^)]*?)\s*\)\s*`,
     'i',
   ).exec(value)
   if (!match) return { packageSize: undefined, remainder: value }
 
   const parsedUnit = parseUnitPrefix(match[2].trim())
-  const quantity = parseRange(match[1])
+  const quantity = parseRange(match[1], undefined, locale)
   if (!parsedUnit.unit || parsedUnit.remainder || !quantity) {
     return { packageSize: undefined, remainder: value }
   }
@@ -198,15 +236,13 @@ function parsePackageSize(value: string) {
   }
 }
 
-function parseInlinePackageSize(value: string) {
-  const match = new RegExp(
-    String.raw`^(${quantityAtomPattern})\s*-?\s*`,
-    'i',
-  ).exec(value)
+function parseInlinePackageSize(value: string, locale = defaultLocale) {
+  const atom = quantityAtomPattern(locale)
+  const match = new RegExp(String.raw`^(${atom})\s*-?\s*`, 'i').exec(value)
   if (!match) return { packageSize: undefined, remainder: value }
 
   const parsedUnit = parseUnitPrefix(value.slice(match[0].length))
-  const quantity = parseRange(match[1])
+  const quantity = parseRange(match[1], undefined, locale)
   if (!parsedUnit.unit || !quantity) {
     return { packageSize: undefined, remainder: value }
   }
@@ -264,14 +300,22 @@ function extractPreparation(value: string) {
  * Quantities are returned as decimal strings so later scaling does not depend
  * on display rounding or binary floating-point arithmetic.
  */
-export function parseIngredientLine(line: string): ParsedIngredientLine {
+export function parseIngredientLine(
+  line: string,
+  options: ParseIngredientOptions = {},
+): ParsedIngredientLine {
+  const locale = options.locale ?? defaultLocale
   const originalText = cleanText(line)
   let remainder = originalText
   let quantity: ParsedIngredientQuantity | null = null
 
-  const quantityMatch = quantityPrefixPattern.exec(remainder)
+  const quantityMatch = quantityPrefixPattern(locale).exec(remainder)
   if (quantityMatch) {
-    const parsedQuantity = parseRange(quantityMatch[1], quantityMatch[2])
+    const parsedQuantity = parseRange(
+      quantityMatch[1],
+      quantityMatch[2],
+      locale,
+    )
     if (parsedQuantity) {
       quantity = parsedQuantity
       remainder = remainder.slice(quantityMatch[0].length).trimStart()
@@ -279,26 +323,26 @@ export function parseIngredientLine(line: string): ParsedIngredientLine {
   }
 
   let packageSize: ParsedIngredientLine['packageSize']
-  const parenthesizedPackage = parsePackageSize(remainder)
+  const parenthesizedPackage = parsePackageSize(remainder, locale)
   packageSize = parenthesizedPackage.packageSize
   remainder = parenthesizedPackage.remainder
 
   if (!packageSize && quantity) {
-    const inlinePackage = parseInlinePackageSize(remainder)
+    const inlinePackage = parseInlinePackageSize(remainder, locale)
     packageSize = inlinePackage.packageSize
     remainder = inlinePackage.remainder
   }
 
   if (/^x\s/i.test(remainder)) {
     const packageMatch = new RegExp(
-      String.raw`^x\s+(${quantityAtomPattern})\s*-?\s*`,
+      String.raw`^x\s+(${quantityAtomPattern(locale)})\s*-?\s*`,
       'i',
     ).exec(remainder)
     if (packageMatch) {
       const parsedUnit = parseUnitPrefix(
         remainder.slice(packageMatch[0].length),
       )
-      const packageQuantity = parseRange(packageMatch[1])
+      const packageQuantity = parseRange(packageMatch[1], undefined, locale)
       if (parsedUnit.unit && packageQuantity) {
         packageSize = {
           quantity: packageQuantity,
@@ -319,7 +363,7 @@ export function parseIngredientLine(line: string): ParsedIngredientLine {
   if (quantity && parsedUnit.unit) remainder = parsedUnit.remainder
 
   if (quantity && !packageSize) {
-    const trailingPackage = parsePackageSize(remainder)
+    const trailingPackage = parsePackageSize(remainder, locale)
     packageSize = trailingPackage.packageSize
     remainder = trailingPackage.remainder
   }
@@ -337,5 +381,105 @@ export function parseIngredientLine(line: string): ParsedIngredientLine {
       : {}),
     optional: extracted.optional,
     ...(packageSize ? { packageSize } : {}),
+  }
+}
+
+type MeasurementSystem = 'metric' | 'imperial-us' | 'imperial-uk'
+
+function measurementSystem(locale: string): MeasurementSystem {
+  let region: string | undefined
+  try {
+    region = new Intl.Locale(locale).region
+  } catch {
+    region = undefined
+  }
+
+  if (region === 'GB') return 'imperial-uk'
+  if (region === 'US' || region === 'LR' || region === 'MM') {
+    return 'imperial-us'
+  }
+  return 'metric'
+}
+
+const massFactorsInGrams: Record<string, string> = {
+  g: '1',
+  kg: '1000',
+  oz: '28.349523125',
+  lb: '453.59237',
+}
+
+const volumeFactorsInMilliliters: Record<
+  MeasurementSystem,
+  Record<string, string>
+> = {
+  metric: {
+    ml: '1',
+    l: '1000',
+    tsp: '5',
+    tbsp: '15',
+    cup: '250',
+    pint: '500',
+    quart: '1000',
+    gallon: '4000',
+    'fl oz': '30',
+  },
+  'imperial-us': {
+    ml: '1',
+    l: '1000',
+    tsp: '4.92892159375',
+    tbsp: '14.78676478125',
+    cup: '236.5882365',
+    pint: '473.176473',
+    quart: '946.352946',
+    gallon: '3785.411784',
+    'fl oz': '29.5735295625',
+  },
+  'imperial-uk': {
+    ml: '1',
+    l: '1000',
+    tsp: '5.9193880208333333333',
+    tbsp: '17.7581640625',
+    cup: '284.130625',
+    pint: '568.26125',
+    quart: '1136.5225',
+    gallon: '4546.09',
+    'fl oz': '28.4130625',
+  },
+}
+
+function conversionFactor(unit: ParsedIngredientUnit, locale: string) {
+  if (unit.dimension === 'mass') return massFactorsInGrams[unit.name]
+  if (unit.dimension === 'volume') {
+    return volumeFactorsInMilliliters[measurementSystem(locale)][unit.name]
+  }
+  return undefined
+}
+
+/**
+ * Convert a parsed quantity without display rounding. Incompatible dimensions,
+ * unknown units, and non-equivalent count units intentionally return null.
+ */
+export function convertIngredientQuantity(
+  quantity: ParsedIngredientQuantity,
+  fromUnit: ParsedIngredientUnit,
+  toUnit: ParsedIngredientUnit,
+  locale = defaultLocale,
+): ParsedIngredientQuantity | null {
+  if (fromUnit.dimension !== toUnit.dimension) return null
+
+  if (fromUnit.dimension === 'count' || fromUnit.dimension === 'unknown') {
+    return fromUnit.name === toUnit.name ? quantity : null
+  }
+
+  const fromFactor = conversionFactor(fromUnit, locale)
+  const toFactor = conversionFactor(toUnit, locale)
+  if (!fromFactor || !toFactor) return null
+
+  const convert = (value: string) =>
+    new Decimal(value).times(fromFactor).dividedBy(toFactor).toString()
+
+  return {
+    min: convert(quantity.min),
+    ...(quantity.max ? { max: convert(quantity.max) } : {}),
   }
 }

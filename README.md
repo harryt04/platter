@@ -14,8 +14,9 @@ outcomes are in place. Recipe drafts also accept optional
 informational nutrition values per person. Signed-in users also receive
 in-product notifications for invitations and member role or removal changes,
 with authenticated deep links and independent read state.
-The first pure ingredient-line parsing slice now recognizes common quantity
-forms and preserves source text; ingredient normalization, grocery calculations,
+The ingredient parser now recognizes common quantity forms, preserves source
+text, classifies units by dimension, and performs exact locale-aware mass and
+volume conversions; ingredient normalization, grocery calculations,
 collaboration, and moderation remain intentionally deferred to the feature
 lanes described in the [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
 

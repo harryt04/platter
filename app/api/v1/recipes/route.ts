@@ -1,7 +1,10 @@
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { getSession } from '@/lib/auth/authorization'
 import { problemResponse } from '@/lib/contracts/problem'
-import { findRecipeLibrary } from '@/lib/recipes/library'
+import {
+  decodeRecipeLibraryCursor,
+  searchRecipeLibrary,
+} from '@/lib/recipes/library'
 import {
   createDraftDocument,
   createDraftSchema,
@@ -11,8 +14,19 @@ import {
   type RecipeDraftDocument,
   type RecipeVersionDocument,
 } from '@/lib/recipes/drafts'
+import { z } from 'zod'
 
-export async function GET() {
+const librarySearchParamsSchema = z.object({
+  q: z
+    .string()
+    .trim()
+    .max(100, 'Search terms must be 100 characters or fewer.')
+    .default(''),
+  cursor: z.string().max(500).optional(),
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
+})
+
+export async function GET(request: Request) {
   const session = await getSession()
   if (!session) {
     return problemResponse({
@@ -24,15 +38,35 @@ export async function GET() {
     })
   }
 
+  const url = new URL(request.url)
+  const parsed = librarySearchParamsSchema.safeParse({
+    q: url.searchParams.get('q') ?? '',
+    cursor: url.searchParams.get('cursor') ?? undefined,
+    pageSize: url.searchParams.get('pageSize') ?? undefined,
+  })
+  if (
+    !parsed.success ||
+    (parsed.data.cursor && !decodeRecipeLibraryCursor(parsed.data.cursor))
+  ) {
+    return problemResponse({
+      type: 'https://platter.dev/problems/validation-failed',
+      title: 'Check the library search',
+      status: 422,
+      detail: 'Use a valid library search and pagination cursor.',
+      code: 'VALIDATION_FAILED',
+    })
+  }
+
   const db = await getConnectedDatabase()
-  const recipes = await findRecipeLibrary(db, session.user.id)
+  const page = await searchRecipeLibrary(db, session.user.id, parsed.data)
 
   return Response.json({
-    recipes: recipes.map(({ recipe, access, sharedListNames }) => ({
+    recipes: page.entries.map(({ recipe, access, sharedListNames }) => ({
       ...recipe,
       libraryAccess: access,
       ...(sharedListNames.length ? { sharedListNames } : {}),
     })),
+    ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
   })
 }
 

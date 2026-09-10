@@ -236,7 +236,7 @@ they authored, imported, saved, or received through a list.
       them to a shopping run.
 - [x] A user can save a public recipe without adding it to a run and later
       remove that saved reference without deleting public or other-user data.
-- [ ] Library search supports title, ingredient, source, and tag with stable
+- [x] Library search supports title, ingredient, source, and tag with stable
       cursor pagination.
 - [ ] Personal notes and variants stay private unless separately shared or
       published.

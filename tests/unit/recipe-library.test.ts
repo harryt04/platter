@@ -1,6 +1,10 @@
 import type { Db } from 'mongodb'
 import { describe, expect, it, vi } from 'vitest'
-import { findRecipeLibrary } from '@/lib/recipes/library'
+import {
+  decodeRecipeLibraryCursor,
+  findRecipeLibrary,
+  searchRecipeLibrary,
+} from '@/lib/recipes/library'
 import type { ListDocument } from '@/lib/lists'
 import type {
   RecipeDraftDocument,
@@ -12,6 +16,7 @@ function query<T>(documents: T[]) {
   const cursor = {
     project: vi.fn(() => cursor),
     sort: vi.fn(() => cursor),
+    limit: vi.fn(() => cursor),
     toArray: vi.fn().mockResolvedValue(documents),
   }
   const find = vi.fn(() => cursor)
@@ -180,6 +185,76 @@ describe('findRecipeLibrary', () => {
     expect(recipes.find).toHaveBeenCalledWith({
       status: { $in: ['draft', 'usable'] },
       $or: [{ ownerId: 'owner-1' }],
+    })
+  })
+
+  it('searches accessible library fields and returns a stable cursor page', async () => {
+    const lists = query<ListDocument>([])
+    const shares = query<RecipeShareDocument>([])
+    const saves = query<RecipeSaveDocument>([])
+    const recipes = query<RecipeDraftDocument>([
+      recipe('recipe-1', {
+        updatedAt:
+          '2026-09-12T12:00:00.000Z' as RecipeDraftDocument['updatedAt'],
+      }),
+      recipe('recipe-2', {
+        updatedAt:
+          '2026-09-11T12:00:00.000Z' as RecipeDraftDocument['updatedAt'],
+      }),
+      recipe('recipe-3', {
+        updatedAt:
+          '2026-09-10T12:00:00.000Z' as RecipeDraftDocument['updatedAt'],
+      }),
+    ])
+    const db = {
+      collection: vi.fn((name: string) => {
+        if (name === 'lists') return lists
+        if (name === 'recipe_shares') return shares
+        if (name === 'recipe_saves') return saves
+        if (name === 'recipes') return recipes
+        throw new Error(`Unexpected collection: ${name}`)
+      }),
+    } as unknown as Db
+
+    const firstPage = await searchRecipeLibrary(db, 'owner-1', {
+      text: 'onion',
+      pageSize: 2,
+    })
+
+    expect(firstPage.entries.map(({ recipe: item }) => item.id)).toEqual([
+      'recipe-1',
+      'recipe-2',
+    ])
+    expect(firstPage.nextCursor).toBeDefined()
+    expect(decodeRecipeLibraryCursor(firstPage.nextCursor ?? '')).toEqual({
+      updatedAt: '2026-09-11T12:00:00.000Z',
+      id: 'recipe-2',
+    })
+    expect(recipes.find).toHaveBeenCalledWith({
+      status: { $in: ['draft', 'usable'] },
+      $text: { $search: 'onion' },
+      $and: [{ $or: [{ ownerId: 'owner-1' }] }],
+    })
+
+    await searchRecipeLibrary(db, 'owner-1', {
+      cursor: firstPage.nextCursor,
+      pageSize: 2,
+    })
+
+    expect(recipes.find).toHaveBeenLastCalledWith({
+      status: { $in: ['draft', 'usable'] },
+      $and: [
+        { $or: [{ ownerId: 'owner-1' }] },
+        {
+          $or: [
+            { updatedAt: { $lt: '2026-09-11T12:00:00.000Z' } },
+            {
+              updatedAt: '2026-09-11T12:00:00.000Z',
+              _id: { $gt: 'recipe-2' },
+            },
+          ],
+        },
+      ],
     })
   })
 })

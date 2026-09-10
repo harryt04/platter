@@ -16,6 +16,16 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import type {
   RecipeImageProvenance,
   RecipeIngredient,
@@ -102,6 +112,9 @@ export function DraftEditor({
   initialInstructions?: RecipeInstruction[]
 }) {
   const router = useRouter()
+  const [initialIngredientsSnapshot] = useState(() =>
+    JSON.stringify(initialIngredients),
+  )
   const [title, setTitle] = useState(initialTitle)
   const [description, setDescription] = useState(initialDescription)
   const [typicalPeopleFed, setTypicalPeopleFed] = useState(
@@ -149,6 +162,11 @@ export function DraftEditor({
     useState<RecipeInstruction[]>(initialInstructions)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [correctionDialogOpen, setCorrectionDialogOpen] = useState(false)
+
+  const ingredientCorrectionPending =
+    Boolean(recipeId) &&
+    initialIngredientsSnapshot !== JSON.stringify(ingredients)
 
   function updateIngredient(index: number, changes: Partial<IngredientForm>) {
     setIngredients((current) =>
@@ -158,8 +176,7 @@ export function DraftEditor({
     )
   }
 
-  async function save(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function persist() {
     setBusy(true)
     setError('')
     try {
@@ -231,6 +248,15 @@ export function DraftEditor({
     } finally {
       setBusy(false)
     }
+  }
+
+  function save(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (ingredientCorrectionPending) {
+      setCorrectionDialogOpen(true)
+      return
+    }
+    void persist()
   }
 
   return (
@@ -1000,6 +1026,46 @@ export function DraftEditor({
           </div>
         </form>
       </CardContent>
+      {correctionDialogOpen && (
+        <AlertDialog
+          aria-labelledby="recipe-correction-title"
+          aria-describedby="recipe-correction-description"
+          aria-modal="true"
+          className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4"
+        >
+          <AlertDialogContent className="w-full max-w-md">
+            <AlertDialogHeader>
+              <AlertDialogTitle id="recipe-correction-title">
+                Apply ingredient correction?
+              </AlertDialogTitle>
+              <AlertDialogDescription id="recipe-correction-description">
+                This saves a new recipe version with your corrected ingredient
+                facts. Existing shopping runs stay pinned to their current
+                version until a member explicitly chooses the newer version, so
+                shared grocery amounts will not change unexpectedly.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                disabled={busy}
+                onClick={() => setCorrectionDialogOpen(false)}
+                type="button"
+              >
+                Keep editing
+              </AlertDialogCancel>
+              <AlertDialogAction
+                disabled={busy}
+                onClick={() => {
+                  setCorrectionDialogOpen(false)
+                  void persist()
+                }}
+              >
+                {busy ? 'Saving…' : 'Save new version'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </Card>
   )
 }

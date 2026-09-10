@@ -46,6 +46,9 @@ both item identities, dimensions, original lines, and recipe sources before a
 merge correction. Members can split an incorrect combined contribution after
 reviewing its source line; the correction is scoped to the active run, keeps
 recipe facts unchanged, and remains stable when groceries are regenerated.
+Ingredient corrections in a recipe require explicit confirmation, save a new
+immutable recipe version, and leave existing selections pinned until a member
+accepts that version.
 Public recipe reads also have a shared visibility guard: imported content must
 be approved after review, usable, and explicitly public before it can render.
 Recipes now have stable identities and incrementing immutable version IDs;

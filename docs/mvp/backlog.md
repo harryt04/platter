@@ -369,7 +369,7 @@ editing the underlying recipes accidentally.
       contributions involved before accepting a merge.
 - [x] A user can split an incorrect merge and the corrected structure remains
       stable through deterministic regeneration of the current run.
-- [ ] Recipe-level parser corrections require explicit confirmation and create
+- [x] Recipe-level parser corrections require explicit confirmation and create
       or select the appropriate version before derived lists change.
 - [ ] Merge, split, correction, focus restoration, and non-color uncertainty
       states have automated coverage.

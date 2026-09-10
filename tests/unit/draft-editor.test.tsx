@@ -183,4 +183,56 @@ describe('DraftEditor', () => {
       screen.queryByRole('textbox', { name: 'Instruction 3' }),
     ).not.toBeInTheDocument()
   })
+
+  it('requires confirmation before saving an ingredient correction as a new version', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ recipe: { id: 'recipe-1' } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <DraftEditor
+        recipeId="recipe-1"
+        initialTitle="Tomato soup"
+        initialIngredients={[
+          {
+            originalText: '2 onions',
+            quantity: '2',
+            unit: 'each',
+            ingredientName: 'Onions',
+            optional: false,
+          },
+        ]}
+      />,
+    )
+
+    await user.clear(screen.getByRole('textbox', { name: 'Ingredient name' }))
+    await user.type(
+      screen.getByRole('textbox', { name: 'Ingredient name' }),
+      'Red onions',
+    )
+    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('alertdialog', { name: 'Apply ingredient correction?' }),
+    ).toHaveTextContent(/saves a new recipe version/i)
+    expect(
+      screen.getByText(/stay pinned to their current version/i),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Save new version' }))
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/recipes/recipe-1',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: expect.stringContaining('Red onions'),
+      }),
+    )
+  })
 })

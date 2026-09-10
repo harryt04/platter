@@ -95,6 +95,7 @@ export function GroceryRow({
   listId,
   baseRevision,
   editable,
+  showCalculatedRequirement = false,
 }: {
   item?: GroceryItem
   ingredient?: string
@@ -105,6 +106,7 @@ export function GroceryRow({
   listId?: string
   baseRevision?: number
   editable?: boolean
+  showCalculatedRequirement?: boolean
 }) {
   const itemIngredient = item?.ingredientName ?? ingredient ?? 'Grocery item'
   const itemAmount = item
@@ -134,7 +136,7 @@ export function GroceryRow({
                     : 'From Tacos + Curry'}
             </span>
           </div>
-          {item?.override && (
+          {item && (showCalculatedRequirement || item.override) && (
             <p className="text-muted-foreground mt-2 text-xs">
               Calculated requirement: {formatRequirement(item)}
             </p>

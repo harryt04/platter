@@ -50,6 +50,12 @@ export default async function ShopPage({
       [],
   })
   const mergeSuggestions = findGroceryMergeSuggestions(groceryItems)
+  const alreadyHaveItemIds = new Set(
+    run?.alreadyHaveItems?.map(({ itemId }) => itemId) ?? [],
+  )
+  const buyGroceryItems = groceryItems.filter(
+    (item) => !alreadyHaveItemIds.has(item.id),
+  )
 
   return (
     <ContentContainer>
@@ -75,9 +81,9 @@ export default async function ShopPage({
         <SyncStatus state="synced" />
       </div>
       <PageSection title="Grocery items">
-        {groceryItems.length > 0 ? (
+        {buyGroceryItems.length > 0 ? (
           <div className="space-y-3">
-            {groceryItems.map((item) => (
+            {buyGroceryItems.map((item) => (
               <div className="space-y-2" key={item.id}>
                 <GroceryRow
                   item={item}
@@ -100,8 +106,9 @@ export default async function ShopPage({
           </div>
         ) : (
           <p className="text-muted-foreground text-sm">
-            This shopping run has no grocery items yet. Choose a recipe to add
-            its ingredients.
+            {groceryItems.length > 0
+              ? 'Everything in this run is marked already have. Review at home if you want to add an item back.'
+              : 'This shopping run has no grocery items yet. Choose a recipe to add its ingredients.'}
           </p>
         )}
       </PageSection>

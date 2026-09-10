@@ -19,6 +19,7 @@ import {
 import { notFound } from 'next/navigation'
 import { GroceryAmountOverrideForm } from '@/components/lists/grocery-amount-override-form'
 import { ManualGroceryItems } from '@/components/lists/manual-grocery-items'
+import { AlreadyHaveButton } from '@/components/lists/already-have-button'
 
 export default async function ReviewPage({
   params,
@@ -76,6 +77,19 @@ export default async function ReviewPage({
                   baseRevision={run?.revision}
                   listId={listId}
                   editable={!isReadOnly}
+                  showCalculatedRequirement
+                />
+                <AlreadyHaveButton
+                  baseRevision={run?.revision}
+                  editable={!isReadOnly}
+                  ingredientName={item.ingredientName}
+                  itemId={item.id}
+                  listId={listId}
+                  marked={Boolean(
+                    run?.alreadyHaveItems?.some(
+                      (alreadyHave) => alreadyHave.itemId === item.id,
+                    ),
+                  )}
                 />
                 <GroceryAmountOverrideForm
                   baseRevision={run?.revision}

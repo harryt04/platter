@@ -421,16 +421,16 @@ on hand without creating a pantry inventory system.
 
 **Blocked by:** 17: Override shopping amounts
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] The active run has a clear `Review at home` mode showing shopping amount,
+- [x] The active run has a clear `Review at home` mode showing shopping amount,
       calculated requirement, category, and contribution access.
-- [ ] `Already have` is an all-or-nothing item state that removes the item from
+- [x] `Already have` is an all-or-nothing item state that removes the item from
       the buy view without marking it purchased or storing a pantry quantity.
-- [ ] Undo restores the item with its prior override and provenance intact.
-- [ ] Partial on-hand quantities are handled through a shopping-amount override
+- [x] Undo restores the item with its prior override and provenance intact.
+- [x] Partial on-hand quantities are handled through a shopping-amount override
       rather than a pantry prompt.
-- [ ] An all-already-have run keeps its recipe selections and explains why the
+- [x] An all-already-have run keeps its recipe selections and explains why the
       buy view is empty.
 - [ ] The review remains available after shopping starts and works at 320px with
       one-tap controls and accessible announcements.

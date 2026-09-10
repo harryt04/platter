@@ -2,6 +2,7 @@ import { getSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { problemResponse } from '@/lib/contracts/problem'
 import {
+  notificationRecipientFilter,
   toNotificationSummary,
   type NotificationDocument,
 } from '@/lib/notifications'
@@ -23,7 +24,7 @@ export async function GET() {
   const db = await getConnectedDatabase()
   const documents = await db
     .collection<NotificationDocument>('notifications')
-    .find({ userId: session.user.id })
+    .find(notificationRecipientFilter(session.user.id))
     .sort({ createdAt: -1 })
     .limit(50)
     .toArray()

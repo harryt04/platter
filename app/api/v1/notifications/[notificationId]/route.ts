@@ -4,6 +4,7 @@ import { isoDateTime } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
 import {
   notificationIdSchema,
+  notificationRecipientFilter,
   toNotificationSummary,
   type NotificationDocument,
 } from '@/lib/notifications'
@@ -44,7 +45,7 @@ export async function PATCH(_request: Request, context: RouteContext) {
   )
     .collection<NotificationDocument>('notifications')
     .findOneAndUpdate(
-      { _id: notificationId, userId: session.user.id },
+      { _id: notificationId, ...notificationRecipientFilter(session.user.id) },
       { $set: { readAt: isoDateTime(new Date()) } },
       { returnDocument: 'after' },
     )

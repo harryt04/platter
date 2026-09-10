@@ -115,7 +115,7 @@ ownership
       delivery failure does not invalidate an in-product invitation.
 - [ ] Purchased checks and routine grocery edits never generate email or push
       notifications.
-- [ ] Notification payloads contain no recipe or grocery content and respect
+- [x] Notification payloads contain no recipe or grocery content and respect
       list-scoped authorization.
 
 ## 05: Create and save recipe drafts

@@ -3,6 +3,7 @@ import {
   createNotificationDocument,
   notifyExistingUserByEmail,
   notificationCopy,
+  notificationRecipientFilter,
   toNotificationSummary,
 } from '@/lib/notifications'
 
@@ -25,6 +26,31 @@ describe('notification contracts', () => {
     })
     expect(notification).not.toHaveProperty('recipe')
     expect(notification).not.toHaveProperty('grocery')
+  })
+
+  it('rejects recipe and grocery fields at the notification persistence boundary', () => {
+    expect(() =>
+      createNotificationDocument({
+        userId: 'user-1',
+        event: 'removed',
+        listId: 'list-1',
+        listName: 'Family',
+        recipe: 'recipe content',
+      } as never),
+    ).toThrow()
+    expect(() =>
+      createNotificationDocument({
+        userId: 'user-1',
+        event: 'removed',
+        listId: 'list-1',
+        listName: 'Family',
+        grocery: ['onions'],
+      } as never),
+    ).toThrow()
+  })
+
+  it('uses the recipient as the sole notification authorization scope', () => {
+    expect(notificationRecipientFilter('user-1')).toEqual({ userId: 'user-1' })
   })
 
   it('links invitation notifications to their authenticated invitation view', () => {

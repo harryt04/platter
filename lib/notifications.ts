@@ -40,17 +40,30 @@ export type NotificationSummary = {
   body: string
 }
 
-type NotificationInput = Omit<
-  NotificationDocument,
-  '_id' | 'createdAt' | 'readAt'
->
+const notificationInputSchema = z
+  .object({
+    userId: z.string().min(1),
+    event: z.enum(['invitation', 'role-changed', 'removed']),
+    listId: z.string().min(1),
+    listName: z.string().min(1),
+    invitationId: z.string().min(1).optional(),
+    role: z.enum(['owner', 'editor']).optional(),
+  })
+  .strict()
+
+type NotificationInput = z.infer<typeof notificationInputSchema>
+
+export function notificationRecipientFilter(userId: string) {
+  return { userId }
+}
 
 export function createNotificationDocument(
   input: NotificationInput,
   now = new Date(),
 ): NotificationDocument {
+  const validated = notificationInputSchema.parse(input)
   return {
-    ...input,
+    ...validated,
     _id: crypto.randomUUID(),
     createdAt: isoDateTime(now),
   }
@@ -107,7 +120,7 @@ export async function findInvitationForNotification(
     .collection<NotificationDocument>('notifications')
     .findOne({
       _id: notificationId,
-      userId,
+      ...notificationRecipientFilter(userId),
       event: 'invitation',
     })
   if (!notification?.invitationId) return null

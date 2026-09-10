@@ -339,9 +339,9 @@ selections while merging only facts that are safe to combine.
 
 **Blocked by:** 13: Manage recipe selections
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] Grocery generation is deterministic for identical recipe versions,
+- [x] Grocery generation is deterministic for identical recipe versions,
       people counts, manual additions, and overrides.
 - [ ] High-confidence matches with compatible dimensions convert to a common
       calculation unit and merge without losing decimal precision.

@@ -17,6 +17,7 @@ import {
   type RecipeDraftDocument,
   type RecipeShareDocument,
 } from '@/lib/recipes/drafts'
+import { generateGroceryItems } from '@/lib/recipes/groceries'
 
 export default async function ListPage({
   params,
@@ -33,6 +34,12 @@ export default async function ListPage({
     ? await resolveRunRecipeVersions(db, run.recipeSelections)
     : []
   const selections = run?.recipeSelections ?? []
+  const groceryItems = generateGroceryItems({
+    selections: resolvedSelections.flatMap(({ version }, index) => {
+      const selection = selections[index]
+      return selection && version ? [{ selection, version }] : []
+    }),
+  })
   const recipeIds = [
     ...new Set(selections.map((selection) => selection.recipeId)),
   ]
@@ -98,7 +105,7 @@ export default async function ListPage({
             </div>
             <div className="flex justify-between">
               <span>Grocery items</span>
-              <span className="font-data">0</span>
+              <span className="font-data">{groceryItems.length}</span>
             </div>
             {list.status === 'active' ? (
               <Button className="w-full" asChild>

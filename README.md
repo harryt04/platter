@@ -37,7 +37,9 @@ locale-formatted dates; the history view says which recipes were shopped for
 without implying that they were cooked or purchased. Each history entry now
 opens to an authorized detail view showing its completion date, completing
 member, immutable recipe versions, and people counts without retaining a final
-checklist.
+checklist. Members can explicitly add those pinned recipe versions and people
+counts to the current run again; the action is idempotent and never restores
+the old checklist state.
 The ingredient parser now recognizes common quantity forms, preserves source
 text, records qualitative confidence and a stable normalized identity when the
 parse is sufficient, resolves a bounded set of high-confidence ingredient

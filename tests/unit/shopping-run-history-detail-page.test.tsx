@@ -2,6 +2,10 @@ import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RunHistoryPage from '@/app/(app)/lists/[listId]/history/[runId]/page'
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}))
+
 const mocks = vi.hoisted(() => ({
   requireSession: vi.fn(),
   findListForMember: vi.fn(),

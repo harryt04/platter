@@ -54,7 +54,13 @@ export type SelectionMutationReceipt = {
   operationId: string
   clientId: string
   target: string
-  kind: 'create' | 'update-people' | 'remove' | 'duplicate' | 'repin'
+  kind:
+    | 'create'
+    | 'update-people'
+    | 'remove'
+    | 'duplicate'
+    | 'repin'
+    | 'repeat-history'
   status: 200 | 201
   response: Record<string, unknown>
 }

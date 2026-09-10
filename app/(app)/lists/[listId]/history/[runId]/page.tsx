@@ -12,6 +12,7 @@ import {
 } from '@/lib/shopping-run-history'
 import { resolvePinnedRecipeVersions } from '@/lib/recipes/versions'
 import type { RecipeVersionDocument } from '@/lib/recipes/drafts'
+import { RepeatHistoryButton } from '@/components/lists/repeat-history-button'
 
 export default async function RunHistoryPage({
   params,
@@ -89,6 +90,17 @@ export default async function RunHistoryPage({
               ))}
             </ul>
           )}
+          <div className="mt-6 border-t pt-6">
+            <RepeatHistoryButton
+              historyId={runId}
+              listId={listId}
+              runId={list.activeRunId}
+            />
+            <p className="text-muted-foreground mt-2 text-sm">
+              This adds the same pinned recipe versions and people counts to the
+              current run. It does not restore the old checklist.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </ContentContainer>

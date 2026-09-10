@@ -590,7 +590,7 @@ make those selections useful again without restoring an old checklist.
       immutable recipe versions, and people counts—and no final checklist.
 - [x] Copy says the recipes were shopped for and never infers that they were
       cooked or that every item was purchased.
-- [ ] A member can explicitly add a recent run's recipe versions and people
+- [x] A member can explicitly add a recent run's recipe versions and people
       counts to the current run through normal selection rules.
 - [ ] Repeating a run generates a fresh checklist with default ordering and no
       old purchased, already-have, override, or pantry state.

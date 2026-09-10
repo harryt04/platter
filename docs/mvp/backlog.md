@@ -634,7 +634,7 @@ secure import
 - [x] The base adapter extracts Schema.org `Recipe` data when present and maps
       title, yield, ingredients, instructions, metadata, and attribution into the
       structured editor.
-- [ ] The preview lets the user correct title, typical yield, ingredient
+- [x] The preview lets the user correct title, typical yield, ingredient
       structure, ordered instructions, source facts, and attribution before save.
 - [ ] Partial extraction preserves every safe useful field and opens a prefilled
       manual editor instead of discarding data.

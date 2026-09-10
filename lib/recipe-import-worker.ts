@@ -6,6 +6,7 @@ import {
   isRecipeImportFetchError,
   type RecipeImportFetchResult,
 } from '@/lib/recipe-import-fetcher'
+import { extractSchemaOrgRecipe } from '@/lib/recipe-import-schema-org'
 import type { RecipeImportDocument } from '@/lib/recipe-imports'
 
 export const recipeImportRetryPolicy = {
@@ -58,9 +59,36 @@ export function createRecipeImportJobHandler(
     }
 
     try {
-      // The next importer stage will normalize this bounded body. Until then,
-      // never persist or publish fetched source content as an approved recipe.
-      await fetcher(document.sourceUrl)
+      const fetched = await fetcher(document.sourceUrl)
+      const preview = extractSchemaOrgRecipe(fetched.body, fetched.finalUrl)
+      if (!preview) {
+        await collection.updateOne(
+          {
+            _id: payload.importId,
+            userId: payload.userId,
+            status: 'processing',
+          },
+          {
+            $set: {
+              status: 'failed',
+              failureCode: 'RECIPE_DATA_NOT_FOUND',
+              updatedAt: isoDateTime(new Date()),
+            },
+          },
+        )
+        return
+      }
+      await collection.updateOne(
+        { _id: payload.importId, userId: payload.userId, status: 'processing' },
+        {
+          $set: {
+            status: 'preview-ready',
+            preview,
+            updatedAt: isoDateTime(new Date()),
+          },
+          $unset: { failureCode: '' },
+        },
+      )
     } catch (error) {
       const failureCode = isRecipeImportFetchError(error)
         ? error.code

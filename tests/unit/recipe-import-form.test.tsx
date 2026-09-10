@@ -33,4 +33,32 @@ describe('RecipeImportForm', () => {
       screen.getByText(/never adds.*shopping run automatically/i),
     ).toBeInTheDocument()
   })
+
+  it('links a ready import to its editable preview', () => {
+    render(
+      <RecipeImportForm
+        initialImports={[
+          {
+            id: 'b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7' as never,
+            sourceUrl: 'https://example.com/recipe',
+            status: 'preview-ready',
+            attemptCount: 1,
+            submittedAt: '2026-09-10T12:00:00.000Z' as never,
+            updatedAt: '2026-09-10T12:00:00.000Z' as never,
+            preview: {
+              title: 'Example recipe',
+              ingredients: [],
+              instructions: [],
+              sourceUrl: 'https://example.com/recipe',
+              warnings: [],
+            },
+          },
+        ]}
+      />,
+    )
+
+    expect(
+      screen.getByRole('link', { name: 'Review extracted recipe' }),
+    ).toHaveAttribute('href', '/import/b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7')
+  })
 })

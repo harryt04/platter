@@ -1,0 +1,92 @@
+import '@testing-library/jest-dom/vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { RecipeImportPreview } from '@/components/recipes/recipe-import-preview'
+
+const { push } = vi.hoisted(() => ({ push: vi.fn() }))
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))
+
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
+
+const candidate = {
+  title: 'Imported soup',
+  typicalPeopleFed: 4,
+  ingredients: [
+    {
+      originalText: '1 cup carrots',
+      quantity: '1',
+      unit: 'cup',
+      ingredientName: 'carrots',
+      optional: false,
+    },
+  ],
+  instructions: ['Simmer.'],
+  sourceName: 'Example Recipes',
+  sourceUrl: 'https://example.com/recipe',
+  warnings: ['The source did not provide a single whole-number yield.'],
+}
+
+describe('RecipeImportPreview', () => {
+  it('renders editable recipe structure, source facts, warnings, and no-run copy', () => {
+    render(
+      <RecipeImportPreview
+        candidate={candidate}
+        importId="b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7"
+      />,
+    )
+
+    expect(screen.getByLabelText('Recipe title')).toHaveValue('Imported soup')
+    expect(screen.getByLabelText('Typical people fed')).toHaveValue(4)
+    expect(screen.getByLabelText('Ingredient name')).toHaveValue('carrots')
+    expect(screen.getByLabelText('Instruction 1')).toHaveValue('Simmer.')
+    expect(screen.getByLabelText('Source name')).toHaveValue('Example Recipes')
+    expect(
+      screen.getByText(/saving creates a private imported draft/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/will not add anything to an active shopping run/i),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/single whole-number yield/i)).toBeInTheDocument()
+  })
+
+  it('supports correcting and reordering the preview before saving', () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ recipe: { id: 'recipe-1' } }), {
+        status: 201,
+        headers: { 'content-type': 'application/json' },
+      }),
+    )
+    render(
+      <RecipeImportPreview
+        candidate={{
+          ...candidate,
+          instructions: ['First.', 'Second.'],
+        }}
+        importId="b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7"
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Recipe title'), {
+      target: { value: 'Corrected soup' },
+    })
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Move instruction 2 up' }),
+    )
+    expect(screen.getByLabelText('Instruction 1')).toHaveValue('Second.')
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Save private recipe draft' }),
+    )
+
+    return vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/v1/imports/b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7/save',
+        expect.objectContaining({ method: 'POST' }),
+      )
+      expect(push).toHaveBeenCalledWith('/recipes/recipe-1/edit')
+      fetchMock.mockRestore()
+    })
+  })
+})

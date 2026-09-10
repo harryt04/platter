@@ -6,6 +6,7 @@ import {
   type EntityId,
   type IsoDateTime,
 } from '@/lib/contracts/ids'
+import type { RecipeImportCandidate } from '@/lib/recipe-import-schema-org'
 
 export const recipeImportStatusSchema = z.enum([
   'queued',
@@ -59,6 +60,8 @@ export type RecipeImportDocument = {
   submittedAt: IsoDateTime
   updatedAt: IsoDateTime
   failureCode?: string
+  preview?: RecipeImportCandidate
+  savedRecipeId?: string
 }
 
 export type RecipeImportSummary = {
@@ -69,6 +72,8 @@ export type RecipeImportSummary = {
   submittedAt: IsoDateTime
   updatedAt: IsoDateTime
   failureCode?: string
+  preview?: RecipeImportCandidate
+  savedRecipeId?: EntityId
 }
 
 export function recipeImports(collection: Collection<RecipeImportDocument>) {
@@ -109,5 +114,9 @@ export function toRecipeImportSummary(
     submittedAt: document.submittedAt,
     updatedAt: document.updatedAt,
     ...(document.failureCode ? { failureCode: document.failureCode } : {}),
+    ...(document.preview ? { preview: document.preview } : {}),
+    ...(document.savedRecipeId
+      ? { savedRecipeId: entityId(document.savedRecipeId) }
+      : {}),
   }
 }

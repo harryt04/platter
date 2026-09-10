@@ -16,7 +16,7 @@ const document = {
 describe('recipe import worker fetch stage', () => {
   beforeEach(() => vi.restoreAllMocks())
 
-  it('atomically claims a queued import and fetches only its persisted URL', async () => {
+  it('atomically claims a queued import and stores an editable preview', async () => {
     const collection = {
       findOneAndUpdate: vi.fn().mockResolvedValue(document),
       updateOne: vi.fn(),
@@ -26,8 +26,14 @@ describe('recipe import worker fetch stage', () => {
       requestedUrl: document.sourceUrl,
       finalUrl: document.sourceUrl,
       contentType: 'text/html',
-      body: '<html />',
-      byteLength: 9,
+      body: `<script type="application/ld+json">${JSON.stringify({
+        '@type': 'Recipe',
+        name: 'Worker soup',
+        recipeYield: '4',
+        recipeIngredient: ['1 cup carrots'],
+        recipeInstructions: ['Simmer.'],
+      })}</script>`,
+      byteLength: 180,
     })
 
     await createRecipeImportJobHandler(
@@ -57,7 +63,60 @@ describe('recipe import worker fetch stage', () => {
       { returnDocument: 'after' },
     )
     expect(fetcher).toHaveBeenCalledWith(document.sourceUrl)
-    expect(collection.updateOne).not.toHaveBeenCalled()
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      { _id: document._id, userId: document.userId, status: 'processing' },
+      {
+        $set: {
+          status: 'preview-ready',
+          preview: expect.objectContaining({
+            title: 'Worker soup',
+            typicalPeopleFed: 4,
+            sourceUrl: document.sourceUrl,
+          }),
+          updatedAt: expect.any(String),
+        },
+        $unset: { failureCode: '' },
+      },
+    )
+  })
+
+  it('fails safely when no supported recipe candidate is found', async () => {
+    const collection = {
+      findOneAndUpdate: vi.fn().mockResolvedValue(document),
+      updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
+    }
+    const db = { collection: vi.fn().mockReturnValue(collection) }
+    const fetcher = vi.fn().mockResolvedValue({
+      requestedUrl: document.sourceUrl,
+      finalUrl: document.sourceUrl,
+      contentType: 'text/html',
+      body: '<html><title>Not structured</title></html>',
+      byteLength: 45,
+    })
+
+    await createRecipeImportJobHandler(
+      db as never,
+      fetcher,
+    )({
+      attrs: {
+        data: {
+          importId: document._id,
+          userId: document.userId,
+          idempotencyKey: document.idempotencyKey,
+        },
+      },
+    })
+
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      { _id: document._id, userId: document.userId, status: 'processing' },
+      {
+        $set: {
+          status: 'failed',
+          failureCode: 'RECIPE_DATA_NOT_FOUND',
+          updatedAt: expect.any(String),
+        },
+      },
+    )
   })
 
   it('records a typed fetch failure without publishing or retrying unsafe content', async () => {

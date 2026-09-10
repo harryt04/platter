@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { AlertCircle, CheckCircle2, Clock3, LoaderCircle } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -36,6 +37,23 @@ function StatusIcon({ status }: { status: RecipeImportStatus }) {
   return <Clock3 aria-hidden size={16} />
 }
 
+function subscribeToOnlineStatus(onChange: () => void) {
+  window.addEventListener('online', onChange)
+  window.addEventListener('offline', onChange)
+  return () => {
+    window.removeEventListener('online', onChange)
+    window.removeEventListener('offline', onChange)
+  }
+}
+
+function getOnlineStatus() {
+  return navigator.onLine
+}
+
+function getServerOnlineStatus() {
+  return true
+}
+
 export function RecipeImportForm({
   initialImports,
 }: {
@@ -45,22 +63,13 @@ export function RecipeImportForm({
   const [imports, setImports] = React.useState(initialImports)
   const [sourceUrl, setSourceUrl] = React.useState('')
   const [pending, setPending] = React.useState(false)
-  const [online, setOnline] = React.useState(() =>
-    typeof navigator === 'undefined' ? true : navigator.onLine,
+  const online = React.useSyncExternalStore(
+    subscribeToOnlineStatus,
+    getOnlineStatus,
+    getServerOnlineStatus,
   )
   const [message, setMessage] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
-
-  React.useEffect(() => {
-    const updateOnline = () => setOnline(true)
-    const updateOffline = () => setOnline(false)
-    window.addEventListener('online', updateOnline)
-    window.addEventListener('offline', updateOffline)
-    return () => {
-      window.removeEventListener('online', updateOnline)
-      window.removeEventListener('offline', updateOffline)
-    }
-  }, [])
 
   React.useEffect(() => {
     if (
@@ -218,6 +227,16 @@ export function RecipeImportForm({
                       {statusDescription[item.status]}
                       {item.failureCode ? ` (${item.failureCode})` : ''}
                     </p>
+                    {item.status === 'preview-ready' && item.preview && (
+                      <Link
+                        className="text-primary inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
+                        href={`/import/${item.id}`}
+                      >
+                        {item.savedRecipeId
+                          ? 'Open saved import'
+                          : 'Review extracted recipe'}
+                      </Link>
+                    )}
                   </CardContent>
                 </Card>
               </li>

@@ -640,7 +640,7 @@ secure import
       manual editor instead of discarding data.
 - [ ] Hostile markup is sanitized and cannot execute or inject active content;
       unsupported editorial prose is not copied into the normalized record.
-- [ ] The preview clearly states that saving an import will not add it to an
+- [x] The preview clearly states that saving an import will not add it to an
       active shopping run.
 - [ ] Parser tests use synthetic or licensed HTML fixtures and cover incomplete,
       malformed, hostile, and missing-quantity recipes.

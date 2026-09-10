@@ -54,16 +54,17 @@ function setup(
   const versions = {
     insertOne: vi.fn().mockResolvedValue({ acknowledged: true }),
   }
+  const collection = vi.fn((name: string) =>
+    name === 'recipe_imports'
+      ? imports
+      : name === 'recipes'
+        ? recipes
+        : versions,
+  )
   getConnectedDatabase.mockResolvedValue({
-    collection: vi.fn((name: string) =>
-      name === 'recipe_imports'
-        ? imports
-        : name === 'recipes'
-          ? recipes
-          : versions,
-    ),
+    collection,
   })
-  return { imports, recipes, versions }
+  return { collection, imports, recipes, versions }
 }
 
 function request(body: unknown) {
@@ -81,7 +82,7 @@ beforeEach(() => {
 
 describe('POST /api/v1/imports/[importId]/save', () => {
   it('saves corrected preview fields as a private imported draft', async () => {
-    const { imports, recipes, versions } = setup()
+    const { collection, imports, recipes, versions } = setup()
     const response = await POST(
       request({
         title: 'Corrected soup',
@@ -132,6 +133,7 @@ describe('POST /api/v1/imports/[importId]/save', () => {
       }),
     )
     expect(versions.insertOne).toHaveBeenCalledOnce()
+    expect(collection).not.toHaveBeenCalledWith('shopping_runs')
   })
 
   it('replays an already-saved import without creating another recipe', async () => {

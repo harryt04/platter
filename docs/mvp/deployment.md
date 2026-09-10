@@ -24,7 +24,9 @@ human-created OAuth credentials and approved redirect URIs.
 The worker passes only the bounded result of the SSRF-safe fetch stage to an
 import adapter. Adapters implement the typed contract in
 `lib/recipe-import-adapters.ts` and return a normalized candidate, a partial
-candidate with explicit warnings, or a typed failure. The current
-`schema-org-json-ld` adapter is isolated from fetching and persistence, so
-future site-specific or generic adapters can be added or disabled without
-changing manual recipes, saved recipes, discovery, or shopping workflows.
+candidate with explicit warnings, or a typed failure. Selection tries the
+`schema-org-json-ld` adapter first, then enabled site-specific adapters in
+registry order, and finally the conservative `generic-html` adapter. Every
+adapter receives only the same bounded fetch result; a disabled or failing
+adapter therefore cannot expand fetch authority or interrupt manual recipes,
+saved recipes, discovery, or shopping workflows.

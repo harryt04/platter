@@ -681,7 +681,7 @@ imports
 
 - [x] The adapter contract accepts bounded fetched content and returns either a
       normalized candidate, a partial candidate with warnings, or a typed failure.
-- [ ] Selection tries Schema.org first, then an enabled supported site adapter,
+- [x] Selection tries Schema.org first, then an enabled supported site adapter,
       then generic extraction without weakening fetch security.
 - [ ] Operators can disable a source adapter, and its failure or absence leaves
       manual recipes, saved recipes, discovery, and shopping available.

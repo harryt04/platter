@@ -9,7 +9,10 @@ import {
 import type { RecipeImportCandidate } from '@/lib/recipe-import-schema-org'
 
 export const recipeImportAcquisitionMethodSchema = z.enum(['server-fetch'])
-export const recipeImportImporterSchema = z.enum(['schema-org-json-ld'])
+export const recipeImportImporterSchema = z.enum([
+  'schema-org-json-ld',
+  'generic-html',
+])
 export const recipeImportRightsStatusSchema = z.enum([
   'unknown',
   'licensed',

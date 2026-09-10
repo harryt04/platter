@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  genericHtmlRecipeAdapter,
   runRecipeImportAdapter,
+  selectRecipeImportAdapter,
   schemaOrgRecipeAdapter,
 } from '@/lib/recipe-import-adapters'
 
@@ -96,5 +98,55 @@ describe('recipe import adapter contract', () => {
       adapterId: 'schema-org-json-ld',
       failure: { code: 'ADAPTER_FAILED' },
     })
+  })
+
+  it('tries enabled site adapters before conservative generic extraction', () => {
+    const siteAdapter = {
+      adapterId: 'generic-html' as const,
+      supports: () => true,
+      extract: vi.fn().mockReturnValue({
+        candidate: {
+          title: 'Site recipe',
+          ingredients: [],
+          instructions: [],
+          sourceUrl: content.finalUrl,
+          warnings: [],
+        },
+      }),
+    }
+
+    expect(
+      selectRecipeImportAdapter(
+        { ...content, body: '<h1>Recipe</h1>' },
+        { supportedAdapters: [siteAdapter] },
+      ),
+    ).toMatchObject({ kind: 'candidate', adapterId: 'generic-html' })
+    expect(siteAdapter.extract).toHaveBeenCalledOnce()
+  })
+
+  it('skips disabled site adapters and uses generic HTML facts', () => {
+    const disabledAdapter = {
+      adapterId: 'generic-html' as const,
+      enabled: false,
+      extract: vi.fn(),
+    }
+    const result = selectRecipeImportAdapter(
+      {
+        ...content,
+        body: '<h1>Fallback soup</h1><span itemprop="recipeIngredient">1 cup carrots</span>',
+      },
+      { supportedAdapters: [disabledAdapter] },
+    )
+
+    expect(result).toMatchObject({
+      kind: 'partial',
+      adapterId: 'generic-html',
+      candidate: {
+        title: 'Fallback soup',
+        ingredients: [expect.objectContaining({ ingredientName: 'carrots' })],
+      },
+    })
+    expect(disabledAdapter.extract).not.toHaveBeenCalled()
+    expect(genericHtmlRecipeAdapter.adapterId).toBe('generic-html')
   })
 })

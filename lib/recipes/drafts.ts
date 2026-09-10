@@ -6,6 +6,7 @@ import {
   type EntityId,
   type IsoDateTime,
 } from '@/lib/contracts/ids'
+import type { RecipeImportImporter } from '@/lib/recipe-imports'
 
 const cleanText = (value: string) =>
   value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim()
@@ -248,7 +249,7 @@ export type RecipeImportProvenanceDocument = {
   sourceDomain: string
   sourceTitle?: string
   sourceAuthor?: string
-  importer: 'schema-org-json-ld'
+  importer: RecipeImportImporter
   importedAt: IsoDateTime
   acquiredAt: IsoDateTime
   acquisitionMethod: 'server-fetch'

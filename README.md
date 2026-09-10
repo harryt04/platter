@@ -185,9 +185,10 @@ deduplication, source-version coexistence, discovery visibility, private
 boundaries, and complete provenance.
 The import extraction stage now runs through a typed replaceable adapter
 contract: bounded fetched HTML can produce a normalized candidate, a partial
-candidate with warnings, or an isolated typed failure. The Schema.org adapter
-is the first implementation, leaving site-specific and generic adapters to be
-added behind the same boundary.
+candidate with warnings, or an isolated typed failure. Selection tries
+Schema.org JSON-LD first, then enabled site adapters supplied by the registry,
+and finally conservative generic HTML microdata/title extraction. All adapters
+receive only the same bounded SSRF-safe fetch result.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

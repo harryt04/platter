@@ -89,7 +89,7 @@ describe('recipe import worker fetch stage', () => {
     )
   })
 
-  it('fails safely when no supported recipe candidate is found', async () => {
+  it('uses generic extraction when no structured recipe candidate is found', async () => {
     const collection = {
       findOneAndUpdate: vi.fn().mockResolvedValue(document),
       updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
@@ -120,10 +120,24 @@ describe('recipe import worker fetch stage', () => {
       { _id: document._id, userId: document.userId, status: 'processing' },
       {
         $set: {
-          status: 'failed',
-          failureCode: 'RECIPE_DATA_NOT_FOUND',
+          status: 'preview-ready',
+          preview: expect.objectContaining({
+            title: 'Not structured',
+            warnings: expect.arrayContaining([
+              'Generic extraction was used. Review every imported field before saving.',
+            ]),
+          }),
+          canonicalUrl: document.sourceUrl,
+          sourceDomain: 'example.com',
+          sourceTitle: 'Not structured',
+          importer: 'generic-html',
+          acquiredAt: expect.any(String),
+          acquisitionMethod: 'server-fetch',
+          contentFingerprint: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+          rightsStatus: 'unknown',
           updatedAt: expect.any(String),
         },
+        $unset: { failureCode: '' },
       },
     )
   })

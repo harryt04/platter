@@ -4,6 +4,7 @@ import {
   extractSchemaOrgRecipe,
   type RecipeImportCandidate,
 } from '@/lib/recipe-import-schema-org'
+import { extractGenericRecipe } from '@/lib/recipe-import-generic'
 import type { RecipeImportImporter } from '@/lib/recipe-imports'
 
 export type RecipeImportAdapterContent = Pick<
@@ -41,6 +42,8 @@ export type RecipeImportAdapterResult =
 
 export type RecipeImportAdapter = {
   adapterId: RecipeImportImporter
+  enabled?: boolean
+  supports?: (content: RecipeImportAdapterContent) => boolean
   extract: (content: RecipeImportAdapterContent) =>
     | {
         candidate: RecipeImportCandidate
@@ -48,6 +51,11 @@ export type RecipeImportAdapter = {
     | {
         failure: RecipeImportAdapterFailure
       }
+}
+
+export type RecipeImportAdapterSelectionOptions = {
+  /** Site adapters are ordered by specificity and may be disabled by config. */
+  supportedAdapters?: readonly RecipeImportAdapter[]
 }
 
 function invalidContent(content: RecipeImportAdapterContent) {
@@ -122,4 +130,33 @@ export const schemaOrgRecipeAdapter: RecipeImportAdapter = {
       ? { candidate }
       : { failure: { code: 'RECIPE_DATA_NOT_FOUND' } }
   },
+}
+
+export const genericHtmlRecipeAdapter: RecipeImportAdapter = {
+  adapterId: 'generic-html',
+  extract: (content) => ({
+    candidate: extractGenericRecipe(content.body, content.finalUrl),
+  }),
+}
+
+/** Choose structured, site-specific, then conservative generic extraction. */
+export function selectRecipeImportAdapter(
+  content: RecipeImportAdapterContent,
+  options: RecipeImportAdapterSelectionOptions = {},
+) {
+  const primary = runRecipeImportAdapter(schemaOrgRecipeAdapter, content)
+  if (primary.kind !== 'failure') return primary
+
+  for (const adapter of options.supportedAdapters ?? []) {
+    if (adapter.enabled === false) continue
+    try {
+      if (adapter.supports && !adapter.supports(content)) continue
+    } catch {
+      continue
+    }
+    const result = runRecipeImportAdapter(adapter, content)
+    if (result.kind !== 'failure') return result
+  }
+
+  return runRecipeImportAdapter(genericHtmlRecipeAdapter, content)
 }

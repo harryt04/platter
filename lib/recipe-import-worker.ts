@@ -2,10 +2,7 @@ import { createHash } from 'node:crypto'
 import type { Db } from 'mongodb'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { validateJobPayload } from '@/lib/jobs/registry'
-import {
-  runRecipeImportAdapter,
-  schemaOrgRecipeAdapter,
-} from '@/lib/recipe-import-adapters'
+import { selectRecipeImportAdapter } from '@/lib/recipe-import-adapters'
 import {
   fetchRecipeSource,
   isRecipeImportFetchError,
@@ -65,7 +62,7 @@ export function createRecipeImportJobHandler(
 
     try {
       const fetched = await fetcher(document.sourceUrl)
-      const adapted = runRecipeImportAdapter(schemaOrgRecipeAdapter, fetched)
+      const adapted = selectRecipeImportAdapter(fetched)
       if (adapted.kind === 'failure') {
         await collection.updateOne(
           {

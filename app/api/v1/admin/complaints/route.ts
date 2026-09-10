@@ -2,6 +2,7 @@ import { getSession } from '@/lib/auth/authorization'
 import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import {
+  recordComplaintAudit,
   toAdminComplaintSummary,
   type ComplaintDocument,
 } from '@/lib/complaints'
@@ -38,6 +39,12 @@ export async function GET() {
     .sort({ receivedAt: -1, _id: -1 })
     .limit(100)
     .toArray()
+
+  await recordComplaintAudit(db, {
+    action: 'queue-viewed',
+    actorId: session.user.id,
+    complaintIds: documents.map((document) => document._id),
+  })
 
   return Response.json({
     complaints: documents.map(toAdminComplaintSummary),

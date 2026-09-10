@@ -5,6 +5,7 @@ import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import {
   canTransitionComplaint,
   complaintIdSchema,
+  recordComplaintAudit,
   toAdminComplaintSummary,
   updateComplaintStatusSchema,
   type ComplaintDocument,
@@ -92,9 +93,8 @@ export async function PATCH(request: Request, context: RouteContext) {
   const parsed = updateComplaintStatusSchema.safeParse(body)
   if (!parsed.success) return validationFailed()
 
-  const complaints = (
-    await getConnectedDatabase()
-  ).collection<ComplaintDocument>('complaints')
+  const db = await getConnectedDatabase()
+  const complaints = db.collection<ComplaintDocument>('complaints')
   const current = await complaints.findOne({ _id: complaintId })
   if (!current) return complaintNotFound()
   if (!canTransitionComplaint(current.status, parsed.data.status)) {
@@ -124,6 +124,14 @@ export async function PATCH(request: Request, context: RouteContext) {
     { returnDocument: 'after' },
   )
   if (!updated) return transitionNotAllowed()
+
+  await recordComplaintAudit(db, {
+    action: 'status-changed',
+    actorId: session.user.id,
+    complaintIds: [complaintId],
+    fromStatus: current.status,
+    toStatus: parsed.data.status,
+  })
 
   return Response.json({ complaint: toAdminComplaintSummary(updated) })
 }

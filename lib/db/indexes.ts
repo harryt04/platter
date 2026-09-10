@@ -71,6 +71,10 @@ export async function ensureSharedIndexes(db: Db) {
   await db.collection('notifications').createIndex({ userId: 1, createdAt: -1 })
   await db.collection('complaints').createIndex({ createdAt: -1 })
   await db.collection('complaints').createIndex({ status: 1, receivedAt: -1 })
+  await db.collection('complaint_access_audit').createIndex({ occurredAt: -1 })
+  await db
+    .collection('complaint_access_audit')
+    .createIndex({ actorId: 1, occurredAt: -1 })
   await db
     .collection('recipe_imports')
     .createIndex({ userId: 1, submittedAt: -1, _id: -1 })

@@ -57,6 +57,7 @@ function setup(current: ComplaintDocument = complaint) {
     })),
     findOne: vi.fn().mockResolvedValue(current),
     findOneAndUpdate: vi.fn().mockResolvedValue(updated),
+    insertOne: vi.fn().mockResolvedValue({ acknowledged: true }),
   }
   getConnectedDatabase.mockResolvedValue({
     collection: vi.fn().mockReturnValue(collection),
@@ -92,6 +93,13 @@ describe('admin complaint routes', () => {
       statusHistory: complaint.statusHistory,
     })
     expect(collection.find).toHaveBeenCalledWith({})
+    expect(collection.insertOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'queue-viewed',
+        actorId: 'admin-1',
+        complaintIds: [complaintId],
+      }),
+    )
   })
 
   it('rejects unauthenticated and non-administrator queue access', async () => {
@@ -126,6 +134,15 @@ describe('admin complaint routes', () => {
       { returnDocument: 'after' },
     )
     expect(updated.statusHistory[1]).toMatchObject({ actorId: 'admin-1' })
+    expect(collection.insertOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'status-changed',
+        actorId: 'admin-1',
+        complaintIds: [complaintId],
+        fromStatus: 'received',
+        toStatus: 'actioned',
+      }),
+    )
   })
 
   it('validates IDs, statuses, and the complaint state machine', async () => {

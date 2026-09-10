@@ -3,12 +3,13 @@ import { ContentContainer, PageHeader } from '@/components/shell/page-header'
 import { requireAdmin } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import {
+  recordComplaintAudit,
   toAdminComplaintSummary,
   type ComplaintDocument,
 } from '@/lib/complaints'
 
 export default async function AdminComplaintsPage() {
-  await requireAdmin()
+  const session = await requireAdmin()
   const db = await getConnectedDatabase()
   const complaints = await db
     .collection<ComplaintDocument>('complaints')
@@ -16,6 +17,11 @@ export default async function AdminComplaintsPage() {
     .sort({ receivedAt: -1, _id: -1 })
     .limit(100)
     .toArray()
+  await recordComplaintAudit(db, {
+    action: 'queue-viewed',
+    actorId: session.user.id,
+    complaintIds: complaints.map((complaint) => complaint._id),
+  })
 
   return (
     <ContentContainer>

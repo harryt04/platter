@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { Db } from 'mongodb'
 import { isoDateTime, type IsoDateTime } from '@/lib/contracts/ids'
 
 const cleanText = (value: string) =>
@@ -121,6 +122,43 @@ export type ComplaintDocument = {
   createdAt: IsoDateTime
   updatedAt: IsoDateTime
   statusHistory: ComplaintStatusEvent[]
+}
+
+export const complaintAuditActionSchema = z.enum([
+  'queue-viewed',
+  'status-changed',
+])
+
+export type ComplaintAuditAction = z.infer<typeof complaintAuditActionSchema>
+
+/**
+ * Metadata-only audit records deliberately contain identifiers and status
+ * changes, never complaint descriptions, source URLs, or contact details.
+ */
+export type ComplaintAuditDocument = {
+  _id: string
+  action: ComplaintAuditAction
+  actorId: string
+  complaintIds: string[]
+  fromStatus?: ComplaintStatus
+  toStatus?: ComplaintStatus
+  occurredAt: IsoDateTime
+}
+
+export async function recordComplaintAudit(
+  db: Db,
+  input: Omit<ComplaintAuditDocument, '_id' | 'occurredAt'>,
+  now = new Date(),
+) {
+  const document: ComplaintAuditDocument = {
+    _id: crypto.randomUUID(),
+    ...input,
+    occurredAt: isoDateTime(now),
+  }
+  await db
+    .collection<ComplaintAuditDocument>('complaint_access_audit')
+    .insertOne(document)
+  return document
 }
 
 export function createComplaintDocument(

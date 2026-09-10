@@ -731,11 +731,11 @@ imported-content rights and provenance
       a complaint with type, status, timestamps, and minimum necessary contacts.
 - [x] Only administrators can view complaint contacts or transition a complaint
       through received, actioned, countered, restored, or closed states.
-- [ ] Administrative access to private data is exceptional, authorized, and
+- [x] Administrative access to private data is exceptional, authorized, and
       auditable; contacts stay out of general logs and public APIs.
 - [x] Hosted-policy copy distinguishes product functionality from legal advice
       and leaves jurisdiction-specific operator obligations configurable.
-- [ ] Integration tests cover public submission, validation, rate limits,
+- [x] Integration tests cover public submission, validation, rate limits,
       restricted fields, audit transitions, and unauthorized access.
 
 ## 32: Suppress recipes, sources, and domains

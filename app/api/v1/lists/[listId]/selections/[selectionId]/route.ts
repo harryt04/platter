@@ -10,8 +10,10 @@ import { problemResponse } from '@/lib/contracts/problem'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { type RecipeVersionDocument } from '@/lib/recipes/drafts'
 import {
+  selectionMutationReceiptFor,
+  selectionMutationMetadataSchema,
   updateRecipeSelectionDocument,
-  updateRecipeSelectionSchema,
+  updateRecipeSelectionRequestSchema,
 } from '@/lib/recipes/selections'
 import { calculateScaledIngredients } from '@/lib/recipes/scaling'
 
@@ -93,6 +95,36 @@ function versionUnavailable() {
   })
 }
 
+function revisionConflict() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/run-revision-conflict',
+    title: 'Shopping run changed',
+    status: 409,
+    detail: 'Reload the shopping run before changing this selection.',
+    code: 'RUN_REVISION_CONFLICT',
+  })
+}
+
+function operationIdConflict() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/operation-id-reused',
+    title: 'Mutation could not be retried',
+    status: 409,
+    detail: 'Use a new operation id for this selection change.',
+    code: 'OPERATION_ID_REUSED',
+  })
+}
+
+function invalidMutationMetadata() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/validation-failed',
+    title: 'Check the mutation metadata',
+    status: 422,
+    detail: 'Retry with an operation id and client id.',
+    code: 'VALIDATION_FAILED',
+  })
+}
+
 export async function PATCH(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session) return authenticationRequired()
@@ -111,7 +143,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch {
     return invalidJson()
   }
-  const parsed = updateRecipeSelectionSchema.safeParse(body)
+  const parsed = updateRecipeSelectionRequestSchema.safeParse(body)
   if (!parsed.success) return validationFailed()
 
   const db = await getConnectedDatabase()
@@ -129,6 +161,26 @@ export async function PATCH(request: Request, context: RouteContext) {
   })
   if (!currentRun) return archivedList()
 
+  let receipt
+  try {
+    receipt = selectionMutationReceiptFor(
+      currentRun.selectionMutationReceipts,
+      parsed.data,
+      'update-people',
+      `selection:${selectionId}`,
+    )
+  } catch {
+    return operationIdConflict()
+  }
+  if (receipt)
+    return Response.json(receipt.response, { status: receipt.status })
+  if (
+    parsed.data.baseRevision !== undefined &&
+    parsed.data.baseRevision !== currentRun.revision
+  ) {
+    return revisionConflict()
+  }
+
   const selection = currentRun.recipeSelections.find(
     (candidate) => candidate._id === selectionId,
   )
@@ -145,14 +197,59 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!version || !version.typicalPeopleFed) return versionUnavailable()
 
   if (selection.desiredPeople === parsed.data.desiredPeople) {
-    return Response.json({
+    const response = {
       selection,
       calculatedIngredients: calculateScaledIngredients(
         version.ingredients ?? [],
         selection.scaleFactor,
       ),
       revision: currentRun.revision,
-    })
+    }
+    const recordedRun = await runs.findOneAndUpdate(
+      {
+        _id: currentRun._id,
+        listId,
+        state: 'active',
+        revision: currentRun.revision,
+      },
+      {
+        $push: {
+          selectionMutationReceipts: {
+            operationId: parsed.data.operationId,
+            clientId: parsed.data.clientId,
+            target: `selection:${selectionId}`,
+            kind: 'update-people',
+            status: 200,
+            response,
+          },
+        },
+      },
+      { returnDocument: 'after' },
+    )
+    if (!recordedRun) {
+      const retryRun = await runs.findOne({
+        _id: currentRun._id,
+        listId,
+        state: 'active',
+      })
+      try {
+        const retryReceipt = selectionMutationReceiptFor(
+          retryRun?.selectionMutationReceipts,
+          parsed.data,
+          'update-people',
+          `selection:${selectionId}`,
+        )
+        if (retryReceipt) {
+          return Response.json(retryReceipt.response, {
+            status: retryReceipt.status,
+          })
+        }
+      } catch {
+        return operationIdConflict()
+      }
+      return revisionConflict()
+    }
+    return Response.json(response)
   }
 
   const updatedSelection = updateRecipeSelectionDocument(
@@ -165,6 +262,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       _id: currentRun._id,
       listId,
       state: 'active',
+      revision: currentRun.revision,
       'recipeSelections._id': selectionId,
     },
     {
@@ -172,23 +270,63 @@ export async function PATCH(request: Request, context: RouteContext) {
         'recipeSelections.$': updatedSelection,
         updatedAt: updatedSelection.updatedAt,
       },
+      $push: {
+        selectionMutationReceipts: {
+          operationId: parsed.data.operationId,
+          clientId: parsed.data.clientId,
+          target: `selection:${selectionId}`,
+          kind: 'update-people',
+          status: 200,
+          response: {
+            selection: updatedSelection,
+            calculatedIngredients: calculateScaledIngredients(
+              version.ingredients ?? [],
+              updatedSelection.scaleFactor,
+            ),
+            revision: currentRun.revision + 1,
+          },
+        },
+      },
       $inc: { revision: 1 },
     },
     { returnDocument: 'after' },
   )
-  if (!updatedRun) return selectionNotFound()
+  if (!updatedRun) {
+    const retryRun = await runs.findOne({
+      _id: currentRun._id,
+      listId,
+      state: 'active',
+    })
+    try {
+      const retryReceipt = selectionMutationReceiptFor(
+        retryRun?.selectionMutationReceipts,
+        parsed.data,
+        'update-people',
+        `selection:${selectionId}`,
+      )
+      if (retryReceipt) {
+        return Response.json(retryReceipt.response, {
+          status: retryReceipt.status,
+        })
+      }
+    } catch {
+      return operationIdConflict()
+    }
+    return revisionConflict()
+  }
 
-  return Response.json({
+  const response = {
     selection: updatedSelection,
     calculatedIngredients: calculateScaledIngredients(
       version.ingredients ?? [],
       updatedSelection.scaleFactor,
     ),
-    revision: updatedRun.revision,
-  })
+    revision: currentRun.revision + 1,
+  }
+  return Response.json(response)
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session) return authenticationRequired()
 
@@ -199,6 +337,15 @@ export async function DELETE(_request: Request, context: RouteContext) {
   ) {
     return selectionNotFound()
   }
+
+  let body: unknown = {}
+  try {
+    body = await request.json()
+  } catch {
+    // An empty body is handled by the metadata validation below.
+  }
+  const parsed = selectionMutationMetadataSchema.safeParse(body)
+  if (!parsed.success) return invalidMutationMetadata()
 
   const db = await getConnectedDatabase()
   const list = await db
@@ -215,6 +362,26 @@ export async function DELETE(_request: Request, context: RouteContext) {
   })
   if (!currentRun) return archivedList()
 
+  let receipt
+  try {
+    receipt = selectionMutationReceiptFor(
+      currentRun.selectionMutationReceipts,
+      parsed.data,
+      'remove',
+      `selection:${selectionId}`,
+    )
+  } catch {
+    return operationIdConflict()
+  }
+  if (receipt)
+    return Response.json(receipt.response, { status: receipt.status })
+  if (
+    parsed.data.baseRevision !== undefined &&
+    parsed.data.baseRevision !== currentRun.revision
+  ) {
+    return revisionConflict()
+  }
+
   const selection = currentRun.recipeSelections.find(
     (candidate) => candidate._id === selectionId,
   )
@@ -225,21 +392,37 @@ export async function DELETE(_request: Request, context: RouteContext) {
       _id: currentRun._id,
       listId,
       state: 'active',
+      revision: currentRun.revision,
       'recipeSelections._id': selectionId,
     },
     {
       $pull: { recipeSelections: { _id: selectionId } },
+      $push: {
+        selectionMutationReceipts: {
+          operationId: parsed.data.operationId,
+          clientId: parsed.data.clientId,
+          target: `selection:${selectionId}`,
+          kind: 'remove',
+          status: 200,
+          response: {
+            detail: 'The recipe selection was removed from this shopping run.',
+            code: 'SELECTION_REMOVED',
+            selectionId,
+            revision: currentRun.revision + 1,
+          },
+        },
+      },
       $inc: { revision: 1 },
       $set: { updatedAt: isoDateTime(new Date()) },
     },
     { returnDocument: 'after' },
   )
-  if (!updatedRun) return selectionNotFound()
+  if (!updatedRun) return revisionConflict()
 
   return Response.json({
     detail: 'The recipe selection was removed from this shopping run.',
     code: 'SELECTION_REMOVED',
     selectionId,
-    revision: updatedRun.revision,
+    revision: currentRun.revision + 1,
   })
 }

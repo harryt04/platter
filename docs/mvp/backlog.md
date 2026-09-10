@@ -316,7 +316,7 @@ versions the active run represents without surprising collaborators.
 
 **Blocked by:** 12: Select and scale one recipe
 
-**Status:** ready-for-agent
+**Status:** implemented
 
 - [x] Changing desired people recalculates every contribution from only that
       selection.
@@ -327,7 +327,7 @@ versions the active run represents without surprising collaborators.
       grocery impact and removes only that selection's contributions.
 - [x] A recipe update leaves existing selections pinned until a member reviews
       and explicitly accepts the newer version.
-- [ ] Concurrent or repeated selection mutations are idempotent and respect the
+- [x] Concurrent or repeated selection mutations are idempotent and respect the
       list's active-run revision.
 - [x] Property tests prove that changing or removing one selection cannot alter
       another selection's contributions.

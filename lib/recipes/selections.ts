@@ -10,6 +10,66 @@ import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
 
 const CalculationDecimal = Decimal.clone({ precision: 40 })
 
+export const selectionMutationMetadataSchema = z.object({
+  operationId: z
+    .string({ error: 'Enter an operation id.' })
+    .trim()
+    .min(1, 'Enter an operation id.')
+    .max(200, 'Operation ids must be 200 characters or fewer.')
+    .refine(
+      (value) => !/[\u0000-\u001F\u007F]/.test(value),
+      'Operation ids cannot contain control characters.',
+    ),
+  clientId: z
+    .string({ error: 'Enter a client id.' })
+    .trim()
+    .min(1, 'Enter a client id.')
+    .max(200, 'Client ids must be 200 characters or fewer.')
+    .refine(
+      (value) => !/[\u0000-\u001F\u007F]/.test(value),
+      'Client ids cannot contain control characters.',
+    ),
+  baseRevision: z
+    .number({ error: 'Base revision must be a number.' })
+    .int('Base revision must be a whole number.')
+    .nonnegative('Base revision cannot be negative.')
+    .max(2_147_483_647, 'Base revision is too large.')
+    .optional(),
+})
+
+export type SelectionMutationMetadata = z.infer<
+  typeof selectionMutationMetadataSchema
+>
+
+export type SelectionMutationReceipt = {
+  operationId: string
+  clientId: string
+  target: string
+  kind: 'create' | 'update-people' | 'remove' | 'duplicate' | 'repin'
+  status: 200 | 201
+  response: Record<string, unknown>
+}
+
+export function selectionMutationReceiptFor(
+  selectionMutationReceipts: readonly SelectionMutationReceipt[] | undefined,
+  metadata: SelectionMutationMetadata,
+  kind: SelectionMutationReceipt['kind'],
+  target: string,
+) {
+  const receipt = selectionMutationReceipts?.find(
+    (candidate) => candidate.operationId === metadata.operationId,
+  )
+  if (!receipt) return null
+  if (
+    receipt.clientId !== metadata.clientId ||
+    receipt.kind !== kind ||
+    receipt.target !== target
+  ) {
+    throw new Error('The operation id is already used for another mutation.')
+  }
+  return receipt
+}
+
 const recipeIdSchema = z
   .string({ error: 'Enter a recipe id.' })
   .trim()
@@ -32,6 +92,11 @@ export const createRecipeSelectionSchema = z.object({
 export const updateRecipeSelectionSchema = z.object({
   desiredPeople: createRecipeSelectionSchema.shape.desiredPeople,
 })
+
+export const createRecipeSelectionRequestSchema =
+  createRecipeSelectionSchema.extend(selectionMutationMetadataSchema.shape)
+export const updateRecipeSelectionRequestSchema =
+  updateRecipeSelectionSchema.extend(selectionMutationMetadataSchema.shape)
 
 export type CreateRecipeSelectionInput = z.infer<
   typeof createRecipeSelectionSchema

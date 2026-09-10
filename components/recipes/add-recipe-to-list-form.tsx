@@ -8,8 +8,9 @@ import {
 } from '@/components/recipes/selection-ingredient-preview'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { createMutationMetadata } from '@/lib/contracts/mutations'
 
-type ListOption = { id: string; name: string }
+type ListOption = { id: string; name: string; activeRunRevision?: number }
 
 export function AddRecipeToListForm({
   recipeId,
@@ -41,7 +42,13 @@ export function AddRecipeToListForm({
       const response = await fetch(`/api/v1/lists/${listId}/selections`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ recipeId, desiredPeople }),
+        body: JSON.stringify({
+          recipeId,
+          desiredPeople,
+          ...createMutationMetadata(
+            lists.find((list) => list.id === listId)?.activeRunRevision,
+          ),
+        }),
       })
       const body = (await response.json()) as {
         detail?: string

@@ -14,7 +14,11 @@ import {
   type RecipeShareDocument,
   type RecipeVersionDocument,
 } from '@/lib/recipes/drafts'
-import { acceptNewerRecipeVersion } from '@/lib/recipes/selections'
+import {
+  acceptNewerRecipeVersion,
+  selectionMutationMetadataSchema,
+  selectionMutationReceiptFor,
+} from '@/lib/recipes/selections'
 import { calculateScaledIngredients } from '@/lib/recipes/scaling'
 
 type RouteContext = {
@@ -26,7 +30,7 @@ const selectionIdSchema = listIdSchema
 function problem(
   code: string,
   title: string,
-  status: 401 | 404 | 409,
+  status: 401 | 404 | 409 | 422,
   detail: string,
 ) {
   return problemResponse({
@@ -36,6 +40,15 @@ function problem(
     detail,
     code,
   })
+}
+
+function operationIdConflict() {
+  return problem(
+    'OPERATION_ID_REUSED',
+    'Mutation could not be retried',
+    409,
+    'Use a new operation id for this selection change.',
+  )
 }
 
 async function findAccessibleCurrentRecipe(
@@ -66,7 +79,7 @@ async function findAccessibleCurrentRecipe(
   })
 }
 
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session) {
     return problem(
@@ -87,6 +100,22 @@ export async function POST(_request: Request, context: RouteContext) {
       'Recipe selection not found',
       404,
       'That recipe selection is not available to you.',
+    )
+  }
+
+  let body: unknown = {}
+  try {
+    body = await request.json()
+  } catch {
+    // An empty body is handled by metadata validation below.
+  }
+  const parsed = selectionMutationMetadataSchema.safeParse(body)
+  if (!parsed.success) {
+    return problem(
+      'VALIDATION_FAILED',
+      'Check the mutation metadata',
+      422,
+      'Retry with an operation id and client id.',
     )
   }
 
@@ -117,6 +146,32 @@ export async function POST(_request: Request, context: RouteContext) {
     listId,
     state: 'active',
   })
+  let receipt
+  try {
+    receipt = selectionMutationReceiptFor(
+      currentRun?.selectionMutationReceipts,
+      parsed.data,
+      'repin',
+      `selection:${selectionId}`,
+    )
+  } catch {
+    return operationIdConflict()
+  }
+  if (receipt)
+    return Response.json(receipt.response, { status: receipt.status })
+  if (
+    currentRun &&
+    parsed.data.baseRevision !== undefined &&
+    parsed.data.baseRevision !== currentRun.revision
+  ) {
+    return problem(
+      'RUN_REVISION_CONFLICT',
+      'Shopping run changed',
+      409,
+      'Reload the shopping run before accepting this recipe update.',
+    )
+  }
+
   const selection = currentRun?.recipeSelections.find(
     (candidate) => candidate._id === selectionId,
   )
@@ -168,34 +223,7 @@ export async function POST(_request: Request, context: RouteContext) {
   }
 
   const updatedSelection = acceptNewerRecipeVersion(selection, version)
-  const updatedRun = await runs.findOneAndUpdate(
-    {
-      _id: currentRun._id,
-      listId,
-      state: 'active',
-      'recipeSelections._id': selectionId,
-      'recipeSelections.versionId': selection.versionId,
-      'recipeSelections.versionNumber': selection.versionNumber,
-    },
-    {
-      $set: {
-        'recipeSelections.$': updatedSelection,
-        updatedAt: updatedSelection.updatedAt,
-      },
-      $inc: { revision: 1 },
-    },
-    { returnDocument: 'after' },
-  )
-  if (!updatedRun) {
-    return problem(
-      'SELECTION_CHANGED',
-      'Selection changed elsewhere',
-      409,
-      'Reload the list before accepting this recipe update.',
-    )
-  }
-
-  return Response.json({
+  const response = {
     selection: updatedSelection,
     previousVersionNumber: selection.versionNumber,
     recipe: {
@@ -208,6 +236,65 @@ export async function POST(_request: Request, context: RouteContext) {
       version.ingredients ?? [],
       updatedSelection.scaleFactor,
     ),
-    revision: updatedRun.revision,
-  })
+    revision: currentRun.revision + 1,
+  }
+  const updatedRun = await runs.findOneAndUpdate(
+    {
+      _id: currentRun._id,
+      listId,
+      state: 'active',
+      'recipeSelections._id': selectionId,
+      'recipeSelections.versionId': selection.versionId,
+      'recipeSelections.versionNumber': selection.versionNumber,
+      revision: currentRun.revision,
+    },
+    {
+      $set: {
+        'recipeSelections.$': updatedSelection,
+        updatedAt: updatedSelection.updatedAt,
+      },
+      $push: {
+        selectionMutationReceipts: {
+          operationId: parsed.data.operationId,
+          clientId: parsed.data.clientId,
+          target: `selection:${selectionId}`,
+          kind: 'repin',
+          status: 200,
+          response,
+        },
+      },
+      $inc: { revision: 1 },
+    },
+    { returnDocument: 'after' },
+  )
+  if (!updatedRun) {
+    const retryRun = await runs.findOne({
+      _id: currentRun._id,
+      listId,
+      state: 'active',
+    })
+    try {
+      const retryReceipt = selectionMutationReceiptFor(
+        retryRun?.selectionMutationReceipts,
+        parsed.data,
+        'repin',
+        `selection:${selectionId}`,
+      )
+      if (retryReceipt) {
+        return Response.json(retryReceipt.response, {
+          status: retryReceipt.status,
+        })
+      }
+    } catch {
+      return operationIdConflict()
+    }
+    return problem(
+      'SELECTION_CHANGED',
+      'Selection changed elsewhere',
+      409,
+      'Reload the list before accepting this recipe update.',
+    )
+  }
+
+  return Response.json(response)
 }

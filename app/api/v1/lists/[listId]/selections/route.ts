@@ -16,7 +16,8 @@ import {
 } from '@/lib/recipes/drafts'
 import {
   createRecipeSelectionDocument,
-  createRecipeSelectionSchema,
+  createRecipeSelectionRequestSchema,
+  selectionMutationReceiptFor,
 } from '@/lib/recipes/selections'
 import { calculateScaledIngredients } from '@/lib/recipes/scaling'
 
@@ -93,6 +94,26 @@ function versionUnavailable() {
   })
 }
 
+function revisionConflict() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/run-revision-conflict',
+    title: 'Shopping run changed',
+    status: 409,
+    detail: 'Reload the shopping run before adding this recipe.',
+    code: 'RUN_REVISION_CONFLICT',
+  })
+}
+
+function operationIdConflict() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/operation-id-reused',
+    title: 'Mutation could not be retried',
+    status: 409,
+    detail: 'Use a new operation id for this selection change.',
+    code: 'OPERATION_ID_REUSED',
+  })
+}
+
 async function findAccessibleRecipe(
   listId: string,
   recipeId: string,
@@ -135,7 +156,7 @@ export async function POST(request: Request, context: RouteContext) {
     return invalidJson()
   }
 
-  const parsed = createRecipeSelectionSchema.safeParse(body)
+  const parsed = createRecipeSelectionRequestSchema.safeParse(body)
   if (!parsed.success) {
     const fields = parsed.error.issues.reduce<Record<string, string[]>>(
       (result, issue) => {
@@ -154,6 +175,34 @@ export async function POST(request: Request, context: RouteContext) {
     .findOne(listRoleFilter(listId, session.user.id))
   if (!list) return listNotFound()
   if (list.status !== 'active') return archivedList()
+
+  const runs = db.collection<ShoppingRunDocument>('shopping_runs')
+  const currentRun = await runs.findOne({
+    _id: list.activeRunId,
+    listId,
+    state: 'active',
+  })
+  if (!currentRun) return archivedList()
+
+  let receipt
+  try {
+    receipt = selectionMutationReceiptFor(
+      currentRun.selectionMutationReceipts,
+      parsed.data,
+      'create',
+      `recipe:${parsed.data.recipeId}`,
+    )
+  } catch {
+    return operationIdConflict()
+  }
+  if (receipt)
+    return Response.json(receipt.response, { status: receipt.status })
+  if (
+    parsed.data.baseRevision !== undefined &&
+    parsed.data.baseRevision !== currentRun.revision
+  ) {
+    return revisionConflict()
+  }
 
   const recipe = await findAccessibleRecipe(
     listId,
@@ -179,35 +228,69 @@ export async function POST(request: Request, context: RouteContext) {
     recipe,
     parsed.data.desiredPeople,
   )
-  const run = await db
-    .collection<ShoppingRunDocument>('shopping_runs')
-    .findOneAndUpdate(
-      { _id: list.activeRunId, listId, state: 'active' },
-      {
-        $push: { recipeSelections: selection },
-        $inc: { revision: 1 },
-        $set: { updatedAt: selection.updatedAt },
-      },
-      { returnDocument: 'after' },
-    )
-  if (!run) return archivedList()
-
-  return Response.json(
-    {
-      selection,
-      recipe: {
-        id: recipe.recipeId ?? recipe._id,
-        title: recipe.title,
-        typicalPeopleFed: recipe.typicalPeopleFed,
-        versionId,
-        versionNumber,
-      },
-      calculatedIngredients: calculateScaledIngredients(
-        version.ingredients ?? [],
-        selection.scaleFactor,
-      ),
-      revision: run.revision,
-    },
-    { status: 201 },
+  const calculatedIngredients = calculateScaledIngredients(
+    version.ingredients ?? [],
+    selection.scaleFactor,
   )
+  const response = {
+    selection,
+    recipe: {
+      id: recipe.recipeId ?? recipe._id,
+      title: recipe.title,
+      typicalPeopleFed: recipe.typicalPeopleFed,
+      versionId,
+      versionNumber,
+    },
+    calculatedIngredients,
+    revision: currentRun.revision + 1,
+  }
+  const updatedRun = await runs.findOneAndUpdate(
+    {
+      _id: currentRun._id ?? list.activeRunId,
+      listId,
+      state: 'active',
+      revision: currentRun.revision,
+    },
+    {
+      $push: {
+        recipeSelections: selection,
+        selectionMutationReceipts: {
+          operationId: parsed.data.operationId,
+          clientId: parsed.data.clientId,
+          target: `recipe:${parsed.data.recipeId}`,
+          kind: 'create',
+          status: 201,
+          response,
+        },
+      },
+      $inc: { revision: 1 },
+      $set: { updatedAt: selection.updatedAt },
+    },
+    { returnDocument: 'after' },
+  )
+  if (!updatedRun) {
+    const retryRun = await runs.findOne({
+      _id: list.activeRunId,
+      listId,
+      state: 'active',
+    })
+    try {
+      const retryReceipt = selectionMutationReceiptFor(
+        retryRun?.selectionMutationReceipts,
+        parsed.data,
+        'create',
+        `recipe:${parsed.data.recipeId}`,
+      )
+      if (retryReceipt) {
+        return Response.json(retryReceipt.response, {
+          status: retryReceipt.status,
+        })
+      }
+    } catch {
+      return operationIdConflict()
+    }
+    return revisionConflict()
+  }
+
+  return Response.json(response, { status: 201 })
 }

@@ -46,13 +46,16 @@ describe('SelectionPeopleForm', () => {
     await user.type(people, '6')
     await user.click(screen.getByRole('button', { name: 'Update people' }))
 
-    expect(fetch).toHaveBeenCalledWith(
-      '/api/v1/lists/list-1/selections/selection-1',
-      expect.objectContaining({
-        method: 'PATCH',
-        body: JSON.stringify({ desiredPeople: 6 }),
-      }),
+    const patchCall = vi.mocked(fetch).mock.calls[0]
+    expect(patchCall?.[0]).toBe('/api/v1/lists/list-1/selections/selection-1')
+    expect(patchCall?.[1]).toEqual(
+      expect.objectContaining({ method: 'PATCH', body: expect.any(String) }),
     )
+    expect(JSON.parse(String(patchCall?.[1]?.body))).toMatchObject({
+      desiredPeople: 6,
+      clientId: expect.any(String),
+      operationId: expect.any(String),
+    })
     expect(
       await screen.findByText(/now feeds 6 people \(scale 1\.5\)/),
     ).toBeInTheDocument()
@@ -95,9 +98,12 @@ describe('SelectionPeopleForm', () => {
 
     await user.click(screen.getByRole('button', { name: 'Use version 5' }))
 
-    expect(fetch).toHaveBeenCalledWith(
+    const updateCall = vi.mocked(fetch).mock.calls[0]
+    expect(updateCall?.[0]).toBe(
       '/api/v1/lists/list-1/selections/selection-1/update',
-      { method: 'POST' },
+    )
+    expect(updateCall?.[1]).toEqual(
+      expect.objectContaining({ method: 'POST', body: expect.any(String) }),
     )
     expect(
       await screen.findByText(/now uses version 5 for this run/),
@@ -177,9 +183,10 @@ describe('SelectionPeopleForm', () => {
       }),
     )
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/v1/lists/list-1/selections/selection-1',
-      { method: 'DELETE' },
+    const deleteCall = fetchMock.mock.calls[0]
+    expect(deleteCall?.[0]).toBe('/api/v1/lists/list-1/selections/selection-1')
+    expect(deleteCall?.[1]).toEqual(
+      expect.objectContaining({ method: 'DELETE', body: expect.any(String) }),
     )
     expect(refresh).toHaveBeenCalled()
   })

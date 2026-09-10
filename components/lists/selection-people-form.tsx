@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DuplicateSelectionButton } from '@/components/lists/duplicate-selection-button'
 import { RemoveSelectionButton } from '@/components/lists/remove-selection-button'
+import { createMutationMetadata } from '@/lib/contracts/mutations'
 
 export function SelectionPeopleForm({
   listId,
@@ -16,6 +17,7 @@ export function SelectionPeopleForm({
   recipeTitle,
   initialPeople,
   initialScaleFactor,
+  baseRevision,
   newerVersionNumber,
   editable = true,
 }: {
@@ -26,6 +28,7 @@ export function SelectionPeopleForm({
   recipeTitle: string
   initialPeople: number
   initialScaleFactor: string
+  baseRevision?: number
   newerVersionNumber?: number
   editable?: boolean
 }) {
@@ -47,7 +50,10 @@ export function SelectionPeopleForm({
         {
           method: 'PATCH',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ desiredPeople }),
+          body: JSON.stringify({
+            desiredPeople,
+            ...createMutationMetadata(baseRevision),
+          }),
         },
       )
       const body = (await response.json()) as {
@@ -76,7 +82,11 @@ export function SelectionPeopleForm({
     try {
       const response = await fetch(
         `/api/v1/lists/${listId}/selections/${selectionId}/update`,
-        { method: 'POST' },
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(createMutationMetadata(baseRevision)),
+        },
       )
       const body = (await response.json()) as {
         detail?: string
@@ -163,12 +173,14 @@ export function SelectionPeopleForm({
             listId={listId}
             recipeTitle={recipeTitle}
             selectionId={selectionId}
+            baseRevision={baseRevision}
           />
           <RemoveSelectionButton
             listId={listId}
             listName={listName}
             recipeTitle={recipeTitle}
             selectionId={selectionId}
+            baseRevision={baseRevision}
           />
         </div>
       ) : (

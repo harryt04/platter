@@ -10,7 +10,11 @@ import { SavePublicRecipeButton } from '@/components/recipes/save-public-recipe-
 import { AddRecipeToListForm } from '@/components/recipes/add-recipe-to-list-form'
 import { getSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
-import { listMembershipFilter, type ListDocument } from '@/lib/lists'
+import {
+  listMembershipFilter,
+  type ListDocument,
+  type ShoppingRunDocument,
+} from '@/lib/lists'
 import {
   publicRecipeFilter,
   toRecipeDraftForViewer,
@@ -46,6 +50,20 @@ export default async function RecipePage({
         .sort({ updatedAt: -1 })
         .toArray()
     : []
+  const activeRuns =
+    memberLists.length > 0
+      ? await db
+          .collection<ShoppingRunDocument>('shopping_runs')
+          .find({
+            listId: { $in: memberLists.map((list) => list._id) },
+            state: 'active',
+          })
+          .project({ _id: 1, revision: 1 })
+          .toArray()
+      : []
+  const revisionsByRunId = new Map(
+    activeRuns.map((run) => [run._id, run.revision]),
+  )
   const imageIsPermitted =
     recipe.image &&
     ['user-owned', 'licensed', 'permission-granted'].includes(
@@ -75,6 +93,7 @@ export default async function RecipePage({
             lists={memberLists.map((list) => ({
               id: list._id,
               name: list.name,
+              activeRunRevision: revisionsByRunId.get(list.activeRunId),
             }))}
             recipeId={recipe.recipeId}
             recipeTitle={recipe.title}

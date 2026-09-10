@@ -3,18 +3,21 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { createMutationMetadata } from '@/lib/contracts/mutations'
 
 export function DuplicateSelectionButton({
   listId,
   selectionId,
   recipeTitle,
   desiredPeople,
+  baseRevision,
   editable = true,
 }: {
   listId: string
   selectionId: string
   recipeTitle: string
   desiredPeople: number
+  baseRevision?: number
   editable?: boolean
 }) {
   const router = useRouter()
@@ -31,6 +34,8 @@ export function DuplicateSelectionButton({
         `/api/v1/lists/${listId}/selections/${selectionId}/duplicate`,
         {
           method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(createMutationMetadata(baseRevision)),
         },
       )
       const body = (await response.json()) as {

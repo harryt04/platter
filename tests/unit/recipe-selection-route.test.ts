@@ -60,6 +60,14 @@ function duplicateRouteContext(selectionId = 'selection-1') {
   }
 }
 
+function mutationMetadata(operationId = 'operation-1', baseRevision?: number) {
+  return {
+    operationId,
+    clientId: 'client-1',
+    ...(baseRevision === undefined ? {} : { baseRevision }),
+  }
+}
+
 function databaseFor({
   currentRecipe = recipe,
   currentVersion = { ...recipe, _id: 'version-4' },
@@ -108,7 +116,11 @@ describe('POST /api/v1/lists/[listId]/selections', () => {
     const response = await POST(
       new Request('http://localhost/api/v1/lists/list-1/selections', {
         method: 'POST',
-        body: JSON.stringify({ recipeId: 'recipe-1', desiredPeople: 6 }),
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 6,
+          ...mutationMetadata('operation-create-1', 1),
+        }),
       }),
       routeContext(),
     )
@@ -122,17 +134,20 @@ describe('POST /api/v1/lists/[listId]/selections', () => {
         desiredPeople: 6,
         scaleFactor: '1.5',
       },
-      revision: 1,
+      revision: 2,
       calculatedIngredients: [],
     })
     expect(database.runs.findOneAndUpdate).toHaveBeenCalledWith(
-      { _id: 'run-1', listId: 'list-1', state: 'active' },
+      { _id: 'run-1', listId: 'list-1', state: 'active', revision: 1 },
       expect.objectContaining({
         $push: {
           recipeSelections: expect.objectContaining({
             recipeId: 'recipe-1',
             versionId: 'version-4',
             scaleFactor: '1.5',
+          }),
+          selectionMutationReceipts: expect.objectContaining({
+            operationId: 'operation-create-1',
           }),
         },
         $inc: { revision: 1 },
@@ -161,7 +176,11 @@ describe('POST /api/v1/lists/[listId]/selections', () => {
     const response = await POST(
       new Request('http://localhost/api/v1/lists/list-1/selections', {
         method: 'POST',
-        body: JSON.stringify({ recipeId: 'recipe-1', desiredPeople: 6 }),
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 6,
+          ...mutationMetadata('operation-create-2', 1),
+        }),
       }),
       routeContext(),
     )
@@ -202,7 +221,11 @@ describe('POST /api/v1/lists/[listId]/selections', () => {
     const response = await POST(
       new Request('http://localhost/api/v1/lists/list-1/selections', {
         method: 'POST',
-        body: JSON.stringify({ recipeId: 'recipe-1', desiredPeople: 2 }),
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 2,
+          ...mutationMetadata('operation-create-3', 1),
+        }),
       }),
       routeContext(),
     )
@@ -220,7 +243,11 @@ describe('POST /api/v1/lists/[listId]/selections', () => {
     const response = await POST(
       new Request('http://localhost/api/v1/lists/list-1/selections', {
         method: 'POST',
-        body: JSON.stringify({ recipeId: 'recipe-1', desiredPeople: 2 }),
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 2,
+          ...mutationMetadata('operation-create-4', 1),
+        }),
       }),
       routeContext(),
     )
@@ -228,6 +255,97 @@ describe('POST /api/v1/lists/[listId]/selections', () => {
     expect(response.status).toBe(409)
     expect((await response.json()).code).toBe('LIST_NOT_ACTIVE')
     expect(database.recipes.findOne).not.toHaveBeenCalled()
+  })
+
+  it('replays a completed create operation without adding a duplicate selection', async () => {
+    const replay = {
+      selection: { _id: 'selection-1', recipeId: 'recipe-1' },
+      revision: 2,
+    }
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 2,
+        recipeSelections: [],
+        selectionMutationReceipts: [
+          {
+            operationId: 'operation-replay',
+            clientId: 'client-1',
+            target: 'recipe:recipe-1',
+            kind: 'create',
+            status: 201,
+            response: replay,
+          },
+        ],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/selections', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 6,
+          ...mutationMetadata('operation-replay', 2),
+        }),
+      }),
+      routeContext(),
+    )
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toEqual(replay)
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('replays a concurrent create after the first writer wins the revision race', async () => {
+    const replay = {
+      selection: { _id: 'selection-1', recipeId: 'recipe-1' },
+      revision: 2,
+    }
+    const currentRun = {
+      _id: 'run-1',
+      listId: 'list-1',
+      state: 'active' as const,
+      revision: 1,
+      recipeSelections: [],
+    }
+    const database = databaseFor({ currentRun })
+    database.runs.findOne
+      .mockResolvedValueOnce(currentRun)
+      .mockResolvedValueOnce({
+        ...currentRun,
+        revision: 2,
+        selectionMutationReceipts: [
+          {
+            operationId: 'operation-race',
+            clientId: 'client-1',
+            target: 'recipe:recipe-1',
+            kind: 'create',
+            status: 201,
+            response: replay,
+          },
+        ],
+      })
+    database.runs.findOneAndUpdate.mockResolvedValue(null)
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/selections', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 6,
+          ...mutationMetadata('operation-race', 1),
+        }),
+      }),
+      routeContext(),
+    )
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toEqual(replay)
   })
 })
 
@@ -277,7 +395,10 @@ describe('PATCH /api/v1/lists/[listId]/selections/[selectionId]', () => {
         'http://localhost/api/v1/lists/list-1/selections/selection-1',
         {
           method: 'PATCH',
-          body: JSON.stringify({ desiredPeople: 6 }),
+          body: JSON.stringify({
+            desiredPeople: 6,
+            ...mutationMetadata('operation-update-1', 4),
+          }),
         },
       ),
       updateRouteContext(),
@@ -300,6 +421,7 @@ describe('PATCH /api/v1/lists/[listId]/selections/[selectionId]', () => {
         _id: 'run-1',
         listId: 'list-1',
         state: 'active',
+        revision: 4,
         'recipeSelections._id': 'selection-1',
       },
       expect.objectContaining({
@@ -325,7 +447,10 @@ describe('PATCH /api/v1/lists/[listId]/selections/[selectionId]', () => {
         'http://localhost/api/v1/lists/list-1/selections/selection-1',
         {
           method: 'PATCH',
-          body: JSON.stringify({ desiredPeople: 2.5 }),
+          body: JSON.stringify({
+            desiredPeople: 2.5,
+            ...mutationMetadata('operation-update-2', 4),
+          }),
         },
       ),
       updateRouteContext(),
@@ -352,7 +477,10 @@ describe('PATCH /api/v1/lists/[listId]/selections/[selectionId]', () => {
         'http://localhost/api/v1/lists/list-1/selections/selection-1',
         {
           method: 'PATCH',
-          body: JSON.stringify({ desiredPeople: 6 }),
+          body: JSON.stringify({
+            desiredPeople: 6,
+            ...mutationMetadata('operation-update-3', 4),
+          }),
         },
       ),
       updateRouteContext(),
@@ -360,6 +488,48 @@ describe('PATCH /api/v1/lists/[listId]/selections/[selectionId]', () => {
 
     expect(response.status).toBe(404)
     expect((await response.json()).code).toBe('SELECTION_NOT_FOUND')
+    expect(database.versions.findOne).not.toHaveBeenCalled()
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('rejects a stale base revision before recalculating a selection', async () => {
+    const selection = {
+      _id: 'selection-1',
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 2,
+      scaleFactor: '0.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:00:00.000Z',
+    }
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [selection],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await PATCH(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            desiredPeople: 6,
+            ...mutationMetadata('operation-stale', 3),
+          }),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(409)
+    expect((await response.json()).code).toBe('RUN_REVISION_CONFLICT')
     expect(database.versions.findOne).not.toHaveBeenCalled()
     expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
   })
@@ -413,7 +583,10 @@ describe('POST /api/v1/lists/[listId]/selections/[selectionId]/update', () => {
     const response = await acceptUpdatePOST(
       new Request(
         'http://localhost/api/v1/lists/list-1/selections/selection-1/update',
-        { method: 'POST' },
+        {
+          method: 'POST',
+          body: JSON.stringify(mutationMetadata('operation-repin-1', 4)),
+        },
       ),
       updateRouteContext(),
     )
@@ -441,6 +614,7 @@ describe('POST /api/v1/lists/[listId]/selections/[selectionId]/update', () => {
         'recipeSelections._id': 'selection-1',
         'recipeSelections.versionId': 'version-4',
         'recipeSelections.versionNumber': 4,
+        revision: 4,
       },
       expect.objectContaining({
         $set: expect.objectContaining({
@@ -481,7 +655,10 @@ describe('POST /api/v1/lists/[listId]/selections/[selectionId]/update', () => {
     const response = await acceptUpdatePOST(
       new Request(
         'http://localhost/api/v1/lists/list-1/selections/selection-1/update',
-        { method: 'POST' },
+        {
+          method: 'POST',
+          body: JSON.stringify(mutationMetadata('operation-repin-2', 4)),
+        },
       ),
       updateRouteContext(),
     )
@@ -525,7 +702,10 @@ describe('DELETE /api/v1/lists/[listId]/selections/[selectionId]', () => {
     const response = await DELETE(
       new Request(
         'http://localhost/api/v1/lists/list-1/selections/selection-1',
-        { method: 'DELETE' },
+        {
+          method: 'DELETE',
+          body: JSON.stringify(mutationMetadata('operation-remove-1', 4)),
+        },
       ),
       updateRouteContext(),
     )
@@ -541,6 +721,7 @@ describe('DELETE /api/v1/lists/[listId]/selections/[selectionId]', () => {
         _id: 'run-1',
         listId: 'list-1',
         state: 'active',
+        revision: 4,
         'recipeSelections._id': 'selection-1',
       },
       expect.objectContaining({
@@ -566,7 +747,10 @@ describe('DELETE /api/v1/lists/[listId]/selections/[selectionId]', () => {
     const response = await DELETE(
       new Request(
         'http://localhost/api/v1/lists/list-1/selections/selection-1',
-        { method: 'DELETE' },
+        {
+          method: 'DELETE',
+          body: JSON.stringify(mutationMetadata('operation-remove-2', 4)),
+        },
       ),
       updateRouteContext(),
     )
@@ -614,7 +798,10 @@ describe('POST /api/v1/lists/[listId]/selections/[selectionId]/duplicate', () =>
     const response = await duplicatePOST(
       new Request(
         'http://localhost/api/v1/lists/list-1/selections/selection-1/duplicate',
-        { method: 'POST' },
+        {
+          method: 'POST',
+          body: JSON.stringify(mutationMetadata('operation-duplicate-1', 4)),
+        },
       ),
       duplicateRouteContext(),
     )
@@ -634,7 +821,7 @@ describe('POST /api/v1/lists/[listId]/selections/[selectionId]/duplicate', () =>
     })
     expect(body.selection._id).not.toBe(selection._id)
     expect(database.runs.findOneAndUpdate).toHaveBeenCalledWith(
-      { _id: 'run-1', listId: 'list-1', state: 'active' },
+      { _id: 'run-1', listId: 'list-1', state: 'active', revision: 4 },
       expect.objectContaining({
         $push: {
           recipeSelections: expect.objectContaining({
@@ -642,6 +829,9 @@ describe('POST /api/v1/lists/[listId]/selections/[selectionId]/duplicate', () =>
             versionId: 'version-4',
             desiredPeople: 6,
             scaleFactor: '1.5',
+          }),
+          selectionMutationReceipts: expect.objectContaining({
+            operationId: 'operation-duplicate-1',
           }),
         },
         $inc: { revision: 1 },
@@ -665,7 +855,10 @@ describe('POST /api/v1/lists/[listId]/selections/[selectionId]/duplicate', () =>
     const response = await duplicatePOST(
       new Request(
         'http://localhost/api/v1/lists/list-1/selections/selection-1/duplicate',
-        { method: 'POST' },
+        {
+          method: 'POST',
+          body: JSON.stringify(mutationMetadata('operation-duplicate-2', 4)),
+        },
       ),
       duplicateRouteContext(),
     )

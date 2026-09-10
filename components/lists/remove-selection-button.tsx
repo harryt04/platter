@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { createMutationMetadata } from '@/lib/contracts/mutations'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,12 +20,14 @@ export function RemoveSelectionButton({
   listName,
   selectionId,
   recipeTitle,
+  baseRevision,
   editable = true,
 }: {
   listId: string
   listName: string
   selectionId: string
   recipeTitle: string
+  baseRevision?: number
   editable?: boolean
 }) {
   const router = useRouter()
@@ -38,7 +41,11 @@ export function RemoveSelectionButton({
     try {
       const response = await fetch(
         `/api/v1/lists/${encodeURIComponent(listId)}/selections/${encodeURIComponent(selectionId)}`,
-        { method: 'DELETE' },
+        {
+          method: 'DELETE',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(createMutationMetadata(baseRevision)),
+        },
       )
       const body = (await response.json()) as { detail?: string }
       if (!response.ok) {

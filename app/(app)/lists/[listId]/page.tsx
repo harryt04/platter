@@ -148,6 +148,7 @@ export default async function ListPage({
                   <SelectionPeopleForm
                     initialPeople={selection.desiredPeople}
                     initialScaleFactor={selection.scaleFactor}
+                    baseRevision={run?.revision}
                     key={selection._id}
                     listId={listId}
                     listName={list.name}

@@ -98,6 +98,10 @@ the active-run revision. When a selected recipe has a newer accessible version,
 the list keeps the existing selection pinned, links to the recipe for review,
 and requires an explicit acceptance before repinning that selection; the
 desired people count is preserved and the active-run revision advances.
+Selection mutations carry client operation metadata, reject stale active-run
+revisions, and record a run-scoped receipt so a retried create, update,
+duplicate, remove, or repin replays its original result without applying the
+change twice.
 The library can search titles, ingredients, source metadata, and tags with
 stable cursor pagination while preserving the same ownership, membership, and
 saved-reference boundaries. Deleting a recipe explains current list impact,

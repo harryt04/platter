@@ -53,14 +53,17 @@ describe('AddRecipeToListForm', () => {
     await user.type(people, '2')
     await user.click(screen.getByRole('button', { name: 'Add to this week' }))
 
-    expect(fetch).toHaveBeenNthCalledWith(
-      1,
-      '/api/v1/lists/list-two/selections',
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ recipeId: 'recipe-1', desiredPeople: 2 }),
-      }),
+    const firstCall = vi.mocked(fetch).mock.calls[0]
+    expect(firstCall?.[0]).toBe('/api/v1/lists/list-two/selections')
+    expect(firstCall?.[1]).toEqual(
+      expect.objectContaining({ method: 'POST', body: expect.any(String) }),
     )
+    expect(JSON.parse(String(firstCall?.[1]?.body))).toMatchObject({
+      recipeId: 'recipe-1',
+      desiredPeople: 2,
+      clientId: expect.any(String),
+      operationId: expect.any(String),
+    })
     expect(await screen.findByText(/scale 0\.5/)).toBeInTheDocument()
 
     await user.selectOptions(screen.getByLabelText('List'), 'list-six')
@@ -68,14 +71,17 @@ describe('AddRecipeToListForm', () => {
     await user.type(people, '6')
     await user.click(screen.getByRole('button', { name: 'Add to this week' }))
 
-    expect(fetch).toHaveBeenNthCalledWith(
-      2,
-      '/api/v1/lists/list-six/selections',
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ recipeId: 'recipe-1', desiredPeople: 6 }),
-      }),
+    const secondCall = vi.mocked(fetch).mock.calls[1]
+    expect(secondCall?.[0]).toBe('/api/v1/lists/list-six/selections')
+    expect(secondCall?.[1]).toEqual(
+      expect.objectContaining({ method: 'POST', body: expect.any(String) }),
     )
+    expect(JSON.parse(String(secondCall?.[1]?.body))).toMatchObject({
+      recipeId: 'recipe-1',
+      desiredPeople: 6,
+      clientId: expect.any(String),
+      operationId: expect.any(String),
+    })
     expect(await screen.findByText(/scale 1\.5/)).toBeInTheDocument()
   })
 })

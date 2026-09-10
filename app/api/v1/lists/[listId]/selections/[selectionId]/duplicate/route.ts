@@ -8,7 +8,11 @@ import {
 } from '@/lib/lists'
 import { problemResponse } from '@/lib/contracts/problem'
 import { type RecipeVersionDocument } from '@/lib/recipes/drafts'
-import { duplicateRecipeSelectionDocument } from '@/lib/recipes/selections'
+import {
+  duplicateRecipeSelectionDocument,
+  selectionMutationMetadataSchema,
+  selectionMutationReceiptFor,
+} from '@/lib/recipes/selections'
 import { calculateScaledIngredients } from '@/lib/recipes/scaling'
 
 type RouteContext = {
@@ -67,7 +71,27 @@ function versionUnavailable() {
   })
 }
 
-export async function POST(_: Request, context: RouteContext) {
+function revisionConflict() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/run-revision-conflict',
+    title: 'Shopping run changed',
+    status: 409,
+    detail: 'Reload the shopping run before duplicating this selection.',
+    code: 'RUN_REVISION_CONFLICT',
+  })
+}
+
+function operationIdConflict() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/operation-id-reused',
+    title: 'Mutation could not be retried',
+    status: 409,
+    detail: 'Use a new operation id for this selection change.',
+    code: 'OPERATION_ID_REUSED',
+  })
+}
+
+export async function POST(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session) return authenticationRequired()
 
@@ -77,6 +101,23 @@ export async function POST(_: Request, context: RouteContext) {
     !selectionIdSchema.safeParse(selectionId).success
   ) {
     return selectionNotFound()
+  }
+
+  let body: unknown = {}
+  try {
+    body = await request.json()
+  } catch {
+    // An empty body is handled by the metadata validation below.
+  }
+  const parsed = selectionMutationMetadataSchema.safeParse(body)
+  if (!parsed.success) {
+    return problemResponse({
+      type: 'https://platter.dev/problems/validation-failed',
+      title: 'Check the mutation metadata',
+      status: 422,
+      detail: 'Retry with an operation id and client id.',
+      code: 'VALIDATION_FAILED',
+    })
   }
 
   const db = await getConnectedDatabase()
@@ -94,6 +135,26 @@ export async function POST(_: Request, context: RouteContext) {
   })
   if (!currentRun) return archivedList()
 
+  let receipt
+  try {
+    receipt = selectionMutationReceiptFor(
+      currentRun.selectionMutationReceipts,
+      parsed.data,
+      'duplicate',
+      `selection:${selectionId}`,
+    )
+  } catch {
+    return operationIdConflict()
+  }
+  if (receipt)
+    return Response.json(receipt.response, { status: receipt.status })
+  if (
+    parsed.data.baseRevision !== undefined &&
+    parsed.data.baseRevision !== currentRun.revision
+  ) {
+    return revisionConflict()
+  }
+
   const selection = currentRun.recipeSelections.find(
     (candidate) => candidate._id === selectionId,
   )
@@ -110,37 +171,68 @@ export async function POST(_: Request, context: RouteContext) {
   if (!version || !version.typicalPeopleFed) return versionUnavailable()
 
   const duplicate = duplicateRecipeSelectionDocument(selection)
+  const response = {
+    selection: duplicate,
+    recipe: {
+      id: selection.recipeId,
+      title: version.title,
+      typicalPeopleFed: version.typicalPeopleFed,
+      versionId: selection.versionId,
+      versionNumber: selection.versionNumber,
+    },
+    calculatedIngredients: calculateScaledIngredients(
+      version.ingredients ?? [],
+      duplicate.scaleFactor,
+    ),
+    revision: currentRun.revision + 1,
+  }
   const updatedRun = await runs.findOneAndUpdate(
     {
       _id: currentRun._id,
       listId,
       state: 'active',
+      revision: currentRun.revision,
     },
     {
-      $push: { recipeSelections: duplicate },
+      $push: {
+        recipeSelections: duplicate,
+        selectionMutationReceipts: {
+          operationId: parsed.data.operationId,
+          clientId: parsed.data.clientId,
+          target: `selection:${selectionId}`,
+          kind: 'duplicate',
+          status: 201,
+          response,
+        },
+      },
       $inc: { revision: 1 },
       $set: { updatedAt: duplicate.updatedAt },
     },
     { returnDocument: 'after' },
   )
-  if (!updatedRun) return archivedList()
+  if (!updatedRun) {
+    const retryRun = await runs.findOne({
+      _id: currentRun._id,
+      listId,
+      state: 'active',
+    })
+    try {
+      const retryReceipt = selectionMutationReceiptFor(
+        retryRun?.selectionMutationReceipts,
+        parsed.data,
+        'duplicate',
+        `selection:${selectionId}`,
+      )
+      if (retryReceipt) {
+        return Response.json(retryReceipt.response, {
+          status: retryReceipt.status,
+        })
+      }
+    } catch {
+      return operationIdConflict()
+    }
+    return revisionConflict()
+  }
 
-  return Response.json(
-    {
-      selection: duplicate,
-      recipe: {
-        id: selection.recipeId,
-        title: version.title,
-        typicalPeopleFed: version.typicalPeopleFed,
-        versionId: selection.versionId,
-        versionNumber: selection.versionNumber,
-      },
-      calculatedIngredients: calculateScaledIngredients(
-        version.ingredients ?? [],
-        duplicate.scaleFactor,
-      ),
-      revision: updatedRun.revision,
-    },
-    { status: 201 },
-  )
+  return Response.json(response, { status: 201 })
 }

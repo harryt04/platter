@@ -9,6 +9,8 @@ export interface RecipeSearchFilters {
 
 export interface RecipeSearchQuery {
   text: string
+  /** Required by private-library searches; public discovery leaves it unset. */
+  ownerId?: string
   filters?: RecipeSearchFilters
   cursor?: string
   pageSize?: number

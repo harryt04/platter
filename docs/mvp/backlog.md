@@ -212,7 +212,7 @@ creator to decide who may discover or use each recipe.
       with selected lists or explicitly published.
 - [x] Editing public content creates a new version or private personal variant
       with a visible relationship to its source version.
-- [ ] Private, list-shared, public, draft, usable, and suppressed rules are
+- [x] Private, list-shared, public, draft, usable, and suppressed rules are
       independently enforced on reads, writes, and search results.
 - [ ] Active and completed runs can resolve pinned historical versions even
       after later edits or permitted deletion.

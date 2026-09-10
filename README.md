@@ -35,6 +35,9 @@ explicitly shares them with selected active lists or publishes them to the
 public catalog; list-scoped access is checked against current membership.
 Editing a published recipe creates a private personal variant with lineage to
 the published version, leaving the public source unchanged.
+Mongo-backed public discovery now applies the same usable, explicit-public, and
+approved-import guard as public recipe reads; private searches require an
+owner-scoped query.
 
 ## Documentation
 

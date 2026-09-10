@@ -154,6 +154,17 @@ export async function findListForMember(listId: string, userId: string) {
     .findOne(listMemberFilter(listId, userId))
 }
 
+export async function findActiveShoppingRun(
+  list: Pick<ListDocument, 'activeRunId' | '_id'>,
+) {
+  const db = await getConnectedDatabase()
+  return db.collection<ShoppingRunDocument>('shopping_runs').findOne({
+    _id: list.activeRunId,
+    listId: list._id,
+    state: 'active',
+  })
+}
+
 export function createListDocument(
   ownerId: string,
   name: string,

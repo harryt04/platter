@@ -4,6 +4,7 @@ import {
   calculateRecipeScaleFactor,
   createRecipeSelectionDocument,
   createRecipeSelectionSchema,
+  updateRecipeSelectionDocument,
 } from '@/lib/recipes/selections'
 import {
   calculateScaledIngredients,
@@ -58,6 +59,38 @@ describe('recipe selections', () => {
       scaleFactor: '1.5',
       createdAt: '2026-09-10T12:00:00.000Z',
       updatedAt: '2026-09-10T12:00:00.000Z',
+    })
+  })
+
+  it('updates only the selected version reference while preserving its identity', () => {
+    const selection = createRecipeSelectionDocument(
+      {
+        _id: 'recipe-1',
+        recipeId: 'recipe-1',
+        versionId: 'version-4',
+        versionNumber: 4,
+        typicalPeopleFed: 4,
+      },
+      2,
+      new Date('2026-09-10T12:00:00.000Z'),
+    )
+
+    expect(
+      updateRecipeSelectionDocument(
+        selection,
+        6,
+        4,
+        new Date('2026-09-10T12:05:00.000Z'),
+      ),
+    ).toMatchObject({
+      _id: selection._id,
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 6,
+      scaleFactor: '1.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:05:00.000Z',
     })
   })
 

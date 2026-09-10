@@ -318,7 +318,7 @@ versions the active run represents without surprising collaborators.
 
 **Status:** ready-for-agent
 
-- [ ] Changing desired people recalculates every contribution from only that
+- [x] Changing desired people recalculates every contribution from only that
       selection.
 - [ ] Adding the same recipe again requires an explicit duplicate action and
       produces an independently scalable and removable selection.

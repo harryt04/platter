@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { PATCH } from '@/app/api/v1/lists/[listId]/selections/[selectionId]/route'
 import { POST } from '@/app/api/v1/lists/[listId]/selections/route'
 
 const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
@@ -42,6 +43,12 @@ function routeContext(listId = 'list-1') {
   return { params: Promise.resolve({ listId }) }
 }
 
+function updateRouteContext(selectionId = 'selection-1') {
+  return {
+    params: Promise.resolve({ listId: 'list-1', selectionId }),
+  }
+}
+
 function databaseFor({
   currentRecipe = recipe,
   currentVersion = { ...recipe, _id: 'version-4' },
@@ -55,7 +62,10 @@ function databaseFor({
   const recipes = { findOne: vi.fn().mockResolvedValue(currentRecipe) }
   const shares = { findOne: vi.fn().mockResolvedValue(null) }
   const versions = { findOne: vi.fn().mockResolvedValue(currentVersion) }
-  const runs = { findOneAndUpdate: vi.fn().mockResolvedValue(currentRun) }
+  const runs = {
+    findOne: vi.fn().mockResolvedValue(currentRun),
+    findOneAndUpdate: vi.fn().mockResolvedValue(currentRun),
+  }
   const collections: Record<string, unknown> = {
     lists,
     recipes,
@@ -207,5 +217,139 @@ describe('POST /api/v1/lists/[listId]/selections', () => {
     expect(response.status).toBe(409)
     expect((await response.json()).code).toBe('LIST_NOT_ACTIVE')
     expect(database.recipes.findOne).not.toHaveBeenCalled()
+  })
+})
+
+describe('PATCH /api/v1/lists/[listId]/selections/[selectionId]', () => {
+  it('recalculates one selection from its pinned immutable version', async () => {
+    const selection = {
+      _id: 'selection-1',
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 2,
+      scaleFactor: '0.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:00:00.000Z',
+    }
+    const otherSelection = { ...selection, _id: 'selection-2' }
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [selection, otherSelection],
+      },
+    })
+    database.versions.findOne.mockResolvedValue({
+      ...recipe,
+      _id: 'version-4',
+      ingredients: [
+        {
+          originalText: '2 onions',
+          quantity: '2',
+          unit: 'each',
+          ingredientName: 'onions',
+          optional: false,
+        },
+      ],
+    })
+    database.runs.findOneAndUpdate.mockResolvedValue({
+      _id: 'run-1',
+      revision: 5,
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await PATCH(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ desiredPeople: 6 }),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      selection: {
+        _id: 'selection-1',
+        desiredPeople: 6,
+        scaleFactor: '1.5',
+      },
+      calculatedIngredients: [
+        { calculatedQuantity: { min: '3' }, sourceQuantity: '2' },
+      ],
+      revision: 5,
+    })
+    expect(database.runs.findOneAndUpdate).toHaveBeenCalledWith(
+      {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        'recipeSelections._id': 'selection-1',
+      },
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          'recipeSelections.$': expect.objectContaining({
+            _id: 'selection-1',
+            desiredPeople: 6,
+            scaleFactor: '1.5',
+          }),
+        }),
+        $inc: { revision: 1 },
+      }),
+      { returnDocument: 'after' },
+    )
+  })
+
+  it('rejects invalid people counts before reading the list', async () => {
+    const database = databaseFor()
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await PATCH(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ desiredPeople: 2.5 }),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(422)
+    expect(database.lists.findOne).not.toHaveBeenCalled()
+  })
+
+  it('does not mutate the run when the selection is missing', async () => {
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await PATCH(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ desiredPeople: 6 }),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(404)
+    expect((await response.json()).code).toBe('SELECTION_NOT_FOUND')
+    expect(database.versions.findOne).not.toHaveBeenCalled()
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
   })
 })

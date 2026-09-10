@@ -87,6 +87,10 @@ The signed-in recipe library now combines authored recipes with usable recipes
 shared through the member's current lists, and shared entries remain read-only.
 Signed-in users can also save public recipes to that library without adding
 them to a shopping run, then remove only their own saved reference.
+List members can change the desired people for an active recipe selection from
+the list page; the server recalculates its precise scale from the pinned
+immutable version and advances the active-run revision without touching other
+selections.
 The library can search titles, ingredients, source metadata, and tags with
 stable cursor pagination while preserving the same ownership, membership, and
 saved-reference boundaries. Deleting a recipe explains current list impact,

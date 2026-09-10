@@ -29,6 +29,10 @@ export const createRecipeSelectionSchema = z.object({
     .max(1000, 'People must be 1,000 or fewer.'),
 })
 
+export const updateRecipeSelectionSchema = z.object({
+  desiredPeople: createRecipeSelectionSchema.shape.desiredPeople,
+})
+
 export type CreateRecipeSelectionInput = z.infer<
   typeof createRecipeSelectionSchema
 >
@@ -81,5 +85,23 @@ export function createRecipeSelectionDocument(
     ),
     createdAt: timestamp,
     updatedAt: timestamp,
+  }
+}
+
+export function updateRecipeSelectionDocument(
+  selection: RecipeSelectionDocument,
+  desiredPeople: number,
+  typicalPeopleFed: number,
+  now = new Date(),
+): RecipeSelectionDocument {
+  if (!Number.isInteger(typicalPeopleFed) || typicalPeopleFed <= 0) {
+    throw new Error('A recipe selection requires a typical yield.')
+  }
+
+  return {
+    ...selection,
+    desiredPeople,
+    scaleFactor: calculateRecipeScaleFactor(desiredPeople, typicalPeopleFed),
+    updatedAt: isoDateTime(now),
   }
 }

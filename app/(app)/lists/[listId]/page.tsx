@@ -4,11 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
 import { requireSession } from '@/lib/auth/authorization'
-import { findListForMember } from '@/lib/lists'
+import { findActiveShoppingRun, findListForMember } from '@/lib/lists'
 import { notFound } from 'next/navigation'
 import { RenameListForm } from '@/components/lists/rename-list-form'
 import { LeaveListButton } from '@/components/lists/leave-list-button'
 import { ListLifecycleActions } from '@/components/lists/list-lifecycle-actions'
+import { SelectionPeopleForm } from '@/components/lists/selection-people-form'
+import { resolveRunRecipeVersions } from '@/lib/recipes/versions'
+import { getConnectedDatabase } from '@/lib/db/mongo-client'
 
 export default async function ListPage({
   params,
@@ -19,6 +22,14 @@ export default async function ListPage({
   const session = await requireSession(`/lists/${listId}`)
   const list = await findListForMember(listId, session.user.id)
   if (!list || list.status === 'deleted') notFound()
+  const run = await findActiveShoppingRun(list)
+  const resolvedSelections = run
+    ? await resolveRunRecipeVersions(
+        await getConnectedDatabase(),
+        run.recipeSelections,
+      )
+    : []
+  const selections = run?.recipeSelections ?? []
 
   return (
     <ContentContainer>
@@ -55,7 +66,9 @@ export default async function ListPage({
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span>Recipes</span>
-              <Badge variant="outline">None selected</Badge>
+              <Badge variant="outline">
+                {run?.recipeSelections.length ?? 0}
+              </Badge>
             </div>
             <div className="flex justify-between">
               <span>Grocery items</span>
@@ -77,13 +90,35 @@ export default async function ListPage({
             <CardTitle>Selected recipes</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <p className="text-muted-foreground">No recipes selected yet.</p>
-            <Link
-              className="text-primary inline-block min-h-11 pt-3"
-              href="/discover"
-            >
-              Choose another recipe
-            </Link>
+            {resolvedSelections.length === 0 ? (
+              <>
+                <p className="text-muted-foreground">
+                  No recipes selected yet.
+                </p>
+                <Link
+                  className="text-primary inline-block min-h-11 pt-3"
+                  href="/discover"
+                >
+                  Choose a recipe
+                </Link>
+              </>
+            ) : (
+              resolvedSelections.map(({ version }, index) => {
+                const selection = selections[index]
+                if (!selection || !version) return null
+                return (
+                  <SelectionPeopleForm
+                    initialPeople={selection.desiredPeople}
+                    initialScaleFactor={selection.scaleFactor}
+                    key={selection._id}
+                    listId={listId}
+                    recipeTitle={version.title}
+                    selectionId={selection._id}
+                    editable={list.status === 'active'}
+                  />
+                )
+              })
+            )}
           </CardContent>
         </Card>
       </div>

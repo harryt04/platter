@@ -710,7 +710,7 @@ recipe experience and prevent unlicensed media or prose from entering it.
       image, user image, or no image is used.
 - [x] Unknown rights are represented honestly and never inferred from the
       presence of Schema.org data or public accessibility.
-- [ ] Bulk-ingested datasets require recorded compatible terms and attribution;
+- [x] Bulk-ingested datasets require recorded compatible terms and attribution;
       noncommercial data cannot silently enter a potentially commercial catalog.
 - [x] Attribution and license fixtures verify visibility after normalization,
       discovery, versioning, and source unavailability.

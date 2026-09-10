@@ -231,6 +231,10 @@ Public recipe detail, discovery cards, and the signed-in recipe library resolve
 source name, canonical source link, and source author from retained import
 provenance when editable preview fields are omitted, so imported attribution
 remains visible after normalization and source-unavailability updates.
+Bulk datasets are not bundled by default. Any future bulk loader must validate
+its source, terms, license, attribution, and explicit commercial-compatibility
+classification through `assertBulkDatasetCompatible`; noncommercial and
+unknown-rights datasets are rejected before catalog publication.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

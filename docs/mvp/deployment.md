@@ -83,6 +83,19 @@ that normalization output remains visible in public discovery, immutable
 version snapshots, and public reads after the source is marked unavailable;
 the fixture contains no external recipe prose or image bytes.
 
+### Bulk dataset policy
+
+Platter does not bundle or bulk-ingest a recipe dataset by default. If a
+deployment adds a bulk loader, it must pass the dataset manifest through
+`assertBulkDatasetCompatible` in
+[`lib/recipes/bulk-datasets.ts`](../../lib/recipes/bulk-datasets.ts) before
+publishing any records. The manifest records the source URL, terms URL,
+license name and URL, attribution, and the time the operator accepted those
+terms. Only the explicit `commercial-compatible` rights class is accepted;
+`noncommercial-only` and `unknown` data fail closed and cannot silently enter a
+potentially commercial catalog. Schema.org markup or a public download URL is
+not a license and cannot replace these fields.
+
 Import normalization keeps structured ingredient facts, yield, timing, and
 concise procedural steps separate from source editorial prose. Descriptions
 are not copied, and instruction values over 500 characters are excluded from

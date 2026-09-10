@@ -18,6 +18,7 @@ import {
   createRecipeSelectionDocument,
   createRecipeSelectionSchema,
 } from '@/lib/recipes/selections'
+import { calculateScaledIngredients } from '@/lib/recipes/scaling'
 
 type RouteContext = { params: Promise<{ listId: string }> }
 
@@ -201,6 +202,10 @@ export async function POST(request: Request, context: RouteContext) {
         versionId,
         versionNumber,
       },
+      calculatedIngredients: calculateScaledIngredients(
+        version.ingredients ?? [],
+        selection.scaleFactor,
+      ),
       revision: run.revision,
     },
     { status: 201 },

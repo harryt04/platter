@@ -102,6 +102,7 @@ describe('POST /api/v1/lists/[listId]/selections', () => {
         scaleFactor: '1.5',
       },
       revision: 1,
+      calculatedIngredients: [],
     })
     expect(database.runs.findOneAndUpdate).toHaveBeenCalledWith(
       { _id: 'run-1', listId: 'list-1', state: 'active' },
@@ -117,6 +118,43 @@ describe('POST /api/v1/lists/[listId]/selections', () => {
       }),
       { returnDocument: 'after' },
     )
+  })
+
+  it('returns precise calculated quantities without changing recipe quantities', async () => {
+    const database = databaseFor({
+      currentVersion: {
+        ...recipe,
+        ingredients: [
+          {
+            originalText: '1/3 cup sugar',
+            quantity: '0.3333333333333333333333333333333333333333',
+            unit: 'cup',
+            ingredientName: 'sugar',
+            optional: false,
+          },
+        ],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/selections', {
+        method: 'POST',
+        body: JSON.stringify({ recipeId: 'recipe-1', desiredPeople: 6 }),
+      }),
+      routeContext(),
+    )
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toMatchObject({
+      calculatedIngredients: [
+        {
+          sourceQuantity: '0.3333333333333333333333333333333333333333',
+          calculatedQuantity: { min: '0.5' },
+          suggestedShoppingQuantity: null,
+        },
+      ],
+    })
   })
 
   it('rejects invalid people counts before reading list or recipe data', async () => {

@@ -300,7 +300,7 @@ lines; 08: Version recipes and control visibility
       whole number of people; invalid values and drafts are rejected.
 - [x] The selection pins an immutable recipe version and computes scale as
       desired people divided by typical people fed.
-- [ ] Decimal calculations retain sufficient precision and do not accumulate
+- [x] Decimal calculations retain sufficient precision and do not accumulate
       friendly-display rounding; count suggestions never alter source facts.
 - [ ] Ingredients with no quantity remain readable contributions without a
       fabricated amount, and optional ingredients remain visibly optional.

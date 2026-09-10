@@ -227,6 +227,14 @@ function parseQuantity(
   }
 }
 
+/** Parse an editable quantity without applying any display rounding. */
+export function parseIngredientQuantity(
+  value: string,
+  options: ParseIngredientOptions = {},
+): ParsedIngredientQuantity | null {
+  return parseQuantity(cleanText(value), options.locale ?? defaultLocale)
+}
+
 function parseRange(
   min: string,
   max?: string,

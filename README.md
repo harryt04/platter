@@ -76,7 +76,9 @@ List owners and editors can now add an accessible usable recipe to an active
 shopping run for a positive whole-person count. Each selection stores its
 immutable recipe version and a high-precision desired-to-typical scale factor;
 public recipe details expose the list and serving-count action for signed-in
-members.
+members. Selection responses also expose precise calculated ingredient
+quantities, retain each source quantity, and keep whole-count suggestions as
+separate shopping guidance.
 The signed-in recipe library now combines authored recipes with usable recipes
 shared through the member's current lists, and shared entries remain read-only.
 Signed-in users can also save public recipes to that library without adding

@@ -15,6 +15,8 @@ connected realtime sockets from the list room across realtime processes. Recipe 
 informational nutrition values per person. Signed-in users also receive
 in-product notifications for invitations and member role or removal changes,
 with authenticated deep links and independent read state.
+The notification contract is membership-only: purchased checks and routine
+grocery edits have no supported notification event or delivery path.
 Archived lists preserve read access to their shopping run while disabling
 shopping changes such as completion and amount resets.
 The ingredient parser now recognizes common quantity forms, preserves source

@@ -2,12 +2,47 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createNotificationDocument,
   notifyExistingUserByEmail,
+  notificationEventSchema,
+  notificationInputSchema,
   notificationCopy,
   notificationRecipientFilter,
   toNotificationSummary,
 } from '@/lib/notifications'
 
 describe('notification contracts', () => {
+  it('allows only membership changes into the notification pipeline', () => {
+    expect(notificationEventSchema.options).toEqual([
+      'invitation',
+      'role-changed',
+      'removed',
+    ])
+    expect(notificationEventSchema.safeParse('grocery-purchased').success).toBe(
+      false,
+    )
+    expect(notificationEventSchema.safeParse('grocery-edited').success).toBe(
+      false,
+    )
+  })
+
+  it('rejects routine grocery event payloads at the persistence boundary', () => {
+    expect(() =>
+      notificationInputSchema.parse({
+        userId: 'user-1',
+        event: 'grocery-purchased',
+        listId: 'list-1',
+        listName: 'Family',
+      }),
+    ).toThrow()
+    expect(() =>
+      notificationInputSchema.parse({
+        userId: 'user-1',
+        event: 'grocery-edited',
+        listId: 'list-1',
+        listName: 'Family',
+      }),
+    ).toThrow()
+  })
+
   it('keeps notification copy limited to membership context', () => {
     const notification = createNotificationDocument(
       {

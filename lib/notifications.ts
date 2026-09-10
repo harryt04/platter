@@ -8,7 +8,18 @@ import {
 import type { InvitationDocument } from '@/lib/invitations'
 import type { ListDocument } from '@/lib/lists'
 
-export type NotificationEvent = 'invitation' | 'role-changed' | 'removed'
+/**
+ * Notification events are intentionally limited to consequential membership
+ * changes. Shopping activity has no event in this contract, so it cannot
+ * reach in-product, email, or push notification delivery accidentally.
+ */
+export const notificationEventSchema = z.enum([
+  'invitation',
+  'role-changed',
+  'removed',
+])
+
+export type NotificationEvent = z.infer<typeof notificationEventSchema>
 
 export const notificationIdSchema = z
   .string()
@@ -40,10 +51,10 @@ export type NotificationSummary = {
   body: string
 }
 
-const notificationInputSchema = z
+export const notificationInputSchema = z
   .object({
     userId: z.string().min(1),
-    event: z.enum(['invitation', 'role-changed', 'removed']),
+    event: notificationEventSchema,
     listId: z.string().min(1),
     listName: z.string().min(1),
     invitationId: z.string().min(1).optional(),

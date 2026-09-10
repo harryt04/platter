@@ -113,7 +113,7 @@ ownership
       read without changing the underlying membership state.
 - [x] Email invitations are sent only when email delivery is configured, and a
       delivery failure does not invalidate an in-product invitation.
-- [ ] Purchased checks and routine grocery edits never generate email or push
+- [x] Purchased checks and routine grocery edits never generate email or push
       notifications.
 - [x] Notification payloads contain no recipe or grocery content and respect
       list-scoped authorization.

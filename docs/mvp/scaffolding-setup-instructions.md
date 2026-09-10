@@ -516,7 +516,7 @@ claims that a control already works.
 | URL | Placeholder purpose |
 | --- | --- |
 | `/discover` | Public discovery/search results, filter controls, loading skeleton, and empty state. |
-| `/recipes/[recipeId]` | Recipe title, yield, ingredients, directions, source, attribution, version, and image-license state. |
+| `/platter/[recipeId]` | Recipe title, yield, ingredients, directions, source, attribution, version, and image-license state. |
 | `/sources` | Public source and attribution policy. |
 | `/copyright` | Copyright/removal process overview. |
 | `/copyright/report` | Removal-request form shell and privacy notice. |
@@ -539,8 +539,8 @@ claims that a control already works.
 | URL | Placeholder purpose |
 | --- | --- |
 | `/my-recipes` | Personal library, search shell, and empty state. |
-| `/recipes/new` | Manual recipe-editor hierarchy and draft requirements. |
-| `/recipes/[recipeId]/edit` | Version-aware editor placeholder. |
+| `/platter/new` | Manual recipe-editor hierarchy and draft requirements. |
+| `/platter/[recipeId]/edit` | Version-aware editor placeholder. |
 | `/import` | URL entry, connectivity requirement, and editable-preview explanation. |
 | `/lists` | Lists index, synthetic memberships, and create-list action. |
 | `/lists/[listId]` | Recipe-selection/current-run summary. |

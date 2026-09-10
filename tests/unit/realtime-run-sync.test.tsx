@@ -1,5 +1,5 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RealtimeRunSync } from '@/components/states/realtime-run-sync'
 
 const realtime = vi.hoisted(() => {
@@ -25,6 +25,8 @@ vi.mock('socket.io-client', () => ({ io: realtime.io }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }))
 
 describe('RealtimeRunSync', () => {
+  afterEach(() => cleanup())
+
   beforeEach(() => {
     realtime.handlers.clear()
     realtime.io.mockClear()
@@ -84,5 +86,62 @@ describe('RealtimeRunSync', () => {
     })
 
     expect(refresh).not.toHaveBeenCalled()
+  })
+
+  it('recovers from a revision gap with one server snapshot refresh', async () => {
+    render(<RealtimeRunSync listId="list-1" revision={4} runId="run-1" />)
+
+    act(() =>
+      realtime.handlers.get('run:mutation')?.({
+        type: 'grocery.purchased.marked',
+        listId: 'list-1',
+        runId: 'run-1',
+        revision: 7,
+        operationId: 'operation-7',
+        actorId: 'member-2',
+        occurredAt: '2026-09-10T12:00:00.000Z',
+      }),
+    )
+    act(() =>
+      realtime.handlers.get('run:mutation')?.({
+        type: 'grocery.purchased.marked',
+        listId: 'list-1',
+        runId: 'run-1',
+        revision: 8,
+        operationId: 'operation-8',
+        actorId: 'member-2',
+        occurredAt: '2026-09-10T12:00:01.000Z',
+      }),
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Catching up with live updates',
+    )
+    await waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+  })
+
+  it('only clears recovery after the refreshed snapshot reports its revision', () => {
+    const { rerender } = render(
+      <RealtimeRunSync listId="list-1" revision={4} runId="run-1" />,
+    )
+
+    act(() =>
+      realtime.handlers.get('run:mutation')?.({
+        type: 'grocery.purchased.marked',
+        listId: 'list-1',
+        runId: 'run-1',
+        revision: 7,
+        operationId: 'operation-7',
+        actorId: 'member-2',
+        occurredAt: '2026-09-10T12:00:00.000Z',
+      }),
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Catching up with live updates',
+    )
+
+    rerender(<RealtimeRunSync listId="list-1" revision={7} runId="run-1" />)
+
+    expect(screen.getByRole('status')).toHaveTextContent('Live updates on')
   })
 })

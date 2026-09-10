@@ -170,7 +170,10 @@ actor, and authoritative revision. Event delivery is best effort after the
 database write; the active run remains the source of truth. Connected list,
 review, and shopping views join the authorized list room and refresh when a
 newer matching active-run event arrives, so another shopper's accepted change
-is reflected without manual reload. Realtime
+is reflected without manual reload. Events are content-free invalidation hints:
+duplicate or out-of-order revisions are ignored, revision gaps trigger a
+coalesced server snapshot refresh, and the live-update status clears only after
+the refreshed run reports its authoritative revision. Realtime
 handshakes and every list-room join revalidate the Better Auth session before
 checking current list membership, so a known list ID cannot grant access.
 The active run also shares a temporary within-category item order: members can

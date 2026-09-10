@@ -496,7 +496,7 @@ active checklist
       authorize current membership; knowing a list ID grants no access.
 - [x] A second connected client reflects accepted changes within two seconds at
       the 95th percentile under the expected test load.
-- [ ] Missed, duplicate, and out-of-order events cause snapshot or delta recovery
+- [x] Missed, duplicate, and out-of-order events cause snapshot or delta recovery
       rather than treating events as durable state.
 - [ ] Screen readers receive useful batched announcements of remote changes
       without being overwhelmed.

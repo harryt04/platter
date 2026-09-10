@@ -7,7 +7,12 @@ import { clientEnv } from '@/lib/env/client'
 import { realtimeRunMutationEventSchema } from '@/lib/contracts/mutations'
 
 type ConnectionState =
-  'connecting' | 'connected' | 'disconnected' | 'unavailable'
+  | 'connecting'
+  | 'connected'
+  | 'disconnected'
+  | 'unavailable'
+  | 'syncing'
+  | 'recovering'
 
 function connectionCopy(state: ConnectionState) {
   switch (state) {
@@ -17,6 +22,10 @@ function connectionCopy(state: ConnectionState) {
       return 'Live updates paused; reconnecting'
     case 'unavailable':
       return 'Live updates unavailable; changes still save normally'
+    case 'syncing':
+      return 'Updating from another device'
+    case 'recovering':
+      return 'Catching up with live updates'
     default:
       return 'Connecting to live updates'
   }
@@ -34,10 +43,15 @@ export function RealtimeRunSync({
 }) {
   const router = useRouter()
   const latestRevision = useRef(revision)
+  const refreshPending = useRef(false)
   const [state, setState] = useState<ConnectionState>('connecting')
 
   useEffect(() => {
     latestRevision.current = revision
+    if (refreshPending.current) {
+      refreshPending.current = false
+      setState('connected')
+    }
   }, [listId, revision, runId])
 
   useEffect(() => {
@@ -59,7 +73,15 @@ export function RealtimeRunSync({
       if (event.listId !== listId || event.runId !== runId) return
       if (event.revision <= latestRevision.current) return
 
+      const hasRevisionGap = event.revision > latestRevision.current + 1
       latestRevision.current = event.revision
+      if (refreshPending.current) return
+
+      // Events are content-free invalidation hints. A gap means the client
+      // may have missed one or more hints, so the server-rendered snapshot is
+      // the recovery mechanism instead of applying event payloads locally.
+      refreshPending.current = true
+      setState(hasRevisionGap ? 'recovering' : 'syncing')
       router.refresh()
     }
 

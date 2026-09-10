@@ -74,6 +74,7 @@ export function SplitGroceryContributionButton({
       <Button
         aria-label={`Split ${contributionLabel} into separate grocery item`}
         disabled={!editable || pending}
+        id={`split-grocery-trigger-${contributionId}`}
         onClick={() => setOpen(true)}
         size="sm"
         type="button"
@@ -109,7 +110,12 @@ export function SplitGroceryContributionButton({
             <AlertDialogFooter>
               <AlertDialogCancel
                 disabled={pending}
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  setOpen(false)
+                  document
+                    .getElementById(`split-grocery-trigger-${contributionId}`)
+                    ?.focus()
+                }}
                 type="button"
               >
                 Keep combined

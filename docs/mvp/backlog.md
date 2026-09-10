@@ -361,7 +361,7 @@ editing the underlying recipes accidentally.
 
 **Blocked by:** 14: Combine compatible grocery contributions
 
-**Status:** in progress
+**Status:** implemented
 
 - [x] Low-confidence candidates remain separate and may appear as clearly
       optional merge suggestions.
@@ -371,7 +371,7 @@ editing the underlying recipes accidentally.
       stable through deterministic regeneration of the current run.
 - [x] Recipe-level parser corrections require explicit confirmation and create
       or select the appropriate version before derived lists change.
-- [ ] Merge, split, correction, focus restoration, and non-color uncertainty
+- [x] Merge, split, correction, focus restoration, and non-color uncertainty
       states have automated coverage.
 
 ## 16: Manage manual grocery items

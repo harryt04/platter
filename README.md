@@ -45,7 +45,9 @@ without combining their amounts. That comparison can be expanded to inspect
 both item identities, dimensions, original lines, and recipe sources before a
 merge correction. Members can split an incorrect combined contribution after
 reviewing its source line; the correction is scoped to the active run, keeps
-recipe facts unchanged, and remains stable when groceries are regenerated.
+recipe facts unchanged, remains stable when groceries are regenerated, and
+restores focus when a correction is dismissed. Uncertainty is also communicated
+through explicit labels and explanatory text rather than color alone.
 Ingredient corrections in a recipe require explicit confirmation, save a new
 immutable recipe version, and leave existing selections pinned until a member
 accepts that version.

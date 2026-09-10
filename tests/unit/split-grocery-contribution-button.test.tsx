@@ -53,4 +53,28 @@ describe('SplitGroceryContributionButton', () => {
     )
     expect(refresh).toHaveBeenCalledOnce()
   })
+
+  it('returns focus to the split trigger when the correction is dismissed', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <SplitGroceryContributionButton
+        baseRevision={3}
+        contributionId="manual-a"
+        contributionLabel="2 cups onions"
+        ingredientName="onions"
+        listId="list-1"
+        itemId="grocery:merged:onions:volume:cup"
+      />,
+    )
+
+    const trigger = screen.getByRole('button', {
+      name: 'Split 2 cups onions into separate grocery item',
+    })
+    await user.click(trigger)
+    await user.click(screen.getByRole('button', { name: 'Keep combined' }))
+
+    expect(trigger).toHaveFocus()
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
 })

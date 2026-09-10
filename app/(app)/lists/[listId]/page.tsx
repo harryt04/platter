@@ -41,6 +41,7 @@ export default async function ListPage({
     }),
     manualAdditions: run?.manualAdditions ?? [],
     overrides: run?.groceryAmountOverrides ?? [],
+    categoryOverrides: run?.groceryCategoryOverrides ?? [],
     splitContributionIds:
       run?.groceryMergeSplits?.map(({ contributionId }) => contributionId) ??
       [],

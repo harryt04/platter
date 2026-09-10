@@ -27,6 +27,10 @@ import type {
   GroceryAlreadyHaveDocument,
   GroceryAlreadyHaveMutationReceipt,
 } from '@/lib/recipes/grocery-already-have'
+import type {
+  GroceryCategoryOverrideDocument,
+  GroceryCategoryOverrideMutationReceipt,
+} from '@/lib/recipes/grocery-categories-overrides'
 
 const listNameSchema = z
   .string({ error: 'Enter a list name.' })
@@ -72,6 +76,8 @@ export type ShoppingRunDocument = {
   grocerySplitMutationReceipts?: GrocerySplitMutationReceipt[]
   alreadyHaveItems?: GroceryAlreadyHaveDocument[]
   groceryAlreadyHaveMutationReceipts?: GroceryAlreadyHaveMutationReceipt[]
+  groceryCategoryOverrides?: GroceryCategoryOverrideDocument[]
+  groceryCategoryOverrideMutationReceipts?: GroceryCategoryOverrideMutationReceipt[]
   createdAt: IsoDateTime
   updatedAt: IsoDateTime
 }
@@ -227,6 +233,7 @@ export function createActiveShoppingRunDocument(
     groceryAmountOverrides: [],
     groceryMergeSplits: [],
     alreadyHaveItems: [],
+    groceryCategoryOverrides: [],
     ordering: [],
     createdAt: timestamp,
     updatedAt: timestamp,

@@ -20,6 +20,7 @@ import { notFound } from 'next/navigation'
 import { GroceryAmountOverrideForm } from '@/components/lists/grocery-amount-override-form'
 import { ManualGroceryItems } from '@/components/lists/manual-grocery-items'
 import { AlreadyHaveButton } from '@/components/lists/already-have-button'
+import { GroceryCategorySelect } from '@/components/lists/grocery-category-select'
 import { ShoppingModeNavigation } from '@/components/lists/shopping-mode-navigation'
 import {
   groupGroceryItemsByDefaultCategory,
@@ -49,6 +50,7 @@ export default async function ReviewPage({
     }),
     manualAdditions: run?.manualAdditions ?? [],
     overrides: run?.groceryAmountOverrides ?? [],
+    categoryOverrides: run?.groceryCategoryOverrides ?? [],
     splitContributionIds:
       run?.groceryMergeSplits?.map(({ contributionId }) => contributionId) ??
       [],
@@ -105,6 +107,14 @@ export default async function ReviewPage({
                             (alreadyHave) => alreadyHave.itemId === item.id,
                           ),
                         )}
+                      />
+                      <GroceryCategorySelect
+                        baseRevision={run?.revision}
+                        category={item.category}
+                        editable={!isReadOnly}
+                        ingredientName={item.ingredientName}
+                        itemId={item.id}
+                        listId={listId}
                       />
                       <GroceryAmountOverrideForm
                         baseRevision={run?.revision}

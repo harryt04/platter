@@ -20,6 +20,7 @@ import {
   sortGroceryItemsByDefaultOrder,
   type GroceryCategory,
 } from '@/lib/recipes/grocery-categories'
+import type { GroceryCategoryOverrideDocument } from '@/lib/recipes/grocery-categories-overrides'
 
 const CalculationDecimal = Decimal.clone({ precision: 40 })
 
@@ -361,11 +362,13 @@ export function generateGroceryItems({
   selections,
   manualAdditions = [],
   overrides = [],
+  categoryOverrides = [],
   splitContributionIds = [],
 }: {
   selections: readonly GroceryRecipeSelection[]
   manualAdditions?: readonly GroceryManualAddition[]
   overrides?: readonly GroceryAmountOverride[]
+  categoryOverrides?: readonly GroceryCategoryOverrideDocument[]
   splitContributionIds?: readonly string[]
 }): GroceryItem[] {
   const items = new Map<string, GroceryItem>()
@@ -504,8 +507,14 @@ export function generateGroceryItems({
       ),
     }))
 
+  const categoriesByItemId = new Map(
+    categoryOverrides.map((override) => [override.itemId, override.category]),
+  )
   return sortGroceryItemsByDefaultOrder(
-    generatedItems.map(addPurchaseSuggestion),
+    generatedItems.map((item) => ({
+      ...addPurchaseSuggestion(item),
+      category: categoriesByItemId.get(item.id) ?? item.category,
+    })),
   )
 }
 

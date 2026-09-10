@@ -1,7 +1,7 @@
 import fc from 'fast-check'
 import Decimal from 'decimal.js'
 import { describe, expect, it } from 'vitest'
-import { decimalString } from '@/lib/contracts/ids'
+import { decimalString, isoDateTime } from '@/lib/contracts/ids'
 import {
   findGroceryMergeSuggestions,
   generateGroceryItems,
@@ -89,6 +89,34 @@ describe('grocery generation', () => {
       items.find((item) => item.ingredientName === 'onions'),
     ).toMatchObject({ category: 'produce' })
     expect(items.every((item) => item.category)).toBe(true)
+  })
+
+  it('applies a current-run category correction without changing grocery facts', () => {
+    const selections = [
+      selection('category-correction', 'Dinner', '1', [
+        ingredient({ ingredientName: 'onions' }),
+      ]),
+    ]
+    const before = generateGroceryItems({ selections })[0]!
+    const after = generateGroceryItems({
+      selections,
+      categoryOverrides: [
+        {
+          itemId: before.id,
+          category: 'frozen',
+          createdAt: isoDateTime(new Date('2026-09-10T12:00:00.000Z')),
+          updatedAt: isoDateTime(new Date('2026-09-10T12:00:00.000Z')),
+        },
+      ],
+    })[0]!
+
+    expect(after).toMatchObject({
+      id: before.id,
+      category: 'frozen',
+      calculatedRequirement: before.calculatedRequirement,
+      shoppingAmount: before.shoppingAmount,
+      contributions: before.contributions,
+    })
   })
 
   it('returns generated items in the default category route and stable item order', () => {

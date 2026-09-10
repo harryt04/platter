@@ -147,7 +147,10 @@ Every derived grocery item now receives a conservative documented default
 category such as Produce, Pantry, or Household; uncertain parser output and
 unrecognized ingredients remain in Other. Active runs group categories along a
 documented typical-store route and use normalized ingredient names plus stable
-item IDs for a predictable order within each category. The `Review at home`
+item IDs for a predictable order within each category. Current members can
+move an item to a more useful category from either active-run view; the
+revision-aware, retry-safe correction is shared with the list and does not
+change its recipe facts or calculated amount. The `Review at home`
 mode now shows calculated and shopping amounts, category, and contribution
 access for each grocery item. Members can mark an item
 `Already have` without creating pantry inventory; it is hidden from the buy

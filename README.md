@@ -57,6 +57,9 @@ Mailpit inbox on `http://localhost:8025`. `npm run services:down` stops services
 without removing the Mongo volume. Password reset mail is delivered to
 Mailpit locally.
 
+Set `SMTP_ENABLED=true` to deliver password-reset and invitation emails through
+the configured SMTP server; the example configuration targets local Mailpit.
+
 For the ignored local browser account, create `.env.test.local` with
 `E2E_USER_NAME`, `E2E_USER_EMAIL`, and `E2E_USER_PASSWORD`, then run
 `npm run db:seed:test-user`. The seed never prints the password.

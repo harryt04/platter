@@ -12,6 +12,7 @@ import {
   type InvitationDocument,
 } from '@/lib/invitations'
 import { notifyExistingUserByEmail } from '@/lib/notifications'
+import { sendInvitationEmail } from '@/lib/auth/mailer'
 
 type RouteContext = { params: Promise<{ listId: string }> }
 
@@ -141,6 +142,9 @@ export async function POST(request: Request, context: RouteContext) {
   }).catch(() => false)
 
   const inviteUrl = new URL(`/invitations/${token}`, env.APP_URL).toString()
+  await sendInvitationEmail(document.email, inviteUrl, list.name).catch(
+    () => false,
+  )
   return Response.json(
     { invitation: toInvitationSummary(document, inviteUrl) },
     { status: 201 },

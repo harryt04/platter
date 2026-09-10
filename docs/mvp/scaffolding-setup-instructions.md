@@ -246,7 +246,8 @@ Create `.env.example` with names and safe local defaults where possible. Keep
 | `MONGODB_DATABASE` | Explicit database name | Required; local default `platter_development`. |
 | `BETTER_AUTH_SECRET` | Better Auth encryption/signing secret | Required; example contains no value. |
 | `BETTER_AUTH_URL` | Better Auth base URL | Required; same local origin as the web app. |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` | Password reset delivery | Required locally with Mailpit defaults. |
+| `SMTP_ENABLED` | Password reset and invitation email delivery | Explicit opt-in; local Mailpit default is `true` in `.env.example`. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` | Password reset and invitation email delivery | Required when SMTP is enabled; local defaults target Mailpit. |
 | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE` | Hosted SMTP settings | Optional locally. |
 | `REALTIME_PORT` | Socket.IO service port | Local default `3001`. |
 | `NEXT_PUBLIC_REALTIME_URL` | Browser-visible realtime origin | Local default `http://localhost:3001`. |

@@ -111,7 +111,7 @@ ownership
       and material membership or ownership changes affecting them.
 - [x] Notifications link to the relevant list or invitation and can be marked
       read without changing the underlying membership state.
-- [ ] Email invitations are sent only when email delivery is configured, and a
+- [x] Email invitations are sent only when email delivery is configured, and a
       delivery failure does not invalidate an in-product invitation.
 - [ ] Purchased checks and routine grocery edits never generate email or push
       notifications.

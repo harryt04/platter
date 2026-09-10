@@ -12,6 +12,7 @@ import {
   type InvitationDocument,
 } from '@/lib/invitations'
 import { randomBytes } from 'node:crypto'
+import { sendInvitationEmail } from '@/lib/auth/mailer'
 
 type RouteContext = {
   params: Promise<{ listId: string; invitationId: string }>
@@ -75,7 +76,7 @@ async function findPendingInvitation(
   if (invitation.status !== 'pending') {
     return { kind: 'invitation-not-pending' as const }
   }
-  return { kind: 'ok' as const, db, invitation }
+  return { kind: 'ok' as const, db, invitation, list }
 }
 
 export async function POST(_request: Request, context: RouteContext) {
@@ -124,6 +125,9 @@ export async function POST(_request: Request, context: RouteContext) {
     `/invitations/${token}`,
     serverEnv().APP_URL,
   ).toString()
+  await sendInvitationEmail(updated.email, inviteUrl, result.list.name).catch(
+    () => false,
+  )
   return Response.json({ invitation: toInvitationSummary(updated, inviteUrl) })
 }
 

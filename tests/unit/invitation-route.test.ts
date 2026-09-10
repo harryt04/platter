@@ -7,10 +7,13 @@ import {
 } from '@/app/api/v1/lists/[listId]/invitations/[invitationId]/route'
 import { resetRateLimitsForTests } from '@/lib/security/rate-limit'
 
-const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
-  getSession: vi.fn(),
-  getConnectedDatabase: vi.fn(),
-}))
+const { getSession, getConnectedDatabase, sendInvitationEmail } = vi.hoisted(
+  () => ({
+    getSession: vi.fn(),
+    getConnectedDatabase: vi.fn(),
+    sendInvitationEmail: vi.fn().mockResolvedValue(undefined),
+  }),
+)
 
 afterEach(() => {
   vi.clearAllMocks()
@@ -18,6 +21,7 @@ afterEach(() => {
 })
 
 vi.mock('@/lib/auth/authorization', () => ({ getSession }))
+vi.mock('@/lib/auth/mailer', () => ({ sendInvitationEmail }))
 vi.mock('@/lib/db/mongo-client', () => ({ getConnectedDatabase }))
 
 const list = {
@@ -174,6 +178,34 @@ describe('POST /api/v1/lists/[listId]/invitations', () => {
       createHash('sha256').update(token).digest('hex'),
     )
     expect(stored).not.toHaveProperty('token')
+    expect(sendInvitationEmail).toHaveBeenCalledWith(
+      'guest@example.com',
+      body.invitation.inviteUrl,
+      'Family',
+    )
+  })
+
+  it('keeps the in-product invitation when email delivery fails', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    sendInvitationEmail.mockRejectedValueOnce(new Error('SMTP unavailable'))
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(list),
+      insertOne: vi.fn().mockResolvedValue({ acknowledged: true }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/invitations', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'guest@example.com' }),
+      }),
+      context('list-1'),
+    )
+
+    expect(response.status).toBe(201)
+    expect((await response.json()).invitation.status).toBe('pending')
   })
 
   it('limits invitation creation for an owner and returns a retry hint', async () => {
@@ -300,6 +332,11 @@ describe('invitation management routes', () => {
     const update = invitationCollection.findOneAndUpdate.mock.calls[0][1]
     expect(update.$set.tokenHash).not.toBe(invitation.tokenHash)
     expect(update.$set.expiresAt).not.toBe(invitation.expiresAt)
+    expect(sendInvitationEmail).toHaveBeenCalledWith(
+      invitation.email,
+      body.invitation.inviteUrl,
+      list.name,
+    )
   })
 
   it('revokes a pending invitation and does not expose its token', async () => {

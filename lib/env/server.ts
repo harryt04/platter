@@ -16,6 +16,7 @@ const serverSchema = z.object({
     z.string().min(16).optional(),
   ),
   BETTER_AUTH_URL: z.string().url().default('http://localhost:3000'),
+  SMTP_ENABLED: z.coerce.boolean().default(false),
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
   SMTP_FROM: z.string().default('noreply@example.test'),

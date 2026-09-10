@@ -98,7 +98,7 @@ describe('grocery generation', () => {
     })
   })
 
-  it('keeps uncertain identities, incompatible units, and missing amounts separate', () => {
+  it('keeps uncertain identities, incompatible dimensions, and missing amounts separate', () => {
     const items = generateGroceryItems({
       selections: [
         selection('medium', 'Medium', '1', [
@@ -118,11 +118,11 @@ describe('grocery generation', () => {
           }),
         ]),
         selection('cup', 'Cup', '1', [ingredient()]),
-        selection('tbsp', 'Tablespoon', '1', [
+        selection('mass', 'Mass', '1', [
           ingredient({
-            originalText: '2 tbsp onions',
+            originalText: '2 kg onions',
             quantity: '2',
-            unit: 'tbsp',
+            unit: 'kg',
           }),
         ]),
       ],
@@ -135,6 +135,44 @@ describe('grocery generation', () => {
     expect(items.find((item) => item.ingredientName === 'salt')).toMatchObject({
       calculatedRequirement: null,
       shoppingAmount: null,
+    })
+  })
+
+  it('converts compatible high-confidence volume contributions to the first unit', () => {
+    const items = generateGroceryItems({
+      selections: [
+        selection('cups', 'Soup', '1', [
+          ingredient({
+            originalText: '2 cups onions',
+            quantity: '2',
+            unit: 'cup',
+          }),
+        ]),
+        selection('tablespoons', 'Sauce', '1', [
+          ingredient({
+            originalText: '2 tbsp onions',
+            quantity: '2',
+            unit: 'tbsp',
+          }),
+        ]),
+      ],
+    })
+
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({
+      id: 'grocery:merged:onions:volume:cup',
+      unit: { name: 'cup', dimension: 'volume' },
+      calculatedRequirement: { min: '2.125' },
+      contributions: [
+        {
+          unit: { name: 'cup', dimension: 'volume' },
+          calculatedQuantity: { min: '2' },
+        },
+        {
+          unit: { name: 'tbsp', dimension: 'volume' },
+          calculatedQuantity: { min: '2' },
+        },
+      ],
     })
   })
 

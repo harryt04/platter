@@ -26,8 +26,8 @@ aliases without collapsing meaningful varieties, classifies units by dimension,
 degrades incomplete lines to readable unknown ingredients without a fabricated
 amount, and performs high-precision locale-aware mass and volume conversions
 with round-trip test coverage. The first grocery-generation layer now derives
-stable, provenance-preserving items from pinned selections, while compatible
-unit conversion, collaboration, and moderation remain intentionally deferred
+stable, provenance-preserving items from pinned selections, while grocery
+correction, collaboration, and moderation remain intentionally deferred
 to the feature lanes described in the
 [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
 Public recipe reads also have a shared visibility guard: imported content must

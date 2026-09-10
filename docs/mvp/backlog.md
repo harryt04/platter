@@ -343,7 +343,7 @@ selections while merging only facts that are safe to combine.
 
 - [x] Grocery generation is deterministic for identical recipe versions,
       people counts, manual additions, and overrides.
-- [ ] High-confidence matches with compatible dimensions convert to a common
+- [x] High-confidence matches with compatible dimensions convert to a common
       calculation unit and merge without losing decimal precision.
 - [ ] Mass and volume do not convert without ingredient-specific data, and
       uncertain identities or incompatible units remain separate.

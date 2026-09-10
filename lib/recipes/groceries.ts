@@ -11,6 +11,7 @@ import {
   type ParsedIngredientLine,
   type ParsedIngredientQuantity,
   type ParsedIngredientUnit,
+  convertIngredientQuantity,
 } from '@/lib/recipes/ingredient-parser'
 import type { RecipeSelectionDocument } from '@/lib/recipes/selections'
 import { scaleIngredientQuantity } from '@/lib/recipes/scaling'
@@ -146,6 +147,29 @@ function mergeKey(prepared: PreparedIngredient) {
   ].join(':')
 }
 
+function compatibleIdentity(prepared: PreparedIngredient) {
+  if (!canMerge(prepared)) return null
+  if (
+    prepared.parsed.unit.dimension !== 'mass' &&
+    prepared.parsed.unit.dimension !== 'volume'
+  ) {
+    return null
+  }
+  return [
+    prepared.parsed.normalizedIdentity,
+    prepared.parsed.unit.dimension,
+  ].join(':')
+}
+
+function convertForUnit(
+  quantity: ParsedIngredientQuantity | null,
+  fromUnit: ParsedIngredientUnit,
+  toUnit: ParsedIngredientUnit,
+) {
+  if (!quantity) return null
+  return convertIngredientQuantity(quantity, fromUnit, toUnit)
+}
+
 function contributionFromIngredient(
   ingredient: RecipeIngredient,
   prepared: PreparedIngredient,
@@ -190,8 +214,10 @@ function itemFromContribution(
 
 /**
  * Derive the current run's grocery items without mutating recipes or the run.
- * Only high-confidence, same-dimension, same-unit facts are merged here;
- * compatible-unit conversion and user correction flows build on this boundary.
+ * Only high-confidence, same-dimension facts are merged here. Mass and volume
+ * contributions use the first contribution's unit as their common calculation
+ * unit; the original contribution quantity and unit remain available for
+ * provenance and readable breakdowns.
  */
 export function generateGroceryItems({
   selections,
@@ -209,20 +235,40 @@ export function generateGroceryItems({
     prepared: PreparedIngredient,
     fallbackKey: string,
   ) => {
-    const itemKey = mergeKey(prepared) ?? fallbackKey
-    const itemId = `grocery:${itemKey}`
-    const existing = items.get(itemId)
+    const itemKey = mergeKey(prepared)
+    const compatibleKey = compatibleIdentity(prepared)
+    let itemId = `grocery:${itemKey ?? fallbackKey}`
+    let existing = items.get(itemId)
+
+    if (!existing && compatibleKey) {
+      existing = [...items.values()].find(
+        (item) =>
+          [item.normalizedIdentity, item.dimension].join(':') === compatibleKey,
+      )
+      if (existing) itemId = existing.id
+    }
 
     if (!existing) {
       items.set(itemId, itemFromContribution(itemId, contribution))
       return
     }
 
+    const convertedQuantity = convertForUnit(
+      contribution.calculatedQuantity,
+      contribution.unit,
+      existing.unit,
+    )
+    if (!convertedQuantity) {
+      const separateId = `${itemId}:separate:${prepared.parsed.unit.name}`
+      items.set(separateId, itemFromContribution(separateId, contribution))
+      return
+    }
+
     existing.contributions.push(contribution)
-    if (existing.calculatedRequirement && contribution.calculatedQuantity) {
+    if (existing.calculatedRequirement && convertedQuantity) {
       existing.calculatedRequirement = addQuantities(
         existing.calculatedRequirement,
-        contribution.calculatedQuantity,
+        convertedQuantity,
       )
       existing.shoppingAmount = existing.calculatedRequirement
     } else {

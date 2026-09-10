@@ -32,7 +32,9 @@ to the feature lanes described in the
 [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
 Review and shopping rows now render those generated items from the active run,
 including an expandable calculation breakdown for every recipe or manual
-contribution and the aggregate calculated requirement.
+contribution and the aggregate calculated requirement. Grocery derivation also
+removes orphaned recipe items while retaining manual contributions and
+intentional shopping overrides with no fabricated current requirement.
 Public recipe reads also have a shared visibility guard: imported content must
 be approved after review, usable, and explicitly public before it can render.
 Recipes now have stable identities and incrementing immutable version IDs;

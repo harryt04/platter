@@ -213,4 +213,78 @@ describe('grocery generation', () => {
       },
     ])
   })
+
+  it('removes an item when its last recipe contribution is removed', () => {
+    const input = {
+      selections: [selection('recipe', 'Tacos', '1', [ingredient()])],
+    }
+    const generated = generateGroceryItems(input)
+
+    expect(generated).toHaveLength(1)
+    expect(generateGroceryItems({ selections: [] })).toEqual([])
+  })
+
+  it('retains a manual contribution when the last recipe contribution is removed', () => {
+    const manual = {
+      id: 'manual-1',
+      ingredient: ingredient({
+        originalText: '1 cup onions',
+        quantity: '1',
+      }),
+    }
+    const generated = generateGroceryItems({
+      selections: [selection('recipe', 'Tacos', '1', [ingredient()])],
+      manualAdditions: [manual],
+    })
+
+    const afterRecipeRemoval = generateGroceryItems({
+      selections: [],
+      manualAdditions: [manual],
+    })
+
+    expect(afterRecipeRemoval).toMatchObject([
+      {
+        id: generated[0]?.id,
+        calculatedRequirement: { min: '1' },
+        contributions: [{ source: { kind: 'manual', additionId: 'manual-1' } }],
+      },
+    ])
+  })
+
+  it('retains an intentional override without inventing a current requirement', () => {
+    const generated = generateGroceryItems({
+      selections: [selection('recipe', 'Tacos', '1', [ingredient()])],
+    })
+    const item = generated[0]!
+
+    expect(
+      generateGroceryItems({
+        selections: [],
+        overrides: [
+          {
+            itemId: item.id,
+            quantity: { min: '1' },
+            preservedItem: {
+              ingredientName: item.ingredientName,
+              normalizedIdentity: item.normalizedIdentity,
+              dimension: item.dimension,
+              unit: item.unit,
+            },
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        id: item.id,
+        ingredientName: item.ingredientName,
+        normalizedIdentity: item.normalizedIdentity,
+        dimension: item.dimension,
+        unit: item.unit,
+        calculatedRequirement: null,
+        shoppingAmount: { min: '1' },
+        override: { min: '1' },
+        contributions: [],
+      },
+    ])
+  })
 })

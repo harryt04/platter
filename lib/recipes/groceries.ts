@@ -38,6 +38,16 @@ export type GroceryManualAddition = {
 export type GroceryAmountOverride = {
   itemId: string
   quantity: ParsedIngredientQuantity
+  /**
+   * The stable identity facts needed to keep an intentional shopping amount
+   * visible after its final recipe contribution is removed. The current
+   * calculated requirement is intentionally regenerated as null because no
+   * recipe or manual contribution remains to support it.
+   */
+  preservedItem?: Pick<
+    GroceryItem,
+    'ingredientName' | 'normalizedIdentity' | 'dimension' | 'unit'
+  >
 }
 
 export type GroceryContribution = {
@@ -318,7 +328,7 @@ export function generateGroceryItems({
   }
 
   const overridesByItemId = new Map(
-    overrides.map((override) => [override.itemId, override.quantity]),
+    overrides.map((override) => [override.itemId, override]),
   )
 
   return [...items.values()]
@@ -326,8 +336,28 @@ export function generateGroceryItems({
     .map((item) => {
       const override = overridesByItemId.get(item.id)
       if (!override) return item
-      return { ...item, shoppingAmount: override, override }
+      return {
+        ...item,
+        shoppingAmount: override.quantity,
+        override: override.quantity,
+      }
     })
+    .concat(
+      overrides.flatMap((override) => {
+        if (items.has(override.itemId) || !override.preservedItem) return []
+        return [
+          {
+            id: override.itemId,
+            ...override.preservedItem,
+            calculatedRequirement: null,
+            shoppingAmount: override.quantity,
+            override: override.quantity,
+            contributions: [],
+          },
+        ]
+      }),
+    )
+    .sort((left, right) => left.id.localeCompare(right.id))
     .map((item) => ({
       ...item,
       contributions: [...item.contributions].sort((left, right) =>

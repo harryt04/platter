@@ -349,7 +349,7 @@ selections while merging only facts that are safe to combine.
       uncertain identities or incompatible units remain separate.
 - [x] Each item exposes its calculated requirement and a readable breakdown of
       the amount contributed by every selection.
-- [ ] Removing the last recipe contribution removes the item unless an
+- [x] Removing the last recipe contribution removes the item unless an
       intentional manual addition or preserved override still requires it.
 - [ ] Unit and property tests cover merge confidence, conversion, provenance,
       and contribution-removal invariants.

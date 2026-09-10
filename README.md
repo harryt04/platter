@@ -179,6 +179,9 @@ checking current list membership, so a known list ID cannot grant access.
 Remote mutation batches are announced through a polite, actor-aware live region
 with action categories and counts, while the originating shopper's own events
 remain silent to avoid duplicate announcements.
+Real Socket.IO multi-client coverage also verifies different-item and same-item
+fan-out, disconnection gaps, and room rejection after membership removal or
+for a non-member.
 The active run also shares a temporary within-category item order: members can
 use accessible move-up and move-down controls, while a newly created run begins
 at the documented default order. Members can also drag a category or use its

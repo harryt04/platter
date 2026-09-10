@@ -488,7 +488,7 @@ they edit different or identical items from separate connected devices.
 **Blocked by:** 03: Manage list membership and ownership; 20: Shop with the
 active checklist
 
-**Status:** in progress
+**Status:** implemented
 
 - [x] Every accepted check, uncheck, amount edit, addition, removal, and ordering
       mutation advances an authoritative run revision and emits a typed event.
@@ -500,7 +500,7 @@ active checklist
       rather than treating events as durable state.
 - [x] Screen readers receive useful batched announcements of remote changes
       without being overwhelmed.
-- [ ] Multi-client tests cover different-item changes, same-item changes,
+- [x] Multi-client tests cover different-item changes, same-item changes,
       disconnection gaps, removed membership, and non-member room rejection.
 
 ## 22: Support offline shopping and reconciliation

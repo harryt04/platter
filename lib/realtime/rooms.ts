@@ -7,6 +7,11 @@ export type RealtimeRoomSocket = {
   emit: (event: string, payload: unknown) => unknown
 }
 
+export type RealtimeMembershipReader = (
+  listId: string,
+  userId: string,
+) => Promise<{ _id: string } | null>
+
 export type RealtimeHandshakeSocket = {
   handshake: { headers: { cookie?: string } }
 }
@@ -68,6 +73,7 @@ export async function joinAuthorizedRealtimeRoom(
   socket: RealtimeRoomSocket,
   listId: unknown,
   userId: string,
+  readMembership: RealtimeMembershipReader = findListForMember,
 ) {
   if (typeof listId !== 'string') {
     socket.emit('foundation:error', { code: 'LIST_ACCESS_DENIED' })
@@ -75,7 +81,7 @@ export async function joinAuthorizedRealtimeRoom(
   }
 
   try {
-    const list = await findListForMember(listId, userId)
+    const list = await readMembership(listId, userId)
     if (!list) {
       socket.emit('foundation:error', { code: 'LIST_ACCESS_DENIED' })
       return false

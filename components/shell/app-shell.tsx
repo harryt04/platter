@@ -5,17 +5,34 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 import { OfflineBanner } from '@/components/states/offline-banner'
+import { OfflineShellSnapshotWriter } from '@/components/states/offline-snapshot-writers'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 
 export function AppShell({
   children,
+  userId,
   lists,
 }: {
   children: React.ReactNode
-  lists?: { id: string; name: string }[]
+  userId: string
+  lists?: { id: string; name: string; status: 'active' | 'archived' }[]
 }) {
   return (
     <SidebarProvider>
+      {lists && (
+        <OfflineShellSnapshotWriter
+          payload={{
+            kind: 'shell',
+            lists: lists.map((list) => ({
+              id: list.id,
+              name: list.name,
+              status: list.status,
+            })),
+          }}
+          updatedAt={new Date().toISOString()}
+          userId={userId}
+        />
+      )}
       <AppSidebar lists={lists ?? []} />
       <SidebarInset>
         <header className="bg-background/95 sticky top-0 z-20 flex min-h-16 items-center gap-3 border-b px-4 backdrop-blur md:px-8">

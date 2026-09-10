@@ -27,6 +27,7 @@ import { ShoppingModeNavigation } from '@/components/lists/shopping-mode-navigat
 import { groupGroceryItemsByCategoryOrder } from '@/lib/recipes/grocery-categories'
 import { PurchasedButton } from '@/components/lists/purchased-button'
 import { RealtimeRunSync } from '@/components/states/realtime-run-sync'
+import { OfflineRunSnapshotWriter } from '@/components/states/offline-snapshot-writers'
 
 export default async function ReviewPage({
   params,
@@ -65,6 +66,20 @@ export default async function ReviewPage({
     run?.ordering,
     run?.categoryOrdering,
   )
+  const offlineRecipeSelections = resolvedSelections.flatMap(
+    ({ version }, index) => {
+      const selection = selections[index]
+      return selection && version
+        ? [
+            {
+              id: selection._id,
+              title: version.title,
+              desiredPeople: selection.desiredPeople,
+            },
+          ]
+        : []
+    },
+  )
 
   return (
     <ContentContainer>
@@ -85,6 +100,20 @@ export default async function ReviewPage({
         listId={listId}
         revision={run?.revision ?? 0}
         runId={run?._id ?? list.activeRunId}
+      />
+      <OfflineRunSnapshotWriter
+        payload={{
+          kind: 'run',
+          listId,
+          listName: list.name,
+          listStatus: list.status === 'archived' ? 'archived' : 'active',
+          runId: run?._id ?? list.activeRunId,
+          revision: run?.revision ?? 0,
+          recipeSelections: offlineRecipeSelections,
+          groceryItemCount: groceryItems.length,
+        }}
+        updatedAt={run?.updatedAt ?? list.updatedAt}
+        userId={session.user.id}
       />
       <PageSection title="Grocery items">
         {groceryItems.length > 0 ? (

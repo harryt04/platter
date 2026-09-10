@@ -1,24 +1,65 @@
 import Dexie, { type Table } from 'dexie'
 import type { QueuedOperation } from '@/lib/contracts/mutations'
 
+export type OfflineRecipeSelectionSummary = {
+  id: string
+  title: string
+  desiredPeople: number
+}
+
+export type OfflineRunSnapshotPayload = {
+  kind: 'run'
+  listId: string
+  listName: string
+  listStatus: 'active' | 'archived'
+  runId: string
+  revision: number
+  recipeSelections: OfflineRecipeSelectionSummary[]
+  groceryItemCount: number
+}
+
+export type OfflineListSummary = {
+  id: string
+  name: string
+  status: 'active' | 'archived'
+}
+
+export type OfflineShellSnapshotPayload = {
+  kind: 'shell'
+  lists: OfflineListSummary[]
+}
+
 export interface RunSnapshot {
   id?: number
   userId: string
   listId: string
   runId: string
   revision: number
-  payload: unknown
+  payload: OfflineRunSnapshotPayload
+  updatedAt: string
+}
+
+export interface ShellSnapshot {
+  id?: number
+  userId: string
+  payload: OfflineShellSnapshotPayload
   updatedAt: string
 }
 
 class PlatterOfflineDatabase extends Dexie {
   snapshots!: Table<RunSnapshot, number>
+  shells!: Table<ShellSnapshot, number>
   operations!: Table<QueuedOperation & { id?: number }, number>
 
   constructor(userId: string) {
     super(`platter-${userId}`)
     this.version(1).stores({
-      snapshots: '++id, [userId+listId], runId, updatedAt',
+      snapshots: '++id, userId, [userId+listId], runId, updatedAt',
+      operations: '++id, operationId, [listId+runId], status, createdAt',
+    })
+    this.version(2).stores({
+      snapshots: '++id, userId, [userId+listId], runId, updatedAt',
+      shells: '++id, userId, updatedAt',
       operations: '++id, operationId, [listId+runId], status, createdAt',
     })
   }
@@ -28,8 +69,86 @@ export function openOfflineDatabase(userId: string) {
   return new PlatterOfflineDatabase(userId)
 }
 
+export const offlineUserStorageKey = 'platter-offline-user-id'
+
+export function rememberOfflineUser(userId: string) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(offlineUserStorageKey, userId)
+  } catch {
+    // Offline snapshots still work when storage access is restricted.
+  }
+}
+
+export function getRememberedOfflineUser() {
+  if (typeof window === 'undefined') return null
+  try {
+    return window.localStorage.getItem(offlineUserStorageKey)
+  } catch {
+    return null
+  }
+}
+
+export async function saveRunSnapshot(
+  userId: string,
+  snapshot: Omit<RunSnapshot, 'id' | 'userId'>,
+) {
+  rememberOfflineUser(userId)
+  const db = openOfflineDatabase(userId)
+  await db.transaction('rw', db.snapshots, async () => {
+    await db.snapshots
+      .where('[userId+listId]')
+      .equals([userId, snapshot.listId])
+      .delete()
+    await db.snapshots.add({ ...snapshot, userId })
+  })
+  db.close()
+}
+
+export async function saveShellSnapshot(
+  userId: string,
+  snapshot: Omit<ShellSnapshot, 'id' | 'userId'>,
+) {
+  rememberOfflineUser(userId)
+  const db = openOfflineDatabase(userId)
+  await db.transaction('rw', db.shells, async () => {
+    await db.shells.where('userId').equals(userId).delete()
+    await db.shells.add({ ...snapshot, userId })
+  })
+  db.close()
+}
+
+export async function getOfflineSnapshots(userId: string) {
+  const db = openOfflineDatabase(userId)
+  const snapshots = await db.snapshots.where('userId').equals(userId).toArray()
+  db.close()
+  return snapshots.sort((left, right) =>
+    right.updatedAt.localeCompare(left.updatedAt),
+  )
+}
+
+export async function getOfflineShellSnapshot(userId: string) {
+  const db = openOfflineDatabase(userId)
+  const snapshots = await db.shells.where('userId').equals(userId).toArray()
+  db.close()
+  return snapshots.sort((left, right) =>
+    right.updatedAt.localeCompare(left.updatedAt),
+  )[0]
+}
+
 export async function clearOfflineDatabase(userId: string) {
   const db = openOfflineDatabase(userId)
   await db.delete()
   db.close()
+}
+
+export async function clearOfflineSession() {
+  const userId = getRememberedOfflineUser()
+  if (!userId) return
+  await clearOfflineDatabase(userId)
+  try {
+    window.localStorage.removeItem(offlineUserStorageKey)
+  } catch {
+    // The database is already removed even if local storage is unavailable.
+  }
 }

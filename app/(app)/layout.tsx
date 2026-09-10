@@ -13,13 +13,20 @@ export default async function AppLayout({
   const lists = await db
     .collection<ListDocument>('lists')
     .find(listMembershipFilter(session.user.id), {
-      projection: { _id: 1, name: 1 },
+      projection: { _id: 1, name: 1, status: 1 },
     })
     .sort({ name: 1 })
     .toArray()
 
   return (
-    <AppShell lists={lists.map(({ _id, name }) => ({ id: _id, name }))}>
+    <AppShell
+      lists={lists.map(({ _id, name, status }) => ({
+        id: _id,
+        name,
+        status: status === 'archived' ? 'archived' : 'active',
+      }))}
+      userId={session.user.id}
+    >
       {children}
     </AppShell>
   )

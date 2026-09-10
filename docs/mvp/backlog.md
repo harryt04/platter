@@ -512,7 +512,7 @@ and synchronize it honestly and safely when connectivity returns.
 
 **Status:** ready-for-agent
 
-- [ ] After a connected load, the active-list shell, latest run, and recipe
+- [x] After a connected load, the active-list shell, latest run, and recipe
       selection summary remain available offline to the same authenticated user.
 - [ ] Offline users can check or uncheck, mark or undo `Already have`, and adjust
       shopping amounts with immediate local feedback.

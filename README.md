@@ -182,6 +182,13 @@ remain silent to avoid duplicate announcements.
 Real Socket.IO multi-client coverage also verifies different-item and same-item
 fan-out, disconnection gaps, and room rejection after membership removal or
 for a non-member.
+After a connected list, review, or shopping load, Platter stores a minimal
+user-scoped shell and active-run summary in Dexie. The production service
+worker keeps the offline route and static application assets available without
+putting private HTML or API responses in Cache Storage; the offline route reads
+the saved list names, recipe selections, revision, and grocery-item count from
+the authenticated user's local database. Signing out deletes that local
+database and its remembered account marker.
 The active run also shares a temporary within-category item order: members can
 use accessible move-up and move-down controls, while a newly created run begins
 at the documented default order. Members can also drag a category or use its

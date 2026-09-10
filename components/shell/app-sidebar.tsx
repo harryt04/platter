@@ -26,6 +26,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { authClient } from '@/lib/auth/auth-client'
+import { clearOfflineSession } from '@/lib/offline/database'
 
 const groups = [
   {
@@ -133,7 +134,10 @@ export function AppSidebar({
         </div>
         <button
           className="text-muted-foreground hover:text-foreground mt-2 min-h-11 w-full text-left text-xs"
-          onClick={() => authClient.signOut()}
+          onClick={async () => {
+            await clearOfflineSession().catch(() => undefined)
+            await authClient.signOut()
+          }}
         >
           {open ? 'Sign out' : '↪'}
         </button>

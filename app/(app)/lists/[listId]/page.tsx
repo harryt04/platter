@@ -19,6 +19,7 @@ import {
 } from '@/lib/recipes/drafts'
 import { generateGroceryItems } from '@/lib/recipes/groceries'
 import { RealtimeRunSync } from '@/components/states/realtime-run-sync'
+import { OfflineRunSnapshotWriter } from '@/components/states/offline-snapshot-writers'
 
 export default async function ListPage({
   params,
@@ -70,6 +71,20 @@ export default async function ListPage({
       : []
     ).map((share) => share.recipeId),
   )
+  const offlineRecipeSelections = resolvedSelections.flatMap(
+    ({ version }, index) => {
+      const selection = selections[index]
+      return selection && version
+        ? [
+            {
+              id: selection._id,
+              title: version.title,
+              desiredPeople: selection.desiredPeople,
+            },
+          ]
+        : []
+    },
+  )
 
   return (
     <ContentContainer>
@@ -103,6 +118,20 @@ export default async function ListPage({
         listId={listId}
         revision={run?.revision ?? 0}
         runId={run?._id ?? list.activeRunId}
+      />
+      <OfflineRunSnapshotWriter
+        payload={{
+          kind: 'run',
+          listId,
+          listName: list.name,
+          listStatus: list.status === 'archived' ? 'archived' : 'active',
+          runId: run?._id ?? list.activeRunId,
+          revision: run?.revision ?? 0,
+          recipeSelections: offlineRecipeSelections,
+          groceryItemCount: groceryItems.length,
+        }}
+        updatedAt={run?.updatedAt ?? list.updatedAt}
+        userId={session.user.id}
       />
       <div className="grid gap-6 md:grid-cols-2">
         <Card>

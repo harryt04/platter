@@ -6,10 +6,10 @@ This repo contains the Platter foundation scaffold and product/design plans for
 a mobile-first recipe-to-grocery app. Private recipe drafts, recipe parsing and
 scaling, deterministic grocery generation, the first grocery correction slice,
 and conservative grocery categorization, current-run recategorization,
-temporary shared grocery ordering, and the active-checklist membership and
-Purchased slices are implemented; the remaining
-correction, collaboration, and feature workflows are still planned in the
-backlog.
+temporary shared grocery ordering, and the active-checklist membership,
+Purchased, connected realtime, and first user-scoped offline snapshot slices
+are implemented; the remaining offline mutation, reconciliation, correction,
+collaboration, and feature workflows are still planned in the backlog.
 
 - `README.md` — project overview and documentation entry point.
 - `docs/mvp/prd.md` — main product rules, data model, planned technology, and acceptance checks.

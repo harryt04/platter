@@ -556,6 +556,7 @@ describe('GET /api/v1/recipes/[recipeId]', () => {
         ...draft,
         status: 'usable' as const,
         visibility: 'public' as const,
+        householdNotes: 'Keep this private.',
         typicalPeopleFed: 4,
         ingredients: [
           {
@@ -580,13 +581,15 @@ describe('GET /api/v1/recipes/[recipeId]', () => {
       { params: Promise.resolve({ recipeId: 'recipe-1' }) },
     )
 
+    const result = await response.json()
     expect(response.status).toBe(200)
-    expect((await response.json()).recipe).toMatchObject({
+    expect(result.recipe).toMatchObject({
       id: 'recipe-1',
       visibility: 'public',
       title: 'Tomato soup',
       versionNumber: 2,
     })
+    expect(result.recipe).not.toHaveProperty('householdNotes')
     expect(collection.findOne).toHaveBeenCalledWith({
       _id: 'recipe-1',
       status: 'usable',
@@ -610,6 +613,7 @@ describe('GET /api/v1/recipes/[recipeId]', () => {
           ...draft,
           status: 'usable' as const,
           visibility: 'list-shared' as const,
+          householdNotes: 'Owner-only note.',
         }),
       find: vi.fn().mockReturnValue({
         toArray: vi.fn().mockResolvedValue([{ _id: 'list-1' }]),
@@ -624,10 +628,12 @@ describe('GET /api/v1/recipes/[recipeId]', () => {
       { params: Promise.resolve({ recipeId: 'recipe-1' }) },
     )
 
+    const result = await response.json()
     expect(response.status).toBe(200)
-    expect((await response.json()).recipe).toMatchObject({
+    expect(result.recipe).toMatchObject({
       id: 'recipe-1',
       visibility: 'list-shared',
     })
+    expect(result.recipe).not.toHaveProperty('householdNotes')
   })
 })

@@ -12,6 +12,7 @@ import {
   recipeShares,
   recipeVersions,
   toRecipeDraft,
+  toRecipeDraftForViewer,
   updateDraftSchema,
   type RecipeDraftDocument,
   type RecipeShareDocument,
@@ -127,18 +128,25 @@ export async function GET(_request: Request, context: RouteContext) {
   if (!session) {
     const draft = await publicRecipe(recipeId)
     return draft
-      ? Response.json({ recipe: toRecipeDraft(draft) })
+      ? Response.json({ recipe: toRecipeDraftForViewer(draft, 'public') })
       : authenticationRequired('Sign in to view this recipe.')
   }
 
-  const draft =
-    (await ownedDraft(recipeId, session.user.id)) ??
-    (await sharedRecipe(recipeId, session.user.id))
-  if (draft) return Response.json({ recipe: toRecipeDraft(draft) })
+  const owned = await ownedDraft(recipeId, session.user.id)
+  if (owned) {
+    return Response.json({ recipe: toRecipeDraftForViewer(owned, 'owner') })
+  }
+
+  const shared = await sharedRecipe(recipeId, session.user.id)
+  if (shared) {
+    return Response.json({ recipe: toRecipeDraftForViewer(shared, 'shared') })
+  }
 
   const publicDraft = await publicRecipe(recipeId)
   return publicDraft
-    ? Response.json({ recipe: toRecipeDraft(publicDraft) })
+    ? Response.json({
+        recipe: toRecipeDraftForViewer(publicDraft, 'public'),
+      })
     : notFoundResponse()
 }
 

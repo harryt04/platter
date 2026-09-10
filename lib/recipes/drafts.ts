@@ -297,6 +297,8 @@ export type RecipeDraft = {
   updatedAt: IsoDateTime
 }
 
+export type RecipeViewer = 'owner' | 'shared' | 'public'
+
 export type RecipeDraftDocument = Omit<
   RecipeDraft,
   | 'id'
@@ -638,4 +640,18 @@ export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
   }
+}
+
+/**
+ * Personal household notes are only meaningful to the recipe owner. Keep the
+ * field out of shared, saved, and public responses even when the underlying
+ * recipe is otherwise readable through one of those paths.
+ */
+export function toRecipeDraftForViewer(
+  document: RecipeDraftDocument,
+  viewer: RecipeViewer,
+): RecipeDraft {
+  const recipe = toRecipeDraft(document)
+  if (viewer !== 'owner') delete recipe.householdNotes
+  return recipe
 }

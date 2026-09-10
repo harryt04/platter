@@ -4,7 +4,7 @@ import { isoDateTime } from '@/lib/contracts/ids'
 import { listMembershipFilter, type ListDocument } from '@/lib/lists'
 import {
   recipeShares,
-  toRecipeDraft,
+  toRecipeDraftForViewer,
   type RecipeDraft,
   type RecipeDraftDocument,
   type RecipeShareDocument,
@@ -99,14 +99,22 @@ function toLibraryEntries(
   return recipes.map((recipe) => {
     const sharedListNames = sharedListsByRecipe.get(recipe._id) ?? []
     const isSaved = savedRecipeIds.includes(recipe._id)
+    const access =
+      sharedListNames.length > 0 && recipe.ownerId !== userId
+        ? 'shared'
+        : isSaved && recipe.ownerId !== userId
+          ? 'saved'
+          : 'owned'
     return {
-      recipe: toRecipeDraft(recipe),
-      access:
-        sharedListNames.length > 0 && recipe.ownerId !== userId
-          ? 'shared'
-          : isSaved && recipe.ownerId !== userId
-            ? 'saved'
-            : 'owned',
+      recipe: toRecipeDraftForViewer(
+        recipe,
+        access === 'owned'
+          ? 'owner'
+          : access === 'shared'
+            ? 'shared'
+            : 'public',
+      ),
+      access,
       sharedListNames,
     } satisfies RecipeLibraryEntry
   })

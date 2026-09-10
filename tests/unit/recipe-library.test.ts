@@ -96,8 +96,15 @@ describe('findRecipeLibrary', () => {
     ])
     const recipes = query<RecipeDraftDocument>([
       recipe('owned-1', { visibility: 'private' }),
-      recipe('shared-1', { ownerId: 'owner-2' }),
-      recipe('saved-1', { ownerId: 'owner-2', visibility: 'public' }),
+      recipe('shared-1', {
+        ownerId: 'owner-2',
+        householdNotes: 'Owner-only note.',
+      }),
+      recipe('saved-1', {
+        ownerId: 'owner-2',
+        visibility: 'public',
+        householdNotes: 'Save this note privately.',
+      }),
     ])
     const db = {
       collection: vi.fn((name: string) => {
@@ -158,6 +165,8 @@ describe('findRecipeLibrary', () => {
       access: 'saved',
       sharedListNames: [],
     })
+    expect(result[1]?.recipe).not.toHaveProperty('householdNotes')
+    expect(result[2]?.recipe).not.toHaveProperty('householdNotes')
   })
 
   it('does not query or retain shared recipes after membership access disappears', async () => {

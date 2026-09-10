@@ -9,7 +9,10 @@ import { PublicRecipeProvenance } from '@/components/recipes/public-recipe-prove
 import { SavePublicRecipeButton } from '@/components/recipes/save-public-recipe-button'
 import { getSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
-import { publicRecipeFilter, toRecipeDraft } from '@/lib/recipes/drafts'
+import {
+  publicRecipeFilter,
+  toRecipeDraftForViewer,
+} from '@/lib/recipes/drafts'
 import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
 
 export default async function RecipePage({
@@ -24,7 +27,7 @@ export default async function RecipePage({
     .collection<RecipeDraftDocument>('recipes')
     .findOne(publicRecipeFilter(recipeId))
   if (!document) notFound()
-  const recipe = toRecipeDraft(document)
+  const recipe = toRecipeDraftForViewer(document, 'public')
   const saved = session
     ? await db.collection('recipe_saves').findOne({
         userId: session.user.id,

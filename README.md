@@ -37,6 +37,9 @@ explicitly shares them with selected active lists or publishes them to the
 public catalog; list-scoped access is checked against current membership.
 Editing a published recipe creates a private personal variant with lineage to
 the published version, leaving the public source unchanged.
+Household notes are personal recipe notes: the owner can edit them, but shared,
+saved, and public recipe reads omit them unless the recipe is being viewed by
+its owner.
 Mongo-backed public discovery now applies the same usable, explicit-public, and
 approved-import guard as public recipe reads; private searches require an
 owner-scoped query. Public discovery now has a real anonymous and signed-in

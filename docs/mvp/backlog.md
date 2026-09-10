@@ -238,7 +238,7 @@ they authored, imported, saved, or received through a list.
       remove that saved reference without deleting public or other-user data.
 - [x] Library search supports title, ingredient, source, and tag with stable
       cursor pagination.
-- [ ] Personal notes and variants stay private unless separately shared or
+- [x] Personal notes and variants stay private unless separately shared or
       published.
 - [ ] Deleting a referenced private recipe explains the impact and preserves an
       immutable minimal snapshot required by list or history references.

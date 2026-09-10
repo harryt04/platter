@@ -22,6 +22,7 @@ import {
   recipeVisibilitySchema,
   typicalPeopleFedSchema,
   toRecipeDraft,
+  toRecipeDraftForViewer,
   updateDraftSchema,
 } from '@/lib/recipes/drafts'
 
@@ -100,6 +101,22 @@ describe('recipe drafts', () => {
       versionId: 'public-version-3',
       versionNumber: 3,
     })
+  })
+
+  it('keeps personal household notes visible only to the owner', () => {
+    const recipe = createDraftDocument('user-1', 'Tomato soup', {
+      householdNotes: 'Use less salt for the kids.',
+    })
+
+    expect(toRecipeDraftForViewer(recipe, 'owner').householdNotes).toBe(
+      'Use less salt for the kids.',
+    )
+    expect(toRecipeDraftForViewer(recipe, 'shared')).not.toHaveProperty(
+      'householdNotes',
+    )
+    expect(toRecipeDraftForViewer(recipe, 'public')).not.toHaveProperty(
+      'householdNotes',
+    )
   })
 
   it('scopes every lookup to both the draft id and owner', () => {

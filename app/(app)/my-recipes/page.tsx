@@ -11,6 +11,7 @@ import {
   decodeRecipeLibraryCursor,
   searchRecipeLibrary,
 } from '@/lib/recipes/library'
+import { getRecipeSourceMetadata } from '@/lib/recipes/drafts'
 import Link from 'next/link'
 
 type SearchParams = {
@@ -101,60 +102,94 @@ export default async function MyRecipesPage({
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2">
-            {recipes.map(({ recipe, access, sharedListNames }) => (
-              <Card key={recipe.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-data text-muted-foreground text-xs tracking-widest uppercase">
-                        {access === 'shared'
-                          ? `Shared with ${sharedListNames.join(', ')}`
-                          : access === 'saved'
-                            ? 'Saved public recipe'
-                            : recipe.origin === 'imported'
-                              ? 'Imported recipe'
-                              : recipe.status !== 'usable'
-                                ? 'Private draft'
-                                : recipe.visibility === 'public'
-                                  ? 'Published recipe'
-                                  : recipe.visibility === 'list-shared'
-                                    ? 'Shared recipe'
-                                    : 'Ready to use'}
-                      </p>
-                      <CardTitle className="font-display mt-2 text-2xl">
-                        {recipe.title}
-                      </CardTitle>
+            {recipes.map(({ recipe, access, sharedListNames }) => {
+              const source = getRecipeSourceMetadata(recipe)
+              const hasSourceMetadata = Boolean(
+                recipe.sourceName ||
+                recipe.sourceUrl ||
+                recipe.sourceAuthor ||
+                recipe.importProvenance,
+              )
+              return (
+                <Card key={recipe.id}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="font-data text-muted-foreground text-xs tracking-widest uppercase">
+                          {access === 'shared'
+                            ? `Shared with ${sharedListNames.join(', ')}`
+                            : access === 'saved'
+                              ? 'Saved public recipe'
+                              : recipe.origin === 'imported'
+                                ? 'Imported recipe'
+                                : recipe.status !== 'usable'
+                                  ? 'Private draft'
+                                  : recipe.visibility === 'public'
+                                    ? 'Published recipe'
+                                    : recipe.visibility === 'list-shared'
+                                      ? 'Shared recipe'
+                                      : 'Ready to use'}
+                        </p>
+                        <CardTitle className="font-display mt-2 text-2xl">
+                          {recipe.title}
+                        </CardTitle>
+                        {hasSourceMetadata && (
+                          <p className="font-data text-muted-foreground mt-2 text-xs">
+                            Source:{' '}
+                            {source.sourceUrl ? (
+                              <a
+                                className="hover:text-primary underline underline-offset-2"
+                                href={source.sourceUrl}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                {source.sourceName}
+                              </a>
+                            ) : (
+                              source.sourceName
+                            )}
+                          </p>
+                        )}
+                        {hasSourceMetadata && source.sourceAuthor && (
+                          <p className="text-muted-foreground mt-1 text-xs">
+                            By {source.sourceAuthor}
+                          </p>
+                        )}
+                      </div>
+                      <span className="bg-muted rounded-full px-2 py-1 text-xs">
+                        {recipe.status === 'usable'
+                          ? 'Usable recipe'
+                          : 'Needs details'}
+                      </span>
                     </div>
-                    <span className="bg-muted rounded-full px-2 py-1 text-xs">
-                      {recipe.status === 'usable'
-                        ? 'Usable recipe'
-                        : 'Needs details'}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                  <Button variant="outline" asChild>
-                    {access === 'owned' ? (
-                      <Link href={`/recipes/${recipe.id}/edit`}>
-                        Edit draft
-                      </Link>
-                    ) : (
-                      <Link href={`/recipes/${recipe.id}`}>Open recipe</Link>
+                  </CardHeader>
+                  <CardContent className="flex flex-wrap gap-2">
+                    <Button variant="outline" asChild>
+                      {access === 'owned' ? (
+                        <Link href={`/recipes/${recipe.id}/edit`}>
+                          Edit draft
+                        </Link>
+                      ) : (
+                        <Link href={`/recipes/${recipe.id}`}>Open recipe</Link>
+                      )}
+                    </Button>
+                    {access === 'owned' && (
+                      <DeleteDraftButton
+                        recipeId={recipe.id}
+                        sharedListNames={sharedListNames}
+                        title={recipe.title}
+                      />
                     )}
-                  </Button>
-                  {access === 'owned' && (
-                    <DeleteDraftButton
-                      recipeId={recipe.id}
-                      sharedListNames={sharedListNames}
-                      title={recipe.title}
-                    />
-                  )}
-                  {access === 'saved' && (
-                    <SavePublicRecipeButton initialSaved recipeId={recipe.id} />
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                    {access === 'saved' && (
+                      <SavePublicRecipeButton
+                        initialSaved
+                        recipeId={recipe.id}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
           {nextPageHref && (
             <div className="mt-6 flex justify-center">

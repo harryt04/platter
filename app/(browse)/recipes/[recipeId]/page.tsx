@@ -16,6 +16,7 @@ import {
   type ShoppingRunDocument,
 } from '@/lib/lists'
 import {
+  getRecipeSourceMetadata,
   publicRecipeFilter,
   toRecipeDraftForViewer,
 } from '@/lib/recipes/drafts'
@@ -69,7 +70,8 @@ export default async function RecipePage({
     ['user-owned', 'licensed', 'permission-granted'].includes(
       recipe.image.rightsStatus,
     )
-  const sourceName = recipe.sourceName ?? 'Platter community'
+  const { sourceName, sourceUrl, sourceAuthor } =
+    getRecipeSourceMetadata(recipe)
 
   return (
     <ContentContainer>
@@ -149,9 +151,9 @@ export default async function RecipePage({
             <PublicRecipeProvenance
               attribution={recipe.attribution}
               imageLicense={recipe.image?.license ?? undefined}
-              sourceAuthor={recipe.sourceAuthor}
+              sourceAuthor={sourceAuthor}
               sourceName={sourceName}
-              sourceUrl={recipe.sourceUrl}
+              sourceUrl={sourceUrl}
               sourceAvailability={recipe.importProvenance?.sourceAvailability}
               versionNumber={recipe.versionNumber}
             />

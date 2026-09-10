@@ -327,6 +327,30 @@ export type RecipeDraft = {
 
 export type RecipeViewer = 'owner' | 'shared' | 'public'
 
+/**
+ * Imported provenance remains authoritative when a preview omits optional
+ * editable source fields. Public contexts should never fall back to Platter
+ * while a retained source domain or canonical URL is available.
+ */
+export function getRecipeSourceMetadata(
+  recipe: Pick<
+    RecipeDraft,
+    'sourceName' | 'sourceUrl' | 'sourceAuthor' | 'importProvenance'
+  >,
+) {
+  return {
+    sourceName:
+      recipe.sourceName ||
+      recipe.importProvenance?.sourceDomain ||
+      'Platter community',
+    sourceUrl:
+      recipe.sourceUrl ||
+      recipe.importProvenance?.canonicalUrl ||
+      recipe.importProvenance?.submittedUrl,
+    sourceAuthor: recipe.sourceAuthor || recipe.importProvenance?.sourceAuthor,
+  }
+}
+
 export type RecipeDraftDocument = Omit<
   RecipeDraft,
   | 'id'

@@ -46,6 +46,7 @@ type RecipeSearchAggregationDocument = Pick<
   | 'dietaryLabels'
   | 'image'
   | 'visibility'
+  | 'importProvenance'
 > & {
   rankScore?: number
 }
@@ -106,6 +107,7 @@ export class MongoRecipeSearchProvider implements SearchProvider {
             sourceUrl: 1,
             sourceAuthor: 1,
             attribution: 1,
+            importProvenance: 1,
             description: 1,
             typicalPeopleFed: 1,
             cuisine: 1,
@@ -186,13 +188,28 @@ export class MongoRecipeSearchProvider implements SearchProvider {
       results: results.map((document) => ({
         id: document._id.toString(),
         title: String(document.title ?? 'Untitled recipe'),
-        source: String(document.sourceName ?? 'Platter community'),
-        ...(document.sourceUrl === undefined
-          ? {}
-          : { sourceUrl: String(document.sourceUrl) }),
-        ...(document.sourceAuthor === undefined
-          ? {}
-          : { sourceAuthor: String(document.sourceAuthor) }),
+        source: String(
+          document.sourceName ||
+            document.importProvenance?.sourceDomain ||
+            'Platter community',
+        ),
+        ...(document.sourceUrl || document.importProvenance?.canonicalUrl
+          ? {
+              sourceUrl: String(
+                document.sourceUrl || document.importProvenance?.canonicalUrl,
+              ),
+            }
+          : document.importProvenance?.submittedUrl
+            ? { sourceUrl: String(document.importProvenance.submittedUrl) }
+            : {}),
+        ...(document.sourceAuthor || document.importProvenance?.sourceAuthor
+          ? {
+              sourceAuthor: String(
+                document.sourceAuthor ||
+                  document.importProvenance?.sourceAuthor,
+              ),
+            }
+          : {}),
         ...(document.attribution === undefined
           ? {}
           : { attribution: String(document.attribution) }),

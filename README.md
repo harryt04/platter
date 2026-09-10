@@ -201,6 +201,10 @@ source is marked unavailable without deleting or rewriting the normalized
 recipe facts or provenance. Public recipe detail keeps the source link and
 explains that the preserved recipe remains available; a later successful
 refresh restores the available status.
+Public recipe detail, discovery cards, and the signed-in recipe library resolve
+source name, canonical source link, and source author from retained import
+provenance when editable preview fields are omitted, so imported attribution
+remains visible after normalization and source-unavailability updates.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

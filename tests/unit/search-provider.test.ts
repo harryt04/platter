@@ -121,6 +121,20 @@ describe('MongoRecipeSearchProvider', () => {
           rightsStatus: 'unknown',
         },
       },
+      {
+        _id: 'recipe-imported',
+        title: 'Imported soup',
+        origin: 'imported',
+        importReviewStatus: 'approved',
+        visibility: 'public',
+        importProvenance: {
+          canonicalUrl: 'https://example.com/recipes/imported-soup',
+          submittedUrl: 'https://example.com/recipes/imported-soup?ref=1',
+          sourceDomain: 'example.com',
+          sourceAuthor: 'Alex Rivera',
+        },
+        rankScore: -1,
+      },
     ])
 
     const response = await new MongoRecipeSearchProvider(
@@ -154,6 +168,15 @@ describe('MongoRecipeSearchProvider', () => {
         title: 'Private soup',
         source: 'Platter community',
         score: '0',
+        visibility: 'public',
+      },
+      {
+        id: 'recipe-imported',
+        title: 'Imported soup',
+        source: 'example.com',
+        sourceUrl: 'https://example.com/recipes/imported-soup',
+        sourceAuthor: 'Alex Rivera',
+        score: '-1',
         visibility: 'public',
       },
     ])

@@ -701,7 +701,7 @@ recipe experience and prevent unlicensed media or prose from entering it.
 
 **Status:** ready-for-agent
 
-- [ ] Every imported public recipe preserves and displays its source name and
+- [x] Every imported public recipe preserves and displays its source name and
       link in detail views and other contexts where full attribution is required.
 - [ ] Ingredient facts, yield, time, and concise procedural steps are separated
       from substantial editorial prose, which is not copied.

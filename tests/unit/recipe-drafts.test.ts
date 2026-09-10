@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { isoDateTime } from '@/lib/contracts/ids'
 import {
   createDraftDocument,
   createDraftSchema,
@@ -6,6 +7,7 @@ import {
   createRecipeShareDocument,
   createRecipeVersionDocument,
   draftOwnerFilter,
+  getRecipeSourceMetadata,
   isPubliclyRenderableRecipe,
   isUsableRecipe,
   privateDraftFilter,
@@ -27,6 +29,35 @@ import {
 } from '@/lib/recipes/drafts'
 
 describe('recipe drafts', () => {
+  it('uses retained import provenance when editable source fields are absent', () => {
+    const recipe = toRecipeDraft(
+      createDraftDocument('user-1', 'Imported soup', {
+        origin: 'imported',
+        importReviewStatus: 'approved',
+        visibility: 'public',
+        importProvenance: {
+          submittedUrl: 'https://example.com/recipes/soup?from=import',
+          canonicalUrl: 'https://example.com/recipes/soup',
+          sourceDomain: 'example.com',
+          sourceAuthor: 'Alex Rivera',
+          importer: 'schema-org-json-ld',
+          importedAt: isoDateTime(new Date('2026-09-10T12:00:00.000Z')),
+          acquiredAt: isoDateTime(new Date('2026-09-10T12:00:00.000Z')),
+          acquisitionMethod: 'server-fetch',
+          contentFingerprint: 'sha256:test',
+          versionRelationship: 'source-original',
+          rightsStatus: 'unknown',
+        },
+      }),
+    )
+
+    expect(getRecipeSourceMetadata(recipe)).toEqual({
+      sourceName: 'example.com',
+      sourceUrl: 'https://example.com/recipes/soup',
+      sourceAuthor: 'Alex Rivera',
+    })
+  })
+
   it('accepts a trimmed title and rejects blank or oversized titles', () => {
     expect(
       createDraftSchema.parse({ title: '  Tomato soup\u0000  ' }).title,

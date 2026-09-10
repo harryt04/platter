@@ -36,6 +36,12 @@ beforeEach(() => {
           origin: 'imported',
           status: 'usable',
           visibility: 'public',
+          importProvenance: {
+            canonicalUrl: 'https://example.com/recipes/soup',
+            submittedUrl: 'https://example.com/recipes/soup?from=import',
+            sourceDomain: 'example.com',
+            sourceAuthor: 'Alex Rivera',
+          },
         },
         access: 'owned',
         sharedListNames: [],
@@ -56,5 +62,10 @@ describe('my recipes page', () => {
       'href',
       '/recipes/imported-1/edit',
     )
+    expect(screen.getByRole('link', { name: 'example.com' })).toHaveAttribute(
+      'href',
+      'https://example.com/recipes/soup',
+    )
+    expect(screen.getByText('By Alex Rivera')).toBeInTheDocument()
   })
 })

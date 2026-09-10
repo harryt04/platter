@@ -4,9 +4,11 @@ import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DuplicateSelectionButton } from '@/components/lists/duplicate-selection-button'
+import { RemoveSelectionButton } from '@/components/lists/remove-selection-button'
 
 export function SelectionPeopleForm({
   listId,
+  listName,
   selectionId,
   recipeTitle,
   initialPeople,
@@ -14,6 +16,7 @@ export function SelectionPeopleForm({
   editable = true,
 }: {
   listId: string
+  listName: string
   selectionId: string
   recipeTitle: string
   initialPeople: number
@@ -96,6 +99,12 @@ export function SelectionPeopleForm({
           <DuplicateSelectionButton
             desiredPeople={desiredPeople}
             listId={listId}
+            recipeTitle={recipeTitle}
+            selectionId={selectionId}
+          />
+          <RemoveSelectionButton
+            listId={listId}
+            listName={listName}
             recipeTitle={recipeTitle}
             selectionId={selectionId}
           />

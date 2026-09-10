@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST as duplicatePOST } from '@/app/api/v1/lists/[listId]/selections/[selectionId]/duplicate/route'
-import { PATCH } from '@/app/api/v1/lists/[listId]/selections/[selectionId]/route'
+import {
+  DELETE,
+  PATCH,
+} from '@/app/api/v1/lists/[listId]/selections/[selectionId]/route'
 import { POST } from '@/app/api/v1/lists/[listId]/selections/route'
 
 const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
@@ -357,6 +360,90 @@ describe('PATCH /api/v1/lists/[listId]/selections/[selectionId]', () => {
     expect(response.status).toBe(404)
     expect((await response.json()).code).toBe('SELECTION_NOT_FOUND')
     expect(database.versions.findOne).not.toHaveBeenCalled()
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+})
+
+describe('DELETE /api/v1/lists/[listId]/selections/[selectionId]', () => {
+  it('removes only the requested selection and advances the run revision', async () => {
+    const selection = {
+      _id: 'selection-1',
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 6,
+      scaleFactor: '1.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:00:00.000Z',
+    }
+    const otherSelection = { ...selection, _id: 'selection-2' }
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [selection, otherSelection],
+      },
+    })
+    database.runs.findOneAndUpdate.mockResolvedValue({
+      _id: 'run-1',
+      revision: 5,
+      recipeSelections: [otherSelection],
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await DELETE(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        { method: 'DELETE' },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      code: 'SELECTION_REMOVED',
+      selectionId: 'selection-1',
+      revision: 5,
+    })
+    expect(database.runs.findOneAndUpdate).toHaveBeenCalledWith(
+      {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        'recipeSelections._id': 'selection-1',
+      },
+      expect.objectContaining({
+        $pull: { recipeSelections: { _id: 'selection-1' } },
+        $inc: { revision: 1 },
+      }),
+      { returnDocument: 'after' },
+    )
+  })
+
+  it('does not mutate the run when the selection is missing', async () => {
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await DELETE(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        { method: 'DELETE' },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(404)
+    expect((await response.json()).code).toBe('SELECTION_NOT_FOUND')
     expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
   })
 })

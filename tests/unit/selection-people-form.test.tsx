@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SelectionPeopleForm } from '@/components/lists/selection-people-form'
@@ -32,6 +32,7 @@ describe('SelectionPeopleForm', () => {
         initialPeople={2}
         initialScaleFactor="0.5"
         listId="list-1"
+        listName="Family"
         recipeTitle="Tomato soup"
         selectionId="selection-1"
       />,
@@ -69,6 +70,7 @@ describe('SelectionPeopleForm', () => {
         initialPeople={2}
         initialScaleFactor="0.5"
         listId="list-1"
+        listName="Family"
         recipeTitle="Tomato soup"
         selectionId="selection-1"
       />,
@@ -88,5 +90,48 @@ describe('SelectionPeopleForm', () => {
         'Tomato soup was added again as a separate selection for 2 people.',
       ),
     ).toBeInTheDocument()
+  })
+
+  it('requires confirmation and names the list-wide impact before removing', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          detail: 'The recipe selection was removed from this shopping run.',
+        }),
+        { status: 200 },
+      ),
+    )
+
+    render(
+      <SelectionPeopleForm
+        initialPeople={2}
+        initialScaleFactor="0.5"
+        listId="list-1"
+        listName="Family"
+        recipeTitle="Tomato soup"
+        selectionId="selection-1"
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Remove selection' }))
+    expect(
+      screen.getByText(
+        /removes Tomato soup’s grocery contributions from the Family run/,
+      ),
+    ).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'Remove selection',
+      }),
+    )
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/lists/list-1/selections/selection-1',
+      { method: 'DELETE' },
+    )
+    expect(refresh).toHaveBeenCalled()
   })
 })

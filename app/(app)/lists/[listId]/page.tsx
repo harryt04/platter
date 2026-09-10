@@ -112,6 +112,7 @@ export default async function ListPage({
                     initialScaleFactor={selection.scaleFactor}
                     key={selection._id}
                     listId={listId}
+                    listName={list.name}
                     recipeTitle={version.title}
                     selectionId={selection._id}
                     editable={list.status === 'active'}

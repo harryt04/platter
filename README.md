@@ -92,7 +92,9 @@ the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other
 selections. They can also explicitly duplicate a selection, preserving its
 pinned version and scale while creating a separately scalable selection
-identity.
+identity. Removing a selection requires confirmation that names the affected
+list-wide grocery contributions, then removes only that selection and advances
+the active-run revision.
 The library can search titles, ingredients, source metadata, and tags with
 stable cursor pagination while preserving the same ownership, membership, and
 saved-reference boundaries. Deleting a recipe explains current list impact,

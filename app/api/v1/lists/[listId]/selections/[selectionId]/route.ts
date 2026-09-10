@@ -7,6 +7,7 @@ import {
   type ShoppingRunDocument,
 } from '@/lib/lists'
 import { problemResponse } from '@/lib/contracts/problem'
+import { isoDateTime } from '@/lib/contracts/ids'
 import { type RecipeVersionDocument } from '@/lib/recipes/drafts'
 import {
   updateRecipeSelectionDocument,
@@ -183,6 +184,62 @@ export async function PATCH(request: Request, context: RouteContext) {
       version.ingredients ?? [],
       updatedSelection.scaleFactor,
     ),
+    revision: updatedRun.revision,
+  })
+}
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  const session = await getSession()
+  if (!session) return authenticationRequired()
+
+  const { listId, selectionId } = await context.params
+  if (
+    !listIdSchema.safeParse(listId).success ||
+    !selectionIdSchema.safeParse(selectionId).success
+  ) {
+    return selectionNotFound()
+  }
+
+  const db = await getConnectedDatabase()
+  const list = await db
+    .collection<ListDocument>('lists')
+    .findOne(listRoleFilter(listId, session.user.id))
+  if (!list) return listNotFound()
+  if (list.status !== 'active') return archivedList()
+
+  const runs = db.collection<ShoppingRunDocument>('shopping_runs')
+  const currentRun = await runs.findOne({
+    _id: list.activeRunId,
+    listId,
+    state: 'active',
+  })
+  if (!currentRun) return archivedList()
+
+  const selection = currentRun.recipeSelections.find(
+    (candidate) => candidate._id === selectionId,
+  )
+  if (!selection) return selectionNotFound()
+
+  const updatedRun = await runs.findOneAndUpdate(
+    {
+      _id: currentRun._id,
+      listId,
+      state: 'active',
+      'recipeSelections._id': selectionId,
+    },
+    {
+      $pull: { recipeSelections: { _id: selectionId } },
+      $inc: { revision: 1 },
+      $set: { updatedAt: isoDateTime(new Date()) },
+    },
+    { returnDocument: 'after' },
+  )
+  if (!updatedRun) return selectionNotFound()
+
+  return Response.json({
+    detail: 'The recipe selection was removed from this shopping run.',
+    code: 'SELECTION_REMOVED',
+    selectionId,
     revision: updatedRun.revision,
   })
 }

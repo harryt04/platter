@@ -401,7 +401,7 @@ actually intend to buy without corrupting recipe math.
 
 **Blocked by:** 13: Manage recipe selections; 16: Manage manual grocery items
 
-**Status:** in progress
+**Status:** implemented
 
 - [x] A member can replace the shopping amount with a smaller or larger amount
       while the calculated requirement and contributions remain unchanged.
@@ -411,7 +411,7 @@ actually intend to buy without corrupting recipe math.
       override and warn with both the old intent and new calculated requirement.
 - [x] Optional package-size or whole-unit suggestions are editable guidance and
       are never represented as guaranteed facts.
-- [ ] Tests cover override persistence, reset, recalculation, decimal precision,
+- [x] Tests cover override persistence, reset, recalculation, decimal precision,
       and removal of unrelated contributions.
 
 ## 18: Review groceries at home

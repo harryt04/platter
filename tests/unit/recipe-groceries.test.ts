@@ -327,6 +327,98 @@ describe('grocery generation', () => {
     ])
   })
 
+  it('preserves exact decimal override values through regeneration', () => {
+    const calculatedAmount = '1.2345678901234567890123456789'
+    const shoppingAmount = '9.8765432109876543210987654321'
+    const [item] = generateGroceryItems({
+      selections: [
+        selection('precise', 'Precise recipe', '1', [
+          ingredient({
+            originalText: `${calculatedAmount} cups rice`,
+            quantity: calculatedAmount,
+            unit: 'cup',
+            ingredientName: 'rice',
+          }),
+        ]),
+      ],
+    })
+
+    const regenerated = generateGroceryItems({
+      selections: [
+        selection('precise', 'Precise recipe', '1', [
+          ingredient({
+            originalText: `${calculatedAmount} cups rice`,
+            quantity: calculatedAmount,
+            unit: 'cup',
+            ingredientName: 'rice',
+          }),
+        ]),
+      ],
+      overrides: [
+        {
+          itemId: item!.id,
+          quantity: { min: decimalString(shoppingAmount) },
+          calculatedRequirementAtOverride: item!.calculatedRequirement!,
+        },
+      ],
+    })
+
+    expect(regenerated).toMatchObject([
+      {
+        calculatedRequirement: { min: calculatedAmount },
+        shoppingAmount: { min: shoppingAmount },
+        override: { min: shoppingAmount },
+      },
+    ])
+  })
+
+  it('keeps an override when an unrelated grocery contribution is removed', () => {
+    const fullSelection = selection('weeknight', 'Weeknight dinner', '1', [
+      ingredient({
+        originalText: '2 cups rice',
+        quantity: '2',
+        unit: 'cup',
+        ingredientName: 'rice',
+      }),
+      ingredient({
+        originalText: '1 cup onions',
+        quantity: '1',
+        unit: 'cup',
+        ingredientName: 'onions',
+      }),
+    ])
+    const before = generateGroceryItems({ selections: [fullSelection] })
+    const rice = before.find((item) => item.ingredientName === 'rice')!
+    const override = {
+      itemId: rice.id,
+      quantity: { min: decimalString('3.5') },
+      calculatedRequirementAtOverride: rice.calculatedRequirement!,
+    }
+
+    const after = generateGroceryItems({
+      selections: [
+        selection('weeknight', 'Weeknight dinner', '1', [
+          ingredient({
+            originalText: '2 cups rice',
+            quantity: '2',
+            unit: 'cup',
+            ingredientName: 'rice',
+          }),
+        ]),
+      ],
+      overrides: [override],
+    })
+
+    expect(after).toHaveLength(1)
+    expect(after[0]).toMatchObject({
+      id: rice.id,
+      calculatedRequirement: { min: '2' },
+      shoppingAmount: { min: '3.5' },
+      override: { min: '3.5' },
+      contributions: [{ id: 'recipe:weeknight:0' }],
+    })
+  })
+
   it('preserves an override and warns when regeneration changes its calculation', () => {
     const input = {
       selections: [selection('recipe', 'Tacos', '1', [ingredient()])],

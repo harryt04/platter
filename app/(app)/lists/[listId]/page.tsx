@@ -101,12 +101,16 @@ export default async function ListPage({
           </div>
         </>
       )}
-      {list.members.some(
-        (member) =>
-          member.userId === session.user.id && member.role === 'editor',
-      ) && (
+      {list.members.some((member) => member.userId === session.user.id) && (
         <div className="mt-6 max-w-2xl">
-          <LeaveListButton listId={listId} listName={list.name} />
+          <LeaveListButton
+            listId={listId}
+            listName={list.name}
+            canLeave={
+              !list.ownerIds.includes(session.user.id) ||
+              list.ownerIds.length > 1
+            }
+          />
         </div>
       )}
     </ContentContainer>

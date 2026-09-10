@@ -88,7 +88,7 @@ ownership while preserving the rule that every live list has an owner.
       distinguish pending invitations from active membership.
 - [x] Editors can use shopping features but cannot invite, remove, promote,
       rename, archive, or delete.
-- [ ] The last owner cannot leave, demote themselves, or be removed until
+- [x] The last owner cannot leave, demote themselves, or be removed until
       ownership is transferred or the list is explicitly deleted.
 - [ ] A removed member immediately loses API, page, realtime-room, and future
       mutation authorization for that list.

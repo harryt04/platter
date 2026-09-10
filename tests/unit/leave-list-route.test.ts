@@ -54,6 +54,7 @@ describe('POST /api/v1/lists/[listId]/leave', () => {
   it('removes an active editor with a list-scoped atomic update', async () => {
     getSession.mockResolvedValue({ user: { id: 'editor-1' } })
     const collection = {
+      findOne: vi.fn().mockResolvedValue(list),
       findOneAndUpdate: vi.fn().mockResolvedValue({
         ...list,
         members: [list.members[0]],
@@ -77,13 +78,17 @@ describe('POST /api/v1/lists/[listId]/leave', () => {
       {
         _id: 'list-1',
         status: { $ne: 'deleted' },
-        members: {
-          $elemMatch: {
-            userId: 'editor-1',
-            role: 'editor',
-            invitationState: 'active',
+        $or: [
+          {
+            members: {
+              $elemMatch: {
+                userId: 'editor-1',
+                role: 'editor',
+                invitationState: 'active',
+              },
+            },
           },
-        },
+        ],
       },
       expect.objectContaining({
         $pull: {
@@ -95,9 +100,77 @@ describe('POST /api/v1/lists/[listId]/leave', () => {
     )
   })
 
-  it('does not reveal a list to an owner or non-member', async () => {
+  it('returns a clear conflict when the last owner tries to leave', async () => {
     getSession.mockResolvedValue({ user: { id: 'owner-1' } })
-    const collection = { findOneAndUpdate: vi.fn().mockResolvedValue(null) }
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(list),
+      findOneAndUpdate: vi.fn(),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/leave', {
+        method: 'POST',
+      }),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(409)
+    expect((await response.json()).code).toBe('LAST_OWNER_REQUIRED')
+    expect(collection.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('allows an owner to leave after ownership has been shared', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    const sharedList = { ...list, ownerIds: ['owner-1', 'owner-2'] }
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(sharedList),
+      findOneAndUpdate: vi.fn().mockResolvedValue({
+        ...sharedList,
+        ownerIds: ['owner-2'],
+        members: [list.members[1]],
+      }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/leave', {
+        method: 'POST',
+      }),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).list.ownerIds).toEqual(['owner-2'])
+    expect(collection.findOneAndUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _id: 'list-1',
+        $or: [
+          expect.objectContaining({
+            'ownerIds.1': { $exists: true },
+          }),
+        ],
+      }),
+      expect.objectContaining({
+        $pull: {
+          members: { userId: 'owner-1' },
+          ownerIds: 'owner-1',
+        },
+      }),
+      { returnDocument: 'after' },
+    )
+  })
+
+  it('does not reveal a list to a non-member', async () => {
+    getSession.mockResolvedValue({ user: { id: 'stranger-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(null),
+      findOneAndUpdate: vi.fn(),
+    }
     getConnectedDatabase.mockResolvedValue({
       collection: vi.fn().mockReturnValue(collection),
     })

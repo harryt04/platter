@@ -17,9 +17,11 @@ import {
 export function LeaveListButton({
   listId,
   listName,
+  canLeave = true,
 }: {
   listId: string
   listName: string
+  canLeave?: boolean
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -53,20 +55,28 @@ export function LeaveListButton({
     <section className="border-destructive/40 rounded-[var(--radius-card)] border p-6">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">Leave this list</h2>
-        <p className="text-muted-foreground text-sm">
-          You will lose access to “{listName}” and its shared shopping run.
-        </p>
+        {canLeave ? (
+          <p className="text-muted-foreground text-sm">
+            You will lose access to “{listName}” and its shared shopping run.
+          </p>
+        ) : (
+          <p className="text-warning text-sm">
+            Transfer ownership to another member before leaving “{listName}”.
+          </p>
+        )}
       </div>
-      <Button
-        className="mt-4"
-        variant="outline"
-        onClick={() => {
-          setError('')
-          setOpen(true)
-        }}
-      >
-        Leave this list
-      </Button>
+      {canLeave && (
+        <Button
+          className="mt-4"
+          variant="outline"
+          onClick={() => {
+            setError('')
+            setOpen(true)
+          }}
+        >
+          Leave this list
+        </Button>
+      )}
       {error && (
         <p className="text-destructive mt-3 text-sm" role="alert">
           {error}

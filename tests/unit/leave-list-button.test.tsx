@@ -41,4 +41,19 @@ describe('LeaveListButton', () => {
     })
     expect(push).toHaveBeenCalledWith('/lists')
   })
+
+  it('explains that the last owner must transfer ownership first', () => {
+    render(
+      <LeaveListButton listId="list-1" listName="Family" canLeave={false} />,
+    )
+
+    expect(
+      screen.getByText(
+        'Transfer ownership to another member before leaving “Family”.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Leave this list' }),
+    ).not.toBeInTheDocument()
+  })
 })

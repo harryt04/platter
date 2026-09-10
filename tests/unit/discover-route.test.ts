@@ -1,13 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET } from '@/app/api/v1/discover/recipes/route'
 
-const { getConnectedDatabase, searchRecipes } = vi.hoisted(() => ({
-  getConnectedDatabase: vi.fn(),
-  searchRecipes: vi.fn(),
-}))
+const { decodeCursor, getConnectedDatabase, searchRecipes } = vi.hoisted(
+  () => ({
+    decodeCursor: vi.fn((value: string) =>
+      value === 'valid-cursor' ? { rankScore: 2, id: 'recipe-1' } : null,
+    ),
+    getConnectedDatabase: vi.fn(),
+    searchRecipes: vi.fn(),
+  }),
+)
 
 vi.mock('@/lib/db/mongo-client', () => ({ getConnectedDatabase }))
 vi.mock('@/lib/search/mongo-provider', () => ({
+  decodeRecipeSearchCursor: decodeCursor,
   MongoRecipeSearchProvider: class {
     searchRecipes = searchRecipes
   },
@@ -43,6 +49,38 @@ describe('GET /api/v1/discover/recipes', () => {
         dietaryLabels: ['vegetarian'],
       },
     })
+  })
+
+  it('passes composed filters and a valid cursor to the provider', async () => {
+    getConnectedDatabase.mockResolvedValue({})
+    searchRecipes.mockResolvedValue({ results: [] })
+
+    const response = await GET(
+      new Request(
+        'http://localhost/api/v1/discover/recipes?cuisine=Mexican&tags=quick,weeknight&dietaryLabels=vegetarian&cursor=valid-cursor&pageSize=5',
+      ),
+    )
+
+    expect(response.status).toBe(200)
+    expect(searchRecipes).toHaveBeenCalledWith({
+      text: '',
+      cursor: 'valid-cursor',
+      pageSize: 5,
+      filters: {
+        cuisine: 'Mexican',
+        tags: ['quick', 'weeknight'],
+        dietaryLabels: ['vegetarian'],
+      },
+    })
+  })
+
+  it('rejects malformed pagination cursors', async () => {
+    const response = await GET(
+      new Request('http://localhost/api/v1/discover/recipes?cursor=not-valid'),
+    )
+
+    expect(response.status).toBe(422)
+    expect(getConnectedDatabase).not.toHaveBeenCalled()
   })
 
   it('rejects oversized search terms', async () => {

@@ -258,7 +258,7 @@ search while keeping source attribution and visibility rules intact.
       summary metadata with visible attribution.
 - [x] Ranking favors title and ingredient matches, completeness, and allowed
       engagement signals without hiding or outweighing source identity.
-- [ ] Filters compose with stable cursor pagination or progressive loading and
+- [x] Filters compose with stable cursor pagination or progressive loading and
       never return private, shared-only, draft, or suppressed recipes.
 - [ ] Search remains functional through the base Mongo provider with no paid or
       proprietary service configured.

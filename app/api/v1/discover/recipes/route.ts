@@ -1,7 +1,10 @@
 import { z } from 'zod'
 import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
-import { MongoRecipeSearchProvider } from '@/lib/search/mongo-provider'
+import {
+  decodeRecipeSearchCursor,
+  MongoRecipeSearchProvider,
+} from '@/lib/search/mongo-provider'
 
 const searchParamsSchema = z.object({
   q: z
@@ -12,6 +15,7 @@ const searchParamsSchema = z.object({
   cuisine: z.string().trim().max(100).optional(),
   tags: z.string().trim().max(500).optional(),
   dietaryLabels: z.string().trim().max(500).optional(),
+  cursor: z.string().max(500).optional(),
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
 })
 
@@ -20,7 +24,7 @@ function validationFailed() {
     type: 'https://platter.dev/problems/validation-failed',
     title: 'Check the search',
     status: 422,
-    detail: 'Use a search of 100 characters or fewer.',
+    detail: 'Use a valid search and pagination cursor.',
     code: 'VALIDATION_FAILED',
   })
 }
@@ -32,13 +36,19 @@ export async function GET(request: Request) {
     cuisine: url.searchParams.get('cuisine') ?? undefined,
     tags: url.searchParams.get('tags') ?? undefined,
     dietaryLabels: url.searchParams.get('dietaryLabels') ?? undefined,
+    cursor: url.searchParams.get('cursor') ?? undefined,
     pageSize: url.searchParams.get('pageSize') ?? undefined,
   })
-  if (!parsed.success) return validationFailed()
+  if (
+    !parsed.success ||
+    (parsed.data.cursor && !decodeRecipeSearchCursor(parsed.data.cursor))
+  )
+    return validationFailed()
 
   const db = await getConnectedDatabase()
   const recipes = await new MongoRecipeSearchProvider(db).searchRecipes({
     text: parsed.data.q,
+    cursor: parsed.data.cursor,
     pageSize: parsed.data.pageSize,
     filters: {
       ...(parsed.data.cuisine ? { cuisine: parsed.data.cuisine } : {}),

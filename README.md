@@ -45,6 +45,8 @@ approved-import guard as public recipe reads; private searches require an
 owner-scoped query. Public discovery now has a real anonymous and signed-in
 search page and API backed by Mongo text search across recipe titles,
 ingredients, source metadata, cuisines, tags, and dietary labels.
+Discovery filters compose with stable rank-and-ID cursor pagination, and the
+page preserves active filters while loading more results.
 Discovery ranking combines Mongo's weighted title and ingredient relevance with
 deterministic completeness signals and a capped count of public saves, while
 retaining stable ID tie-breaking and visible source attribution.

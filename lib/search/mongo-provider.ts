@@ -7,6 +7,29 @@ import type {
 import { decimalString } from '@/lib/contracts/ids'
 import { publicRecipeFilter } from '@/lib/recipes/drafts'
 import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
+import { z } from 'zod'
+
+const recipeSearchCursorSchema = z.object({
+  rankScore: z.number().finite(),
+  id: z.string().min(1).max(200),
+})
+
+export function encodeRecipeSearchCursor(cursor: {
+  rankScore: number
+  id: string
+}) {
+  return Buffer.from(JSON.stringify(cursor)).toString('base64url')
+}
+
+export function decodeRecipeSearchCursor(value: string) {
+  try {
+    const decoded = JSON.parse(Buffer.from(value, 'base64url').toString('utf8'))
+    const parsed = recipeSearchCursorSchema.safeParse(decoded)
+    return parsed.success ? parsed.data : null
+  } catch {
+    return null
+  }
+}
 
 type RecipeSearchAggregationDocument = Pick<
   RecipeDraftDocument,
@@ -49,6 +72,7 @@ export class MongoRecipeSearchProvider implements SearchProvider {
     const pageSize = Math.min(Math.max(query.pageSize ?? 20, 1), 50)
     const filters = query.filters ?? {}
     const text = query.text.trim()
+    const cursor = query.cursor ? decodeRecipeSearchCursor(query.cursor) : null
     const recipeVisibilityFilter =
       filters.visibility === 'private'
         ? query.ownerId
@@ -127,8 +151,23 @@ export class MongoRecipeSearchProvider implements SearchProvider {
             },
           },
         },
+        ...(cursor
+          ? [
+              {
+                $match: {
+                  $or: [
+                    { rankScore: { $lt: cursor.rankScore } },
+                    {
+                      rankScore: cursor.rankScore,
+                      _id: { $gt: cursor.id },
+                    },
+                  ],
+                },
+              },
+            ]
+          : []),
         { $sort: { rankScore: -1, _id: 1 } },
-        { $limit: pageSize },
+        { $limit: pageSize + 1 },
         {
           $project: {
             engagementSaves: 0,
@@ -139,8 +178,12 @@ export class MongoRecipeSearchProvider implements SearchProvider {
       ] as Document[])
       .toArray()
 
+    const hasNextPage = documents.length > pageSize
+    const results = hasNextPage ? documents.slice(0, pageSize) : documents
+    const lastResult = results.at(-1)
+
     return {
-      results: documents.map((document) => ({
+      results: results.map((document) => ({
         id: document._id.toString(),
         title: String(document.title ?? 'Untitled recipe'),
         source: String(document.sourceName ?? 'Platter community'),
@@ -182,6 +225,14 @@ export class MongoRecipeSearchProvider implements SearchProvider {
             }
           : {}),
       })),
+      ...(hasNextPage && lastResult
+        ? {
+            nextCursor: encodeRecipeSearchCursor({
+              rankScore: lastResult.rankScore ?? 0,
+              id: lastResult._id,
+            }),
+          }
+        : {}),
     }
   }
 }

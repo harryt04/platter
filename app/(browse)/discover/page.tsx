@@ -20,9 +20,42 @@ export default async function DiscoverPage({
 }) {
   const params = (await searchParams) ?? {}
   const query = firstParam(params.q)?.trim() ?? ''
+  const cuisine = firstParam(params.cuisine)?.trim() ?? ''
+  const tags = firstParam(params.tags)?.trim() ?? ''
+  const dietaryLabels = firstParam(params.dietaryLabels)?.trim() ?? ''
+  const cursor = firstParam(params.cursor)?.trim() ?? ''
   const db = await getConnectedDatabase()
-  const { results } = await new MongoRecipeSearchProvider(db).searchRecipes({
+  const page = await new MongoRecipeSearchProvider(db).searchRecipes({
     text: query,
+    cursor: cursor || undefined,
+    filters: {
+      ...(cuisine ? { cuisine } : {}),
+      ...(tags
+        ? {
+            tags: tags
+              .split(',')
+              .map((tag) => tag.trim())
+              .filter(Boolean),
+          }
+        : {}),
+      ...(dietaryLabels
+        ? {
+            dietaryLabels: dietaryLabels
+              .split(',')
+              .map((label) => label.trim())
+              .filter(Boolean),
+          }
+        : {}),
+    },
+  })
+  const { results } = page
+
+  const nextPageParams = new URLSearchParams({
+    ...(query ? { q: query } : {}),
+    ...(cuisine ? { cuisine } : {}),
+    ...(tags ? { tags } : {}),
+    ...(dietaryLabels ? { dietaryLabels } : {}),
+    ...(page.nextCursor ? { cursor: page.nextCursor } : {}),
   })
 
   return (
@@ -37,14 +70,40 @@ export default async function DiscoverPage({
           </Button>
         }
       />
-      <form className="mb-8 flex gap-2" method="get">
+      <form className="mb-8 grid gap-3 sm:grid-cols-2" method="get">
         <Input
           aria-label="Search recipes"
+          className="sm:col-span-2"
           defaultValue={query}
           name="q"
           placeholder="Search titles, ingredients, sources, or labels"
         />
-        <Button type="submit">Search</Button>
+        <Input
+          aria-label="Filter by cuisine"
+          defaultValue={cuisine}
+          name="cuisine"
+          placeholder="Cuisine, such as Italian"
+        />
+        <Input
+          aria-label="Filter by tags"
+          defaultValue={tags}
+          name="tags"
+          placeholder="Tags, separated by commas"
+        />
+        <Input
+          aria-label="Filter by dietary labels"
+          defaultValue={dietaryLabels}
+          name="dietaryLabels"
+          placeholder="Dietary labels, separated by commas"
+        />
+        <div className="flex items-center gap-2">
+          <Button type="submit">Search</Button>
+          {(query || cuisine || tags || dietaryLabels) && (
+            <Button asChild variant="outline">
+              <Link href="/discover">Clear filters</Link>
+            </Button>
+          )}
+        </div>
       </form>
       {results.length > 0 ? (
         <section aria-labelledby="discovery-results-heading">
@@ -72,6 +131,15 @@ export default async function DiscoverPage({
               />
             ))}
           </div>
+          {page.nextCursor && (
+            <div className="mt-6">
+              <Button asChild variant="outline">
+                <Link href={`/discover?${nextPageParams.toString()}`}>
+                  Load more recipes
+                </Link>
+              </Button>
+            </div>
+          )}
         </section>
       ) : (
         <EmptyState

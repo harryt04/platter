@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { MongoRecipeSearchProvider } from '@/lib/search/mongo-provider'
+import {
+  encodeRecipeSearchCursor,
+  MongoRecipeSearchProvider,
+} from '@/lib/search/mongo-provider'
 
 function createDatabase(documents: object[] = []) {
   const cursor = {
@@ -236,6 +239,68 @@ describe('MongoRecipeSearchProvider', () => {
         },
       },
     })
-    expect(pipeline).toContainEqual({ $limit: 7 })
+    expect(pipeline).toContainEqual({ $limit: 8 })
+  })
+
+  it('composes public filters and advances with a rank and id cursor', async () => {
+    const { db, collection } = createDatabase([
+      { _id: 'recipe-1', title: 'First', rankScore: 4 },
+      { _id: 'recipe-2', title: 'Second', rankScore: 3 },
+      { _id: 'recipe-3', title: 'Third', rankScore: 2 },
+    ])
+
+    const response = await new MongoRecipeSearchProvider(
+      db as never,
+    ).searchRecipes({
+      text: 'beans',
+      cursor: encodeRecipeSearchCursor({ rankScore: 4, id: 'recipe-1' }),
+      pageSize: 2,
+      filters: {
+        cuisine: 'Mexican',
+        tags: ['weeknight', 'quick'],
+        dietaryLabels: ['vegetarian'],
+      },
+    })
+
+    const pipeline = collection.aggregate.mock.calls[0][0]
+    expect(pipeline[0]).toEqual({
+      $match: {
+        status: 'usable',
+        visibility: 'public',
+        $or: [
+          { origin: { $exists: false } },
+          { origin: 'authored' },
+          { origin: 'imported', importReviewStatus: 'approved' },
+        ],
+        $text: { $search: 'beans' },
+        cuisine: 'Mexican',
+        tags: { $all: ['weeknight', 'quick'] },
+        dietaryLabels: { $all: ['vegetarian'] },
+      },
+    })
+    expect(pipeline).toContainEqual({
+      $match: {
+        $or: [
+          { rankScore: { $lt: 4 } },
+          { rankScore: 4, _id: { $gt: 'recipe-1' } },
+        ],
+      },
+    })
+    expect(pipeline).toContainEqual({ $limit: 3 })
+    expect(response.nextCursor).toBeTruthy()
+  })
+
+  it('returns an opaque next cursor only when another page exists', async () => {
+    const { db } = createDatabase([
+      { _id: 'recipe-1', title: 'First', rankScore: 4 },
+      { _id: 'recipe-2', title: 'Second', rankScore: 3 },
+    ])
+
+    const response = await new MongoRecipeSearchProvider(
+      db as never,
+    ).searchRecipes({ text: '', pageSize: 1 })
+
+    expect(response.results).toHaveLength(1)
+    expect(response.nextCursor).toBeTruthy()
   })
 })

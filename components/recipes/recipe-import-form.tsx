@@ -1,7 +1,13 @@
 'use client'
 
 import * as React from 'react'
-import { AlertCircle, CheckCircle2, Clock3, LoaderCircle } from 'lucide-react'
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock3,
+  LoaderCircle,
+  RefreshCw,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -63,6 +69,9 @@ export function RecipeImportForm({
   const [imports, setImports] = React.useState(initialImports)
   const [sourceUrl, setSourceUrl] = React.useState('')
   const [pending, setPending] = React.useState(false)
+  const [pendingRecovery, setPendingRecovery] = React.useState<string | null>(
+    null,
+  )
   const online = React.useSyncExternalStore(
     subscribeToOnlineStatus,
     getOnlineStatus,
@@ -134,6 +143,43 @@ export function RecipeImportForm({
       setError(caught instanceof Error ? caught.message : 'Try again.')
     } finally {
       setPending(false)
+    }
+  }
+
+  async function recoverImport(
+    item: RecipeImportSummary,
+    action: 'retry' | 'reprocess',
+  ) {
+    setPendingRecovery(item.id)
+    setMessage(null)
+    setError(null)
+    try {
+      const response = await fetch(`/api/v1/imports/${item.id}/retry`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      const body = (await response.json()) as {
+        detail?: string
+        import?: RecipeImportSummary
+      }
+      if (!response.ok || !body.import) {
+        throw new Error(body.detail ?? 'The import could not be queued.')
+      }
+      setImports((current) =>
+        current.map((currentItem) =>
+          currentItem.id === item.id ? body.import! : currentItem,
+        ),
+      )
+      setMessage(
+        action === 'retry'
+          ? 'Retry queued. This page will update with the result.'
+          : 'Source refresh queued. Your saved recipe will not be duplicated.',
+      )
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Try again.')
+    } finally {
+      setPendingRecovery(null)
     }
   }
 
@@ -228,14 +274,38 @@ export function RecipeImportForm({
                       {item.failureCode ? ` (${item.failureCode})` : ''}
                     </p>
                     {item.status === 'preview-ready' && item.preview && (
-                      <Link
-                        className="text-primary inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
-                        href={`/import/${item.id}`}
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Link
+                          className="text-primary inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
+                          href={`/import/${item.id}`}
+                        >
+                          {item.savedRecipeId
+                            ? 'Open saved import'
+                            : 'Review extracted recipe'}
+                        </Link>
+                        <Button
+                          disabled={pendingRecovery === item.id || !online}
+                          onClick={() => recoverImport(item, 'reprocess')}
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          <RefreshCw aria-hidden size={16} />
+                          Refresh source
+                        </Button>
+                      </div>
+                    )}
+                    {item.status === 'failed' && (
+                      <Button
+                        disabled={pendingRecovery === item.id || !online}
+                        onClick={() => recoverImport(item, 'retry')}
+                        size="sm"
+                        type="button"
+                        variant="outline"
                       >
-                        {item.savedRecipeId
-                          ? 'Open saved import'
-                          : 'Review extracted recipe'}
-                      </Link>
+                        <RefreshCw aria-hidden size={16} />
+                        Retry import
+                      </Button>
                     )}
                   </CardContent>
                 </Card>

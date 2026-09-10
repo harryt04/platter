@@ -192,6 +192,11 @@ receive only the same bounded SSRF-safe fetch result. Operators can disable
 adapter IDs with the comma-separated `RECIPE_IMPORT_DISABLED_ADAPTERS`
 setting; disabled or absent adapters fail only the affected import and leave
 manual recipes, saved recipes, discovery, and shopping available.
+Failed imports can be retried from import history, and preview-ready
+historical imports can be reprocessed through a fresh typed job generation.
+Generation-aware queue claims prevent stale work from changing a newer run;
+reprocessing preserves any existing saved-recipe claim, so refreshing a source
+cannot create a duplicate save.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

@@ -45,7 +45,9 @@ describe('enqueueRecipeImport', () => {
     expect(job.unique).toHaveBeenCalledWith(
       {
         'data.userId': payload.userId,
+        'data.importId': payload.importId,
         'data.idempotencyKey': payload.idempotencyKey,
+        'data.operation': 'process',
       },
       { insertOnly: true },
     )

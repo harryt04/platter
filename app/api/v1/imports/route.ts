@@ -189,6 +189,7 @@ export async function POST(request: Request) {
       importId: document._id,
       userId: document.userId,
       idempotencyKey: document.idempotencyKey,
+      jobGeneration: document.jobGeneration,
     })
   } catch {
     await db.collection<RecipeImportDocument>('recipe_imports').updateOne(

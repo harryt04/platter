@@ -76,6 +76,7 @@ export type RecipeImportDocument = {
   sourceUrl: string
   status: RecipeImportStatus
   attemptCount: number
+  jobGeneration?: string
   submittedAt: IsoDateTime
   updatedAt: IsoDateTime
   canonicalUrl?: string
@@ -126,6 +127,7 @@ export function createRecipeImportDocument(
     sourceUrl,
     status: 'queued',
     attemptCount: 0,
+    jobGeneration: crypto.randomUUID(),
     submittedAt: timestamp,
     updatedAt: timestamp,
   }

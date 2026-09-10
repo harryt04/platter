@@ -685,7 +685,7 @@ imports
       then generic extraction without weakening fetch security.
 - [x] Operators can disable a source adapter, and its failure or absence leaves
       manual recipes, saved recipes, discovery, and shopping available.
-- [ ] Failed and historical jobs can be safely retried or reprocessed through
+- [x] Failed and historical jobs can be safely retried or reprocessed through
       the typed job registry without duplicate saves.
 - [ ] A disappeared source leaves the normalized recipe and provenance intact
       and can be marked unavailable when detected.

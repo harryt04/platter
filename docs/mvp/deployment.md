@@ -36,3 +36,9 @@ of adapter IDs, such as `schema-org-json-ld` or `generic-html`. Disabled
 adapters are skipped during selection; if no adapter remains, only that import
 is marked failed with `ADAPTER_DISABLED`. Manual recipes, saved recipes,
 discovery, and shopping continue to use their normal paths.
+
+Import history recovery creates a fresh typed job generation for a failed
+retry or a preview refresh. Queue uniqueness is scoped to that generation, and
+the worker claims it before fetching. Refreshing an existing import preserves
+its saved-recipe claim, so reprocessing a historical job cannot create a
+duplicate recipe save.

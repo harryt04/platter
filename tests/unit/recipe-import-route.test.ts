@@ -107,6 +107,7 @@ describe('/api/v1/imports', () => {
         importId: expect.any(String),
         userId: 'user-1',
         idempotencyKey: 'new-import-key',
+        jobGeneration: expect.any(String),
       }),
     )
   })

@@ -53,6 +53,9 @@ export function createRecipeImportJobHandler(
         userId: payload.userId,
         idempotencyKey: payload.idempotencyKey,
         status: { $in: ['queued', 'retrying'] },
+        ...(payload.jobGeneration
+          ? { jobGeneration: payload.jobGeneration }
+          : {}),
       },
       {
         $set: { status: 'processing', updatedAt: isoDateTime(new Date()) },
@@ -64,6 +67,15 @@ export function createRecipeImportJobHandler(
       throw new Error('Recipe import record is no longer queued.')
     }
 
+    const processingFilter = {
+      _id: payload.importId,
+      userId: payload.userId,
+      status: 'processing' as const,
+      ...(payload.jobGeneration
+        ? { jobGeneration: payload.jobGeneration }
+        : {}),
+    }
+
     try {
       const fetched = await fetcher(document.sourceUrl)
       const adapted = selectRecipeImportAdapter(fetched, {
@@ -72,20 +84,13 @@ export function createRecipeImportJobHandler(
         ),
       })
       if (adapted.kind === 'failure') {
-        await collection.updateOne(
-          {
-            _id: payload.importId,
-            userId: payload.userId,
-            status: 'processing',
+        await collection.updateOne(processingFilter, {
+          $set: {
+            status: 'failed',
+            failureCode: adapted.failure.code,
+            updatedAt: isoDateTime(new Date()),
           },
-          {
-            $set: {
-              status: 'failed',
-              failureCode: adapted.failure.code,
-              updatedAt: isoDateTime(new Date()),
-            },
-          },
-        )
+        })
         return
       }
       const preview = adapted.candidate
@@ -96,28 +101,25 @@ export function createRecipeImportJobHandler(
       const contentFingerprint = `sha256:${createHash('sha256')
         .update(fetched.body, 'utf8')
         .digest('hex')}`
-      await collection.updateOne(
-        { _id: payload.importId, userId: payload.userId, status: 'processing' },
-        {
-          $set: {
-            status: 'preview-ready',
-            preview,
-            canonicalUrl,
-            sourceDomain,
-            ...(preview.title ? { sourceTitle: preview.title } : {}),
-            ...(preview.sourceAuthor
-              ? { sourceAuthor: preview.sourceAuthor }
-              : {}),
-            importer: adapted.adapterId,
-            acquiredAt,
-            acquisitionMethod: 'server-fetch',
-            contentFingerprint,
-            rightsStatus: 'unknown',
-            updatedAt: isoDateTime(new Date()),
-          },
-          $unset: { failureCode: '' },
+      await collection.updateOne(processingFilter, {
+        $set: {
+          status: 'preview-ready',
+          preview,
+          canonicalUrl,
+          sourceDomain,
+          ...(preview.title ? { sourceTitle: preview.title } : {}),
+          ...(preview.sourceAuthor
+            ? { sourceAuthor: preview.sourceAuthor }
+            : {}),
+          importer: adapted.adapterId,
+          acquiredAt,
+          acquisitionMethod: 'server-fetch',
+          contentFingerprint,
+          rightsStatus: 'unknown',
+          updatedAt: isoDateTime(new Date()),
         },
-      )
+        $unset: { failureCode: '' },
+      })
     } catch (error) {
       const failureCode = isRecipeImportFetchError(error)
         ? error.code
@@ -146,16 +148,13 @@ export function createRecipeImportJobHandler(
           : new Error('Recipe source request failed.')
       }
 
-      await collection.updateOne(
-        { _id: payload.importId, userId: payload.userId, status: 'processing' },
-        {
-          $set: {
-            status: 'failed',
-            failureCode,
-            updatedAt: isoDateTime(new Date()),
-          },
+      await collection.updateOne(processingFilter, {
+        $set: {
+          status: 'failed',
+          failureCode,
+          updatedAt: isoDateTime(new Date()),
         },
-      )
+      })
       return
     }
   }

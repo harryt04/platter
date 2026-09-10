@@ -303,4 +303,64 @@ describe('recipe import worker fetch stage', () => {
       },
     )
   })
+
+  it('reprocesses a historical import generation without changing its saved recipe claim', async () => {
+    const historicalDocument = {
+      ...document,
+      status: 'queued' as const,
+      attemptCount: 0,
+      jobGeneration: 'a7c2b37c-2b06-4540-9c2c-f75d6ebc0e16',
+      savedRecipeId: 'saved-recipe-1',
+    }
+    const collection = {
+      findOneAndUpdate: vi.fn().mockResolvedValue(historicalDocument),
+      updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
+    }
+    const db = { collection: vi.fn().mockReturnValue(collection) }
+    const fetcher = vi.fn().mockResolvedValue({
+      requestedUrl: document.sourceUrl,
+      finalUrl: document.sourceUrl,
+      contentType: 'text/html',
+      body: `<script type="application/ld+json">${JSON.stringify({
+        '@type': 'Recipe',
+        name: 'Refreshed soup',
+        recipeYield: '4',
+        recipeIngredient: ['1 cup carrots'],
+        recipeInstructions: ['Simmer.'],
+      })}</script>`,
+      byteLength: 180,
+    })
+
+    await createRecipeImportJobHandler(
+      db as never,
+      fetcher,
+    )({
+      attrs: {
+        data: {
+          importId: historicalDocument._id,
+          userId: historicalDocument.userId,
+          idempotencyKey: historicalDocument.idempotencyKey,
+          operation: 'reprocess',
+          jobGeneration: historicalDocument.jobGeneration,
+        },
+      },
+    })
+
+    expect(collection.findOneAndUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _id: historicalDocument._id,
+        jobGeneration: historicalDocument.jobGeneration,
+      }),
+      expect.anything(),
+      expect.anything(),
+    )
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobGeneration: historicalDocument.jobGeneration,
+      }),
+      expect.objectContaining({
+        $set: expect.objectContaining({ status: 'preview-ready' }),
+      }),
+    )
+  })
 })

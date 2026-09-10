@@ -6,8 +6,13 @@ const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
   getConnectedDatabase: vi.fn(),
 }))
 
+const { revokeRealtimeListAccess } = vi.hoisted(() => ({
+  revokeRealtimeListAccess: vi.fn(),
+}))
+
 vi.mock('@/lib/auth/authorization', () => ({ getSession }))
 vi.mock('@/lib/db/mongo-client', () => ({ getConnectedDatabase }))
+vi.mock('@/lib/realtime/rooms', () => ({ revokeRealtimeListAccess }))
 
 const list = {
   _id: 'list-1',
@@ -98,6 +103,11 @@ describe('POST /api/v1/lists/[listId]/leave', () => {
       }),
       { returnDocument: 'after' },
     )
+    expect(revokeRealtimeListAccess).toHaveBeenCalledWith(
+      expect.anything(),
+      'list-1',
+      'editor-1',
+    )
   })
 
   it('returns a clear conflict when the last owner tries to leave', async () => {
@@ -162,6 +172,11 @@ describe('POST /api/v1/lists/[listId]/leave', () => {
         },
       }),
       { returnDocument: 'after' },
+    )
+    expect(revokeRealtimeListAccess).toHaveBeenCalledWith(
+      expect.anything(),
+      'list-1',
+      'owner-1',
     )
   })
 

@@ -5,6 +5,7 @@ import { listIdSchema, toPlatterList, type ListDocument } from '@/lib/lists'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { z } from 'zod'
 import { safelyCreateUserNotification } from '@/lib/notifications'
+import { revokeRealtimeListAccess } from '@/lib/realtime/rooms'
 
 type RouteContext = {
   params: Promise<{ listId: string; memberId: string }>
@@ -229,12 +230,19 @@ export async function DELETE(_request: Request, context: RouteContext) {
     )
   if (!updated) return memberNotFound()
 
-  await safelyCreateUserNotification(await getConnectedDatabase(), {
+  const db = await getConnectedDatabase()
+  await safelyCreateUserNotification(db, {
     userId: memberId,
     event: 'removed',
     listId: updated._id,
     listName: updated.name,
   })
+  try {
+    revokeRealtimeListAccess(db, updated._id, memberId)
+  } catch {
+    // Membership removal is authoritative even if the best-effort realtime
+    // eviction cannot be published.
+  }
 
   return Response.json({ list: toPlatterList(updated) })
 }

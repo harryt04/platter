@@ -13,8 +13,13 @@ const { getSession, findListForRole, getConnectedDatabase } = vi.hoisted(
   }),
 )
 
+const { revokeRealtimeListAccess } = vi.hoisted(() => ({
+  revokeRealtimeListAccess: vi.fn(),
+}))
+
 vi.mock('@/lib/auth/authorization', () => ({ getSession, findListForRole }))
 vi.mock('@/lib/db/mongo-client', () => ({ getConnectedDatabase }))
+vi.mock('@/lib/realtime/rooms', () => ({ revokeRealtimeListAccess }))
 
 afterEach(() => {
   vi.clearAllMocks()
@@ -216,6 +221,35 @@ describe('member management routes', () => {
       }),
       { returnDocument: 'after' },
     )
+    expect(revokeRealtimeListAccess).toHaveBeenCalledWith(
+      expect.anything(),
+      'list-1',
+      'editor-1',
+    )
+  })
+
+  it('keeps a successful removal when realtime eviction is unavailable', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    findListForRole.mockResolvedValue({ list, member: list.members[0] })
+    const updated = { ...list, members: [list.members[0]] }
+    const collection = {
+      findOneAndUpdate: vi.fn().mockResolvedValue(updated),
+    }
+    const db = { collection: vi.fn().mockReturnValue(collection) }
+    getConnectedDatabase.mockResolvedValue(db)
+    revokeRealtimeListAccess.mockImplementation(() => {
+      throw new Error('realtime unavailable')
+    })
+
+    const response = await DELETE(
+      new Request('http://localhost/api/v1/lists/list-1/members/editor-1', {
+        method: 'DELETE',
+      }),
+      context(),
+    )
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).list.members).toHaveLength(1)
   })
 
   it('does not remove an owner through the editor-removal endpoint', async () => {

@@ -90,7 +90,7 @@ ownership while preserving the rule that every live list has an owner.
       rename, archive, or delete.
 - [x] The last owner cannot leave, demote themselves, or be removed until
       ownership is transferred or the list is explicitly deleted.
-- [ ] A removed member immediately loses API, page, realtime-room, and future
+- [x] A removed member immediately loses API, page, realtime-room, and future
       mutation authorization for that list.
 - [x] Realtime room joins verify the caller's current active membership before
       joining a list-scoped room; removed and non-member users are rejected.

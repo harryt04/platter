@@ -8,6 +8,7 @@ import {
   toPlatterList,
   type ListDocument,
 } from '@/lib/lists'
+import { revokeRealtimeListAccess } from '@/lib/realtime/rooms'
 
 type RouteContext = { params: Promise<{ listId: string }> }
 
@@ -107,6 +108,13 @@ export async function POST(_request: Request, context: RouteContext) {
   )
 
   if (!updated) return listNotFound()
+
+  try {
+    revokeRealtimeListAccess(db, updated._id, session.user.id)
+  } catch {
+    // Leaving the list is authoritative even if realtime eviction cannot be
+    // published.
+  }
 
   return Response.json({ list: toPlatterList(updated) })
 }

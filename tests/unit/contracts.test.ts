@@ -10,10 +10,17 @@ import {
   listOwnerFilter,
   updateListSchema,
 } from '@/lib/lists'
-import { joinAuthorizedRealtimeRoom } from '@/lib/realtime/rooms'
+import {
+  joinAuthenticatedUserRoom,
+  joinAuthorizedRealtimeRoom,
+  realtimeListRoom,
+  revokeRealtimeListAccess,
+  realtimeUserRoom,
+} from '@/lib/realtime/rooms'
 
-const { findListForMember } = vi.hoisted(() => ({
+const { findListForMember, createRealtimeEmitter } = vi.hoisted(() => ({
   findListForMember: vi.fn(),
+  createRealtimeEmitter: vi.fn(),
 }))
 
 vi.mock('@/lib/lists', async () => {
@@ -21,6 +28,7 @@ vi.mock('@/lib/lists', async () => {
     await vi.importActual<typeof import('@/lib/lists')>('@/lib/lists')
   return { ...actual, findListForMember }
 })
+vi.mock('@/lib/realtime/events', () => ({ createRealtimeEmitter }))
 
 describe('lists', () => {
   it('validates and trims names while rejecting blank or oversized values', () => {
@@ -188,5 +196,30 @@ describe('foundation contracts', () => {
       'foundation:smoke',
       expect.objectContaining({ listId: 'list-1' }),
     )
+  })
+
+  it('uses a private user room to support cross-process membership revocation', async () => {
+    const socket = { join: vi.fn() }
+
+    await joinAuthenticatedUserRoom(socket, 'member-1')
+
+    expect(socket.join).toHaveBeenCalledWith(realtimeUserRoom('member-1'))
+    expect(realtimeListRoom('list-1')).toBe('list:list-1')
+  })
+
+  it('evicts a removed member from the list room across realtime processes', () => {
+    const socketsLeave = vi.fn()
+    const emit = vi.fn()
+    const inRoom = vi.fn().mockReturnValue({ socketsLeave, emit })
+    createRealtimeEmitter.mockReturnValue({ in: inRoom })
+
+    revokeRealtimeListAccess({} as import('mongodb').Db, 'list-1', 'member-1')
+
+    expect(inRoom).toHaveBeenCalledTimes(2)
+    expect(inRoom).toHaveBeenNthCalledWith(1, realtimeUserRoom('member-1'))
+    expect(socketsLeave).toHaveBeenCalledWith(realtimeListRoom('list-1'))
+    expect(emit).toHaveBeenCalledWith('foundation:membership-revoked', {
+      listId: 'list-1',
+    })
   })
 })

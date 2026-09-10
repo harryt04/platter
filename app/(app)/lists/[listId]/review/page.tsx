@@ -51,7 +51,7 @@ export default async function ReviewPage({
       </PageSection>
       <div className="grid gap-6 lg:grid-cols-2">
         <ContributionDetail />
-        <ManualOverride />
+        <ManualOverride disabled={isReadOnly} />
       </div>
     </ContentContainer>
   )

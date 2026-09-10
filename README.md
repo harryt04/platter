@@ -14,6 +14,8 @@ outcomes are in place. Recipe drafts also accept optional
 informational nutrition values per person. Signed-in users also receive
 in-product notifications for invitations and member role or removal changes,
 with authenticated deep links and independent read state.
+Archived lists preserve read access to their shopping run while disabling
+shopping changes such as completion and amount resets.
 The ingredient parser now recognizes common quantity forms, preserves source
 text, records qualitative confidence and a stable normalized identity when the
 parse is sufficient, resolves a bounded set of high-confidence ingredient

@@ -2,7 +2,7 @@ import { RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-export function ManualOverride() {
+export function ManualOverride({ disabled = false }: { disabled?: boolean }) {
   return (
     <Card>
       <CardHeader>
@@ -20,7 +20,7 @@ export function ManualOverride() {
               Calculated requirement: 3 lb
             </p>
           </div>
-          <Button variant="outline">
+          <Button variant="outline" disabled={disabled}>
             <RotateCcw size={16} />
             Reset to calculated amount
           </Button>

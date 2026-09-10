@@ -78,6 +78,14 @@ describe('completed shopping run history detail', () => {
 
     expect(screen.getByText('Sep 10, 2026')).toBeInTheDocument()
     expect(screen.getByText('Completed by member-2')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'These are the recipes this list shopped for. This history does not show the final checklist or claim that the recipes were cooked or that every item was purchased.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Recipes shopped for' }),
+    ).toBeInTheDocument()
     expect(screen.getByText('Citrus tacos')).toBeInTheDocument()
     expect(screen.getByText('Version 3 · 6 people')).toBeInTheDocument()
     expect(screen.queryByText('Purchased')).toBeNull()

@@ -43,7 +43,7 @@ export default async function RunHistoryPage({
       <PageHeader
         eyebrow={list.name}
         title="Completed shopping run"
-        description="These are the recipes this list shopped for. This history does not show the final checklist or claim that the recipes were cooked."
+        description="These are the recipes this list shopped for. This history does not show the final checklist or claim that the recipes were cooked or that every item was purchased."
         action={
           <Button variant="outline" asChild>
             <Link href={`/lists/${listId}/history`}>Back to history</Link>

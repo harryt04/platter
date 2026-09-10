@@ -1,3 +1,4 @@
+import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { decimalString } from '@/lib/contracts/ids'
 import {
@@ -6,6 +7,7 @@ import {
   createRecipeSelectionDocument,
   createRecipeSelectionSchema,
   duplicateRecipeSelectionDocument,
+  removeRecipeSelectionDocument,
   updateRecipeSelectionDocument,
 } from '@/lib/recipes/selections'
 import {
@@ -160,6 +162,146 @@ describe('recipe selections', () => {
       updatedAt: '2026-09-10T12:05:00.000Z',
     })
     expect(duplicate._id).not.toBe(selection._id)
+  })
+
+  it('proves changing one selection cannot change another selection contribution', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 1000 }),
+        fc.integer({ min: 1, max: 1000 }),
+        fc.integer({ min: 1, max: 1000 }),
+        (otherPeople, targetPeople, nextTargetPeople) => {
+          const otherSelection = createRecipeSelectionDocument(
+            {
+              _id: 'recipe-other',
+              recipeId: 'recipe-other',
+              versionId: 'version-other',
+              versionNumber: 1,
+              typicalPeopleFed: 4,
+            },
+            otherPeople,
+            new Date('2026-09-10T12:00:00.000Z'),
+          )
+          const targetSelection = createRecipeSelectionDocument(
+            {
+              _id: 'recipe-target',
+              recipeId: 'recipe-target',
+              versionId: 'version-target',
+              versionNumber: 1,
+              typicalPeopleFed: 4,
+            },
+            targetPeople,
+            new Date('2026-09-10T12:00:00.000Z'),
+          )
+
+          const updatedTarget = updateRecipeSelectionDocument(
+            targetSelection,
+            nextTargetPeople,
+            4,
+            new Date('2026-09-10T12:05:00.000Z'),
+          )
+          const updatedSelections = [otherSelection, targetSelection].map(
+            (selection) =>
+              selection._id === targetSelection._id ? updatedTarget : selection,
+          )
+          const updatedOtherSelection = updatedSelections.find(
+            (selection) => selection._id === otherSelection._id,
+          )
+          const otherContributionBefore = calculateScaledIngredients(
+            [
+              {
+                originalText: '2 onions',
+                quantity: '2',
+                unit: 'each',
+                ingredientName: 'onions',
+                optional: false,
+              },
+            ],
+            otherSelection.scaleFactor,
+          )
+          const otherContributionAfter = calculateScaledIngredients(
+            [
+              {
+                originalText: '2 onions',
+                quantity: '2',
+                unit: 'each',
+                ingredientName: 'onions',
+                optional: false,
+              },
+            ],
+            updatedOtherSelection!.scaleFactor,
+          )
+
+          expect(updatedTarget._id).toBe(targetSelection._id)
+          expect(updatedTarget.desiredPeople).toBe(nextTargetPeople)
+          expect(updatedOtherSelection).toEqual(otherSelection)
+          expect(otherContributionAfter).toEqual(otherContributionBefore)
+        },
+      ),
+    )
+  })
+
+  it('proves removing one selection preserves every other selection and contribution', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 1000 }),
+        fc.integer({ min: 1, max: 1000 }),
+        (otherPeople, targetPeople) => {
+          const otherSelection = createRecipeSelectionDocument(
+            {
+              _id: 'recipe-other',
+              recipeId: 'recipe-other',
+              versionId: 'version-other',
+              versionNumber: 1,
+              typicalPeopleFed: 4,
+            },
+            otherPeople,
+          )
+          const targetSelection = createRecipeSelectionDocument(
+            {
+              _id: 'recipe-target',
+              recipeId: 'recipe-target',
+              versionId: 'version-target',
+              versionNumber: 1,
+              typicalPeopleFed: 4,
+            },
+            targetPeople,
+          )
+
+          const remainingSelections = removeRecipeSelectionDocument(
+            [otherSelection, targetSelection],
+            targetSelection._id,
+          )
+          const otherContributionBefore = calculateScaledIngredients(
+            [
+              {
+                originalText: '2 onions',
+                quantity: '2',
+                unit: 'each',
+                ingredientName: 'onions',
+                optional: false,
+              },
+            ],
+            otherSelection.scaleFactor,
+          )
+          const otherContributionAfter = calculateScaledIngredients(
+            [
+              {
+                originalText: '2 onions',
+                quantity: '2',
+                unit: 'each',
+                ingredientName: 'onions',
+                optional: false,
+              },
+            ],
+            remainingSelections[0]!.scaleFactor,
+          )
+
+          expect(remainingSelections).toEqual([otherSelection])
+          expect(otherContributionAfter).toEqual(otherContributionBefore)
+        },
+      ),
+    )
   })
 
   it('scales decimal quantities without applying display rounding', () => {

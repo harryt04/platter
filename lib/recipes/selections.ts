@@ -152,3 +152,11 @@ export function duplicateRecipeSelectionDocument(
     updatedAt: timestamp,
   }
 }
+
+/** Remove exactly one selection while preserving every other selection. */
+export function removeRecipeSelectionDocument(
+  selections: readonly RecipeSelectionDocument[],
+  selectionId: string,
+): RecipeSelectionDocument[] {
+  return selections.filter((selection) => selection._id !== selectionId)
+}

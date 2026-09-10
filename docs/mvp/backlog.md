@@ -329,7 +329,7 @@ versions the active run represents without surprising collaborators.
       and explicitly accepts the newer version.
 - [ ] Concurrent or repeated selection mutations are idempotent and respect the
       list's active-run revision.
-- [ ] Property tests prove that changing or removing one selection cannot alter
+- [x] Property tests prove that changing or removing one selection cannot alter
       another selection's contributions.
 
 ## 14: Combine compatible grocery contributions

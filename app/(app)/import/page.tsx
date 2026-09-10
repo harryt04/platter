@@ -1,11 +1,30 @@
-import { PlaceholderPage } from '@/components/states/placeholder-page'
-export default function ImportPage() {
+import { RecipeImportForm } from '@/components/recipes/recipe-import-form'
+import { ContentContainer, PageHeader } from '@/components/shell/page-header'
+import { requireSession } from '@/lib/auth/authorization'
+import { getConnectedDatabase } from '@/lib/db/mongo-client'
+import {
+  toRecipeImportSummary,
+  type RecipeImportDocument,
+} from '@/lib/recipe-imports'
+
+export default async function ImportPage() {
+  const session = await requireSession('/import')
+  const db = await getConnectedDatabase()
+  const imports = await db
+    .collection<RecipeImportDocument>('recipe_imports')
+    .find({ userId: session.user.id })
+    .sort({ submittedAt: -1, _id: -1 })
+    .limit(50)
+    .toArray()
+
   return (
-    <PlaceholderPage
-      title="Import a recipe"
-      description="Enter a public URL while connected. URL imports require internet access and are not queued offline; Platter will create an editable preview and explain what needs review before saving."
-      action="Browse recipes"
-      actionHref="/discover"
-    />
+    <ContentContainer>
+      <PageHeader
+        description="Submit a public recipe URL while connected. Review the extracted facts before anything becomes part of your recipe library."
+        eyebrow="Recipe import"
+        title="Bring a recipe into Platter"
+      />
+      <RecipeImportForm initialImports={imports.map(toRecipeImportSummary)} />
+    </ContentContainer>
   )
 }

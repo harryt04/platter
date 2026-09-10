@@ -606,7 +606,7 @@ giving the importer access to private networks, credentials, or unbounded data.
 
 **Status:** ready-for-agent
 
-- [ ] A signed-in user can submit only an HTTP or HTTPS URL and see durable
+- [x] A signed-in user can submit only an HTTP or HTTPS URL and see durable
       queued, processing, retrying, failed, or preview-ready status.
 - [ ] Enqueueing uses an idempotency key and the job stores only necessary
       references and metadata, not cookies, secrets, or full recipe documents.

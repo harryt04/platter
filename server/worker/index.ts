@@ -2,6 +2,8 @@ import { Agenda } from 'agenda'
 import { MongoBackend } from '@agendajs/mongo-backend'
 import { getConnectedDatabase, getMongoClient } from '@/lib/db/mongo-client'
 import { validateJobPayload } from '@/lib/jobs/registry'
+import { isoDateTime } from '@/lib/contracts/ids'
+import type { RecipeImportDocument } from '@/lib/recipe-imports'
 
 async function main() {
   const db = await getConnectedDatabase()
@@ -20,12 +22,20 @@ async function main() {
     )
   })
   agenda.define('recipe-import', async (job) => {
-    validateJobPayload('recipe-import', job.attrs.data)
+    const payload = validateJobPayload('recipe-import', job.attrs.data)
+    await db.collection<RecipeImportDocument>('recipe_imports').updateOne(
+      {
+        _id: payload.importId,
+        status: { $in: ['queued', 'retrying'] },
+      },
+      { $set: { status: 'processing', updatedAt: isoDateTime(new Date()) } },
+    )
     console.log(
       JSON.stringify({
         service: 'worker',
         job: 'recipe-import',
-        status: 'reserved',
+        importId: payload.importId,
+        status: 'processing',
       }),
     )
   })

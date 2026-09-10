@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const jobPayloads = {
   'recipe-import': z.object({
-    recipeId: z.string(),
+    importId: z.string().uuid(),
     sourceUrl: z.string().url(),
   }),
   smoke: z.object({ attempt: z.number().int().nonnegative().default(0) }),

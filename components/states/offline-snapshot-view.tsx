@@ -188,6 +188,11 @@ export function OfflineSnapshotView({ userId }: { userId?: string }) {
                         <p className="text-muted-foreground text-xs">
                           Attempt {operation.attemptCount}
                         </p>
+                        {operation.syncMessage && (
+                          <p className="text-muted-foreground mt-1 max-w-prose text-xs">
+                            {operation.syncMessage}
+                          </p>
+                        )}
                       </div>
                       <SyncStatus state={operation.status} />
                     </li>

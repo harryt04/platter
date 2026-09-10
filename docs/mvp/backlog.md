@@ -521,9 +521,9 @@ and synchronize it honestly and safely when connectivity returns.
       shopping amounts with immediate local feedback.
 - [x] Each queued operation has a unique operation ID, client ID, base revision,
       attempt count, and visible pending, syncing, failed, or synced state.
-- [ ] Retries cannot duplicate manual additions or lose unrelated item changes;
+- [x] Retries cannot duplicate manual additions or lose unrelated item changes;
       the latest server-accepted operation wins for the same field.
-- [ ] Reconciliation visibly replaces optimistic state with authoritative state
+- [x] Reconciliation visibly replaces optimistic state with authoritative state
       and explains permission loss or a change made while offline.
 - [x] Invitations and URL imports explain that connectivity is required instead
       of pretending to queue unsupported work.

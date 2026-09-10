@@ -186,7 +186,7 @@ export async function updateOfflineOperation(
   userId: string,
   operationId: string,
   update: Pick<QueuedOperation, 'status'> &
-    Partial<Pick<QueuedOperation, 'attemptCount'>>,
+    Partial<Pick<QueuedOperation, 'attemptCount' | 'syncMessage'>>,
 ) {
   const db = openOfflineDatabase(userId)
   try {

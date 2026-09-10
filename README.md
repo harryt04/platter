@@ -199,8 +199,10 @@ immediate local feedback and are recorded as retry-safe operations in that same
 user-scoped database with client, revision, attempt, and lifecycle metadata.
 The offline view keeps each operation's pending, syncing, failed, or synced
 state visible without exposing its private payload. Reconnection reconciliation
-and server acceptance are still planned, so queued changes are not presented as
-synced until that workflow is implemented.
+now drains the durable queue when connectivity returns, coalesces stale changes
+to the same field, advances revisions for unrelated changes, and refreshes the
+authoritative shared run. Permission loss, unavailable items, and connection
+failures remain visible as operation-specific attention messages.
 Invitation acceptance and URL recipe imports explicitly require a connection;
 unsupported work is not presented as queued offline.
 The active run also shares a temporary within-category item order: members can

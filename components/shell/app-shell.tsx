@@ -5,6 +5,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 import { OfflineBanner } from '@/components/states/offline-banner'
+import { OfflineMutationSync } from '@/components/states/offline-mutation-sync'
 import { OfflineShellSnapshotWriter } from '@/components/states/offline-snapshot-writers'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 
@@ -43,6 +44,7 @@ export function AppShell({
           <NotificationBell />
         </header>
         <OfflineBanner />
+        <OfflineMutationSync userId={userId} />
         <div className="flex-1">{children}</div>
       </SidebarInset>
     </SidebarProvider>

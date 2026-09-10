@@ -8,8 +8,8 @@ scaling, deterministic grocery generation, the first grocery correction slice,
 and conservative grocery categorization, current-run recategorization,
 temporary shared grocery ordering, and the active-checklist membership,
 Purchased, connected realtime, and first user-scoped offline snapshot and
-optimistic mutation-queue slices are implemented; the remaining offline
-reconciliation, correction,
+optimistic mutation-queue and reconnect-reconciliation slices are implemented;
+the remaining offline correction,
 collaboration, and feature workflows are still planned in the backlog. Active
 shopping-run completion now atomically creates minimal history and a clean
 replacement run; connected completion synchronization remains planned.

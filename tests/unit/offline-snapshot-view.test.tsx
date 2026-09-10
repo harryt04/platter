@@ -112,6 +112,9 @@ describe('OfflineSnapshotView', () => {
         createdAt: '2026-09-10T12:00:00.000Z',
         attemptCount: index + 1,
         status,
+        ...(status === 'failed'
+          ? { syncMessage: 'That list is not available to you.' }
+          : {}),
       })),
     ])
 
@@ -125,6 +128,9 @@ describe('OfflineSnapshotView', () => {
     expect(screen.getAllByText('Already have status')).toHaveLength(3)
     expect(screen.getByText('Syncing')).toBeInTheDocument()
     expect(screen.getByText('Sync needs attention')).toBeInTheDocument()
+    expect(
+      screen.getByText('That list is not available to you.'),
+    ).toBeInTheDocument()
     expect(screen.getByText('Synced')).toBeInTheDocument()
     expect(screen.queryByText(/private-item/)).not.toBeInTheDocument()
   })

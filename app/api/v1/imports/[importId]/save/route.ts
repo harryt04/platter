@@ -11,6 +11,7 @@ import {
   recipeMetadataSchema,
   recipeNutritionSchema,
   recipeImageProvenanceSchema,
+  isUsableRecipe,
   typicalPeopleFedSchema,
   toRecipeDraft,
   type RecipeDraftDocument,
@@ -220,9 +221,14 @@ export async function POST(
     })
   }
 
+  const approvedForPublicCatalog = isUsableRecipe(
+    parsed.data.typicalPeopleFed ?? undefined,
+    parsed.data.ingredients,
+  )
   const draft = createDraftDocument(session.user.id, parsed.data.title, {
     origin: 'imported',
-    importReviewStatus: 'pending',
+    importReviewStatus: approvedForPublicCatalog ? 'approved' : 'pending',
+    visibility: approvedForPublicCatalog ? 'public' : 'private',
     typicalPeopleFed: parsed.data.typicalPeopleFed ?? undefined,
     prepTimeMinutes: parsed.data.prepTimeMinutes ?? undefined,
     cookingTimeMinutes: parsed.data.cookingTimeMinutes ?? undefined,

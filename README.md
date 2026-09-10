@@ -160,13 +160,16 @@ into the structured editor candidate shape; missing fields remain explicit
 warnings for review, while safe partial facts remain available. Preview-ready
 imports now open an authenticated, owner-scoped manual-completion editor when
 facts are missing, preserving the extracted title, ingredients, instructions,
-source facts, attribution, and metadata for correction before saving a private
-imported draft. The import worker also records the submitted and canonical URLs,
+source facts, attribution, and metadata for correction before saving to the
+recipe library. A reviewed import with a positive yield and at least one
+structured ingredient is approved and published to public discovery at save
+time; incomplete imports remain private drafts until they are usable. The
+import worker also records the submitted and canonical URLs,
 source domain and title, source author, acquisition method and timestamp, the
 Schema.org importer, a SHA-256 content fingerprint, and unknown rights status;
-that provenance is copied to the immutable recipe version. Saving preserves the
-imported origin and pending review state, is safe to retry, and never adds the
-recipe to an active shopping run. Preview saves now compare canonical URLs and
+that provenance is copied to the immutable recipe version. Saving is safe to
+retry and never adds the recipe to an active shopping run. Preview saves now
+compare canonical URLs and
 content fingerprints against approved public imports and link the user to an
 existing public recipe instead of silently creating a duplicate. When the
 canonical source has changed, the preview identifies the existing recipe and

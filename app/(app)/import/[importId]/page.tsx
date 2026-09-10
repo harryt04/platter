@@ -25,7 +25,7 @@ export default async function RecipeImportPreviewPage({
   return (
     <ContentContainer>
       <PageHeader
-        description="Review the source facts and correct the structured recipe before saving a private draft."
+        description="Review the source facts and correct the structured recipe before saving it to your recipe library."
         eyebrow="Recipe import preview"
         title={imported.preview.title ?? 'Untitled imported recipe'}
       />

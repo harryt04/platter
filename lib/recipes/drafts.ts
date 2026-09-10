@@ -472,6 +472,7 @@ export function createDraftDocument(
     image?: RecipeImageProvenance
     nutrition?: RecipeNutrition
     importProvenance?: RecipeImportProvenanceDocument
+    visibility?: RecipeVisibility
     ingredients?: RecipeIngredient[]
     instructions?: RecipeInstruction[]
   } = {},
@@ -493,7 +494,7 @@ export function createDraftDocument(
       : 'draft',
     origin: details.origin ?? 'authored',
     importReviewStatus: details.importReviewStatus ?? 'not-required',
-    visibility: 'private',
+    visibility: details.visibility ?? 'private',
     ...(details.typicalPeopleFed === undefined
       ? {}
       : { typicalPeopleFed: details.typicalPeopleFed }),

@@ -44,7 +44,7 @@ describe('RecipeImportPreview', () => {
     expect(screen.getByLabelText('Instruction 1')).toHaveValue('Simmer.')
     expect(screen.getByLabelText('Source name')).toHaveValue('Example Recipes')
     expect(
-      screen.getByText(/saving creates a private imported draft/i),
+      screen.getByText(/saving publishes this reviewed imported recipe/i),
     ).toBeInTheDocument()
     expect(
       screen.getByText(/will not add anything to an active shopping run/i),
@@ -77,7 +77,7 @@ describe('RecipeImportPreview', () => {
     )
     expect(screen.getByLabelText('Instruction 1')).toHaveValue('Second.')
     fireEvent.click(
-      screen.getByRole('button', { name: 'Save private recipe draft' }),
+      screen.getByRole('button', { name: 'Publish public recipe' }),
     )
 
     return vi.waitFor(() => {
@@ -149,7 +149,7 @@ describe('RecipeImportPreview', () => {
     )
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Save private recipe draft' }),
+      screen.getByRole('button', { name: 'Publish public recipe' }),
     )
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -189,7 +189,7 @@ describe('RecipeImportPreview', () => {
     )
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Save private recipe draft' }),
+      screen.getByRole('button', { name: 'Publish public recipe' }),
     )
     expect(
       await screen.findByText('This source has changed'),

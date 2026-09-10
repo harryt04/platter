@@ -91,6 +91,10 @@ export function RecipeImportPreview({
   } | null>(null)
   const [acceptedRelatedVersion, setAcceptedRelatedVersion] =
     React.useState(false)
+  const canPublish =
+    Number.isInteger(Number(typicalPeopleFed)) &&
+    Number(typicalPeopleFed) > 0 &&
+    ingredients.some(({ ingredientName }) => ingredientName.trim().length > 0)
   const timeFields = [
     {
       id: 'import-preview-prep-time',
@@ -192,7 +196,7 @@ export function RecipeImportPreview({
           <CardTitle>Review the extracted recipe</CardTitle>
           <p className="text-muted-foreground text-sm">
             We found recipe facts. Correct anything that needs attention before
-            saving this as a private imported draft.
+            saving this to your recipe library.
           </p>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -550,12 +554,13 @@ export function RecipeImportPreview({
 
       <div className="space-y-3">
         <p className="text-muted-foreground text-sm">
-          Saving creates a private imported draft. It will not add anything to
-          an active shopping run.
+          {canPublish
+            ? 'Saving publishes this reviewed imported recipe for discovery. It will not add anything to an active shopping run.'
+            : 'Saving creates a private imported draft until you add a positive yield and at least one ingredient. It will not add anything to an active shopping run.'}
         </p>
         {savedRecipeId && (
           <p className="text-success text-sm" role="status">
-            This import is already saved as a private recipe draft.
+            This import is already saved in your recipe library.
           </p>
         )}
         {error && (
@@ -610,7 +615,9 @@ export function RecipeImportPreview({
             ? 'Saving recipe…'
             : acceptedRelatedVersion
               ? 'Save related source version'
-              : 'Save private recipe draft'}
+              : canPublish
+                ? 'Publish public recipe'
+                : 'Save private recipe draft'}
         </Button>
       </div>
     </form>

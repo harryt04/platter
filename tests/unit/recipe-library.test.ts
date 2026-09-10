@@ -96,6 +96,11 @@ describe('findRecipeLibrary', () => {
     ])
     const recipes = query<RecipeDraftDocument>([
       recipe('owned-1', { visibility: 'private' }),
+      recipe('imported-1', {
+        origin: 'imported',
+        importReviewStatus: 'approved',
+        visibility: 'public',
+      }),
       recipe('shared-1', {
         ownerId: 'owner-2',
         householdNotes: 'Owner-only note.',
@@ -121,6 +126,15 @@ describe('findRecipeLibrary', () => {
     expect(result).toEqual([
       {
         recipe: expect.objectContaining({ id: 'owned-1', title: 'owned-1' }),
+        access: 'owned',
+        sharedListNames: [],
+      },
+      {
+        recipe: expect.objectContaining({
+          id: 'imported-1',
+          origin: 'imported',
+          importReviewStatus: 'approved',
+        }),
         access: 'owned',
         sharedListNames: [],
       },

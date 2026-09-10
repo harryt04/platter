@@ -92,7 +92,7 @@ beforeEach(() => {
 })
 
 describe('POST /api/v1/imports/[importId]/save', () => {
-  it('saves corrected preview fields as a private imported draft', async () => {
+  it('publishes a reviewed usable import without adding it to a run', async () => {
     const { collection, imports, recipes, versions } = setup()
     const response = await POST(
       request({
@@ -119,7 +119,8 @@ describe('POST /api/v1/imports/[importId]/save', () => {
       title: 'Corrected soup',
       typicalPeopleFed: 6,
       origin: 'imported',
-      importReviewStatus: 'pending',
+      importReviewStatus: 'approved',
+      visibility: 'public',
       sourceName: 'Correct source',
       importProvenance: {
         submittedUrl: source.sourceUrl,
@@ -153,7 +154,8 @@ describe('POST /api/v1/imports/[importId]/save', () => {
       expect.objectContaining({
         title: 'Corrected soup',
         origin: 'imported',
-        importReviewStatus: 'pending',
+        importReviewStatus: 'approved',
+        visibility: 'public',
         importProvenance: expect.objectContaining({
           canonicalUrl: source.canonicalUrl,
           contentFingerprint: source.contentFingerprint,
@@ -163,6 +165,32 @@ describe('POST /api/v1/imports/[importId]/save', () => {
     )
     expect(versions.insertOne).toHaveBeenCalledOnce()
     expect(collection).not.toHaveBeenCalledWith('shopping_runs')
+  })
+
+  it('keeps an incomplete reviewed import private until it is usable', async () => {
+    const { recipes } = setup()
+    const response = await POST(
+      request({
+        title: 'Soup still needs details',
+        ingredients: [],
+        instructions: [],
+      }),
+      { params: Promise.resolve({ importId }) },
+    )
+
+    expect(response.status).toBe(201)
+    expect((await response.json()).recipe).toMatchObject({
+      origin: 'imported',
+      importReviewStatus: 'pending',
+      visibility: 'private',
+      status: 'draft',
+    })
+    expect(recipes.insertOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        importReviewStatus: 'pending',
+        visibility: 'private',
+      }),
+    )
   })
 
   it('replays an already-saved import without creating another recipe', async () => {

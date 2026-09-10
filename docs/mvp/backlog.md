@@ -662,7 +662,7 @@ recipe data
       recipe instead of silently creating a duplicate.
 - [x] Materially different content may create a related immutable version, with
       the source and relationship visible before confirmation.
-- [ ] A successful import becomes discoverable to other users and appears in
+- [x] A successful import becomes discoverable to other users and appears in
       the importer's library, but never changes an active run automatically.
 - [ ] Concurrent or retried saves are idempotent and cannot create duplicate
       public identities or versions.

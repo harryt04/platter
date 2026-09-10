@@ -79,7 +79,10 @@ public recipe details expose the list and serving-count action for signed-in
 members. Selection responses also expose precise calculated ingredient
 quantities, retain each source quantity, keep whole-count suggestions as
 separate shopping guidance, and show missing quantities as `As needed` with
-explicit optional labels in the selection confirmation.
+explicit optional labels in the selection confirmation. The add action is
+explicitly separate from saving a public recipe, and the serving examples are
+covered for four-to-two (`0.5`) and four-to-six (`1.5`) scaling in unit and
+credential-gated browser tests.
 The signed-in recipe library now combines authored recipes with usable recipes
 shared through the member's current lists, and shared entries remain read-only.
 Signed-in users can also save public recipes to that library without adding

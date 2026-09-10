@@ -306,7 +306,7 @@ lines; 08: Version recipes and control visibility
       fabricated amount, and optional ingredients remain visibly optional.
 - [ ] Selecting a recipe never happens as a side effect of saving or importing
       it.
-- [ ] Unit and browser tests demonstrate the PRD's four-to-two and four-to-six
+- [x] Unit and browser tests demonstrate the PRD's four-to-two and four-to-six
       scaling examples.
 
 ## 13: Manage recipe selections

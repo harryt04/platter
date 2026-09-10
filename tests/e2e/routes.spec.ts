@@ -57,4 +57,47 @@ test.describe('authenticated list workflow', () => {
       page.getByRole('button', { name: 'Start shopping' }),
     ).toBeVisible()
   })
+
+  test('adds a four-person recipe for two and six people with explicit actions', async ({
+    page,
+  }) => {
+    test.skip(
+      !process.env.E2E_SCALE_RECIPE_ID,
+      'Set E2E_SCALE_RECIPE_ID to a public usable recipe for serving-scale browser coverage.',
+    )
+
+    await page.goto('/sign-in')
+    await page
+      .getByRole('textbox', { name: 'Email' })
+      .fill(process.env.E2E_USER_EMAIL!)
+    await page.getByLabel('Password').fill(process.env.E2E_USER_PASSWORD!)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await expect(page).toHaveURL(/\/lists$/)
+
+    await page.goto('/lists/new')
+    const twoPeopleList = `Scale two ${Date.now()}`
+    await page.getByRole('textbox', { name: 'List name' }).fill(twoPeopleList)
+    await page.getByRole('button', { name: 'Create list' }).click()
+    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+
+    await page.goto('/lists/new')
+    const sixPeopleList = `Scale six ${Date.now()}`
+    await page.getByRole('textbox', { name: 'List name' }).fill(sixPeopleList)
+    await page.getByRole('button', { name: 'Create list' }).click()
+    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+
+    await page.goto(`/recipes/${process.env.E2E_SCALE_RECIPE_ID}`)
+    const list = page.getByLabel('List')
+    const people = page.getByLabel('People')
+
+    await list.selectOption({ label: twoPeopleList })
+    await people.fill('2')
+    await page.getByRole('button', { name: 'Add to this week' }).click()
+    await expect(page.getByText(/scale 0\.5/)).toBeVisible()
+
+    await list.selectOption({ label: sixPeopleList })
+    await people.fill('6')
+    await page.getByRole('button', { name: 'Add to this week' }).click()
+    await expect(page.getByText(/scale 1\.5/)).toBeVisible()
+  })
 })

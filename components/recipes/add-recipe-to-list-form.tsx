@@ -103,7 +103,7 @@ export function AddRecipeToListForm({
         </label>
       </div>
       <Button disabled={pending || !listId || desiredPeople < 1} type="submit">
-        {pending ? 'Adding recipe…' : 'Add recipe'}
+        {pending ? 'Adding to this week…' : 'Add to this week'}
       </Button>
       <p aria-live="polite" className="text-muted-foreground text-sm">
         {error ?? message}

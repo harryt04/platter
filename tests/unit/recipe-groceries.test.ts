@@ -3,6 +3,7 @@ import Decimal from 'decimal.js'
 import { describe, expect, it } from 'vitest'
 import { decimalString } from '@/lib/contracts/ids'
 import {
+  findGroceryMergeSuggestions,
   generateGroceryItems,
   type GroceryRecipeSelection,
 } from '@/lib/recipes/groceries'
@@ -543,4 +544,59 @@ describe('grocery generation', () => {
       ),
     )
   })
+})
+
+it('offers deterministic optional suggestions without merging low-confidence items', () => {
+  const items = generateGroceryItems({
+    selections: [
+      selection('first', 'First recipe', '1', [
+        ingredient({
+          originalText: 'some onions',
+          quantity: '1',
+          unit: 'each',
+          ingredientName: 'onions',
+          normalizedIdentity: 'onions',
+          parserConfidence: 'low',
+        }),
+      ]),
+      selection('second', 'Second recipe', '1', [
+        ingredient({
+          originalText: '1 onion, sliced',
+          quantity: '1',
+          unit: 'each',
+          ingredientName: 'onion',
+          normalizedIdentity: 'onions',
+          parserConfidence: 'low',
+        }),
+      ]),
+      selection('red', 'Red onion recipe', '1', [
+        ingredient({
+          originalText: '1 red onion',
+          quantity: '1',
+          unit: 'each',
+          ingredientName: 'red onion',
+          normalizedIdentity: 'red onion',
+          parserConfidence: 'low',
+        }),
+      ]),
+    ],
+  })
+
+  expect(items).toHaveLength(3)
+  expect(items.map((item) => item.id)).toEqual([
+    'grocery:recipe:first:0',
+    'grocery:recipe:red:0',
+    'grocery:recipe:second:0',
+  ])
+  expect(findGroceryMergeSuggestions(items)).toMatchObject([
+    {
+      id: 'grocery-merge-suggestion:grocery:recipe:first:0:grocery:recipe:second:0',
+      left: { id: 'grocery:recipe:first:0' },
+      right: { id: 'grocery:recipe:second:0' },
+    },
+  ])
+  expect(items[0]?.contributions).toHaveLength(1)
+  expect(items[2]?.contributions).toHaveLength(1)
+  expect(items[0]?.calculatedRequirement).toEqual({ min: '1' })
+  expect(items[2]?.calculatedRequirement).toEqual({ min: '1' })
 })

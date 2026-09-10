@@ -84,6 +84,16 @@ export type GroceryItem = {
   contributions: GroceryContribution[]
 }
 
+/**
+ * A possible low-confidence match is advisory only. The two grocery items
+ * remain separate until a later correction flow explicitly accepts a merge.
+ */
+export type GroceryMergeSuggestion = {
+  id: string
+  left: GroceryItem
+  right: GroceryItem
+}
+
 type PreparedIngredient = {
   parsed: ParsedIngredientLine
   calculatedQuantity: ParsedIngredientQuantity | null
@@ -169,6 +179,17 @@ function compatibleIdentity(prepared: PreparedIngredient) {
     prepared.parsed.normalizedIdentity,
     prepared.parsed.unit.dimension,
   ].join(':')
+}
+
+function suggestionIdentity(value: string) {
+  const normalized = value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+
+  return normalized || null
 }
 
 function convertForUnit(
@@ -364,4 +385,51 @@ export function generateGroceryItems({
         left.id.localeCompare(right.id),
       ),
     }))
+}
+
+/**
+ * Find conservative, deterministic suggestions for items that were kept
+ * separate because their only contribution parsed with low confidence.
+ * Suggestions require the same visible ingredient identity and dimension;
+ * they never merge items or infer a conversion.
+ */
+export function findGroceryMergeSuggestions(
+  items: readonly GroceryItem[],
+): GroceryMergeSuggestion[] {
+  const candidates = items
+    .filter(
+      (item) =>
+        item.contributions.length === 1 &&
+        item.contributions[0]?.parserConfidence === 'low',
+    )
+    .map((item) => ({
+      item,
+      identity:
+        item.normalizedIdentity ?? suggestionIdentity(item.ingredientName),
+    }))
+    .filter(
+      (candidate): candidate is typeof candidate & { identity: string } =>
+        candidate.identity !== null,
+    )
+    .sort((left, right) => left.item.id.localeCompare(right.item.id))
+
+  const grouped = new Map<string, typeof candidates>()
+  for (const candidate of candidates) {
+    const key = `${candidate.identity}:${candidate.item.dimension}`
+    const group = grouped.get(key) ?? []
+    group.push(candidate)
+    grouped.set(key, group)
+  }
+
+  return [...grouped.values()]
+    .flatMap((group) =>
+      group.slice(0, -1).flatMap((left, index) =>
+        group.slice(index + 1).map((right) => ({
+          id: `grocery-merge-suggestion:${left.item.id}:${right.item.id}`,
+          left: left.item,
+          right: right.item,
+        })),
+      ),
+    )
+    .sort((left, right) => left.id.localeCompare(right.id))
 }

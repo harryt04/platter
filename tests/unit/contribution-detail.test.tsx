@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ContributionDetail } from '@/components/patterns/contribution-detail'
+import { GroceryRow } from '@/components/patterns/grocery-row'
 import type { GroceryItem } from '@/lib/recipes/groceries'
 
 afterEach(() => cleanup())
@@ -74,5 +75,73 @@ describe('ContributionDetail', () => {
     )
 
     expect(screen.getAllByText('As needed')).toHaveLength(2)
+  })
+
+  it('labels a low-confidence item with an optional comparison suggestion', () => {
+    const first: GroceryItem = {
+      id: 'grocery:recipe:first:0',
+      ingredientName: 'onions',
+      normalizedIdentity: 'onions',
+      dimension: 'count',
+      unit: { name: 'each', dimension: 'count' },
+      calculatedRequirement: null,
+      shoppingAmount: null,
+      contributions: [
+        {
+          id: 'recipe:first:0',
+          source: {
+            kind: 'recipe',
+            selectionId: 'first',
+            recipeId: 'recipe-first',
+            versionId: 'version-first',
+            recipeTitle: 'Tacos',
+          },
+          originalText: 'some onions',
+          ingredientName: 'onions',
+          normalizedIdentity: 'onions',
+          parserConfidence: 'low',
+          unit: { name: 'each', dimension: 'count' },
+          optional: false,
+          calculatedQuantity: null,
+        },
+      ],
+    }
+    const second = {
+      ...first,
+      id: 'grocery:recipe:second:0',
+      ingredientName: 'onion',
+      contributions: [
+        {
+          ...first.contributions[0]!,
+          id: 'recipe:second:0',
+          source: {
+            kind: 'recipe' as const,
+            selectionId: 'second',
+            recipeId: 'recipe-second',
+            versionId: 'version-second',
+            recipeTitle: 'Curry',
+          },
+          originalText: '1 onion',
+          ingredientName: 'onion',
+          calculatedQuantity: { min: '1' },
+        },
+      ],
+      calculatedRequirement: { min: '1' },
+      shoppingAmount: { min: '1' },
+    } satisfies GroceryItem
+
+    render(
+      <GroceryRow
+        item={first}
+        mergeSuggestions={[{ id: 'suggestion-1', left: first, right: second }]}
+      />,
+    )
+
+    expect(screen.getByText('Possible match')).toBeInTheDocument()
+    expect(
+      screen.getByText(/may match 1 each onion from Curry/),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/stays separate/)).toBeInTheDocument()
+    expect(screen.getByText('Compare possible match')).toBeInTheDocument()
   })
 })

@@ -13,7 +13,10 @@ import {
 } from '@/lib/lists'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { resolveRunRecipeVersions } from '@/lib/recipes/versions'
-import { generateGroceryItems } from '@/lib/recipes/groceries'
+import {
+  findGroceryMergeSuggestions,
+  generateGroceryItems,
+} from '@/lib/recipes/groceries'
 import { notFound } from 'next/navigation'
 
 export default async function ReviewPage({
@@ -38,6 +41,7 @@ export default async function ReviewPage({
       return selection && version ? [{ selection, version }] : []
     }),
   })
+  const mergeSuggestions = findGroceryMergeSuggestions(groceryItems)
 
   return (
     <ContentContainer>
@@ -56,7 +60,14 @@ export default async function ReviewPage({
         {groceryItems.length > 0 ? (
           <div className="space-y-3">
             {groceryItems.map((item) => (
-              <GroceryRow item={item} category="Other" key={item.id} />
+              <GroceryRow
+                item={item}
+                category="Other"
+                key={item.id}
+                mergeSuggestions={mergeSuggestions.filter(
+                  (suggestion) => suggestion.left.id === item.id,
+                )}
+              />
             ))}
           </div>
         ) : (

@@ -38,7 +38,10 @@ Review and shopping rows now render those generated items from the active run,
 including an expandable calculation breakdown for every recipe or manual
 contribution and the aggregate calculated requirement. Grocery derivation also
 removes orphaned recipe items while retaining manual contributions and
-intentional shopping overrides with no fabricated current requirement.
+intentional shopping overrides with no fabricated current requirement. When
+two separately generated low-confidence items have the same visible identity
+and dimension, the rows expose a deterministic optional comparison suggestion
+without combining their amounts.
 Public recipe reads also have a shared visibility guard: imported content must
 be approved after review, usable, and explicitly public before it can render.
 Recipes now have stable identities and incrementing immutable version IDs;

@@ -361,9 +361,9 @@ editing the underlying recipes accidentally.
 
 **Blocked by:** 14: Combine compatible grocery contributions
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] Low-confidence candidates remain separate and may appear as clearly
+- [x] Low-confidence candidates remain separate and may appear as clearly
       optional merge suggestions.
 - [ ] A user can inspect the identities, dimensions, original lines, and recipe
       contributions involved before accepting a merge.

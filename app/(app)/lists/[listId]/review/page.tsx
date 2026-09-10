@@ -81,6 +81,7 @@ export default async function ReviewPage({
         </p>
       )}
       <RealtimeRunSync
+        currentUserId={session.user.id}
         listId={listId}
         revision={run?.revision ?? 0}
         runId={run?._id ?? list.activeRunId}

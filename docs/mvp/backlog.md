@@ -498,7 +498,7 @@ active checklist
       the 95th percentile under the expected test load.
 - [x] Missed, duplicate, and out-of-order events cause snapshot or delta recovery
       rather than treating events as durable state.
-- [ ] Screen readers receive useful batched announcements of remote changes
+- [x] Screen readers receive useful batched announcements of remote changes
       without being overwhelmed.
 - [ ] Multi-client tests cover different-item changes, same-item changes,
       disconnection gaps, removed membership, and non-member room rejection.

@@ -25,7 +25,10 @@ vi.mock('socket.io-client', () => ({ io: realtime.io }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }))
 
 describe('RealtimeRunSync', () => {
-  afterEach(() => cleanup())
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
 
   beforeEach(() => {
     realtime.handlers.clear()
@@ -38,7 +41,14 @@ describe('RealtimeRunSync', () => {
   })
 
   it('joins the list room and refreshes once for a newer matching run event', async () => {
-    render(<RealtimeRunSync listId="list-1" revision={4} runId="run-1" />)
+    render(
+      <RealtimeRunSync
+        currentUserId="member-1"
+        listId="list-1"
+        revision={4}
+        runId="run-1"
+      />,
+    )
 
     act(() => realtime.handlers.get('connect')?.())
     expect(realtime.socket.emit).toHaveBeenCalledWith(
@@ -71,7 +81,14 @@ describe('RealtimeRunSync', () => {
   })
 
   it('does not refresh for malformed events or an event from another run', () => {
-    render(<RealtimeRunSync listId="list-1" revision={4} runId="run-1" />)
+    render(
+      <RealtimeRunSync
+        currentUserId="member-1"
+        listId="list-1"
+        revision={4}
+        runId="run-1"
+      />,
+    )
 
     act(() => {
       realtime.handlers.get('run:mutation')?.({
@@ -89,7 +106,14 @@ describe('RealtimeRunSync', () => {
   })
 
   it('recovers from a revision gap with one server snapshot refresh', async () => {
-    render(<RealtimeRunSync listId="list-1" revision={4} runId="run-1" />)
+    render(
+      <RealtimeRunSync
+        currentUserId="member-1"
+        listId="list-1"
+        revision={4}
+        runId="run-1"
+      />,
+    )
 
     act(() =>
       realtime.handlers.get('run:mutation')?.({
@@ -122,7 +146,12 @@ describe('RealtimeRunSync', () => {
 
   it('only clears recovery after the refreshed snapshot reports its revision', () => {
     const { rerender } = render(
-      <RealtimeRunSync listId="list-1" revision={4} runId="run-1" />,
+      <RealtimeRunSync
+        currentUserId="member-1"
+        listId="list-1"
+        revision={4}
+        runId="run-1"
+      />,
     )
 
     act(() =>
@@ -140,8 +169,51 @@ describe('RealtimeRunSync', () => {
       'Catching up with live updates',
     )
 
-    rerender(<RealtimeRunSync listId="list-1" revision={7} runId="run-1" />)
+    rerender(
+      <RealtimeRunSync
+        currentUserId="member-1"
+        listId="list-1"
+        revision={7}
+        runId="run-1"
+      />,
+    )
 
     expect(screen.getByRole('status')).toHaveTextContent('Live updates on')
+  })
+
+  it('batches remote change announcements and ignores the current shopper', () => {
+    vi.useFakeTimers()
+    render(
+      <RealtimeRunSync
+        currentUserId="member-1"
+        listId="list-1"
+        revision={4}
+        runId="run-1"
+      />,
+    )
+
+    const emit = (type: string, revision: number, actorId = 'member-2') =>
+      realtime.handlers.get('run:mutation')?.({
+        type,
+        listId: 'list-1',
+        runId: 'run-1',
+        revision,
+        operationId: `operation-${revision}`,
+        actorId,
+        occurredAt: `2026-09-10T12:00:0${revision}.000Z`,
+      })
+
+    act(() => emit('grocery.purchased.marked', 5, 'member-1'))
+    act(() => emit('grocery.purchased.marked', 6))
+    act(() => emit('grocery.amount-override.set', 7))
+
+    expect(screen.queryByText(/Another shopper made/)).not.toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(600))
+
+    expect(
+      screen.getByText(
+        'Another shopper made 2 shared changes: Purchased status and shopping amount.',
+      ),
+    ).toBeInTheDocument()
   })
 })

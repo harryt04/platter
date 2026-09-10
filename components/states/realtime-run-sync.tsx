@@ -4,7 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { io } from 'socket.io-client'
 import { clientEnv } from '@/lib/env/client'
-import { realtimeRunMutationEventSchema } from '@/lib/contracts/mutations'
+import {
+  realtimeRunMutationEventSchema,
+  type RealtimeRunMutationEvent,
+} from '@/lib/contracts/mutations'
 
 type ConnectionState =
   | 'connecting'
@@ -31,20 +34,72 @@ function connectionCopy(state: ConnectionState) {
   }
 }
 
+const remoteChangeLabels: Record<RealtimeRunMutationEvent['type'], string> = {
+  'grocery.purchased.marked': 'Purchased status',
+  'grocery.purchased.undone': 'Purchased status',
+  'grocery.already-have.marked': 'Already have status',
+  'grocery.already-have.undone': 'Already have status',
+  'grocery.amount-override.set': 'shopping amount',
+  'grocery.amount-override.reset': 'shopping amount',
+  'grocery.manual-item.added': 'grocery item',
+  'grocery.manual-item.updated': 'grocery item',
+  'grocery.manual-item.removed': 'grocery item',
+  'grocery.category.changed': 'grocery category',
+  'grocery.item.moved': 'grocery item order',
+  'grocery.category.moved': 'grocery category order',
+  'grocery.merge-split': 'grocery merge',
+  'recipe.selection.added': 'recipe selection',
+  'recipe.selection.people-changed': 'recipe selection',
+  'recipe.selection.removed': 'recipe selection',
+  'recipe.selection.duplicated': 'recipe selection',
+  'recipe.selection.repinned': 'recipe selection',
+}
+
+function formatRemoteChangeAnnouncement(
+  changeTypes: RealtimeRunMutationEvent['type'][],
+) {
+  const counts = new Map<string, number>()
+  for (const type of changeTypes) {
+    const label = remoteChangeLabels[type]
+    counts.set(label, (counts.get(label) ?? 0) + 1)
+  }
+
+  const details = [...counts].map(([label, count]) =>
+    count === 1 ? label : `${label} (${count})`,
+  )
+  const detailText =
+    details.length < 2
+      ? details[0]
+      : details.length === 2
+        ? details.join(' and ')
+        : `${details.slice(0, -1).join(', ')}, and ${details.at(-1)}`
+  const noun = changeTypes.length === 1 ? 'change' : 'changes'
+  return `Another shopper made ${changeTypes.length} shared ${noun}: ${detailText}.`
+}
+
 /** Keep the server-rendered active run fresh for other connected shoppers. */
 export function RealtimeRunSync({
   listId,
   runId,
   revision,
+  currentUserId,
 }: {
   listId: string
   runId: string
   revision: number
+  currentUserId: string
 }) {
   const router = useRouter()
   const latestRevision = useRef(revision)
   const refreshPending = useRef(false)
+  const pendingRemoteChanges = useRef<RealtimeRunMutationEvent['type'][]>([])
+  const announcementTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const announcementId = useRef(0)
   const [state, setState] = useState<ConnectionState>('connecting')
+  const [announcement, setAnnouncement] = useState<{
+    id: number
+    message: string
+  } | null>(null)
 
   useEffect(() => {
     latestRevision.current = revision
@@ -73,6 +128,22 @@ export function RealtimeRunSync({
       if (event.listId !== listId || event.runId !== runId) return
       if (event.revision <= latestRevision.current) return
 
+      if (event.actorId !== currentUserId) {
+        pendingRemoteChanges.current.push(event.type)
+        if (announcementTimer.current === null) {
+          announcementTimer.current = setTimeout(() => {
+            announcementTimer.current = null
+            const changeTypes = pendingRemoteChanges.current.splice(0)
+            if (changeTypes.length === 0) return
+            announcementId.current += 1
+            setAnnouncement({
+              id: announcementId.current,
+              message: formatRemoteChangeAnnouncement(changeTypes),
+            })
+          }, 600)
+        }
+      }
+
       const hasRevisionGap = event.revision > latestRevision.current + 1
       latestRevision.current = event.revision
       if (refreshPending.current) return
@@ -98,16 +169,31 @@ export function RealtimeRunSync({
       socket.off('foundation:error', handleFoundationError)
       socket.off('run:mutation', handleMutation)
       socket.disconnect()
+      if (announcementTimer.current !== null) {
+        clearTimeout(announcementTimer.current)
+        announcementTimer.current = null
+      }
+      pendingRemoteChanges.current = []
     }
-  }, [listId, router, runId])
+  }, [currentUserId, listId, router, runId])
 
   return (
-    <p
-      aria-live="polite"
-      className="text-muted-foreground text-xs"
-      role="status"
-    >
-      {connectionCopy(state)}
-    </p>
+    <>
+      <p
+        aria-live="polite"
+        className="text-muted-foreground text-xs"
+        role="status"
+      >
+        {connectionCopy(state)}
+      </p>
+      <p
+        aria-atomic="true"
+        aria-live="polite"
+        className="sr-only"
+        key={announcement?.id ?? 'empty'}
+      >
+        {announcement?.message ?? ''}
+      </p>
+    </>
   )
 }

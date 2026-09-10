@@ -176,6 +176,9 @@ coalesced server snapshot refresh, and the live-update status clears only after
 the refreshed run reports its authoritative revision. Realtime
 handshakes and every list-room join revalidate the Better Auth session before
 checking current list membership, so a known list ID cannot grant access.
+Remote mutation batches are announced through a polite, actor-aware live region
+with action categories and counts, while the originating shopper's own events
+remain silent to avoid duplicate announcements.
 The active run also shares a temporary within-category item order: members can
 use accessible move-up and move-down controls, while a newly created run begins
 at the documented default order. Members can also drag a category or use its

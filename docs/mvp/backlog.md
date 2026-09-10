@@ -519,7 +519,7 @@ and synchronize it honestly and safely when connectivity returns.
       reconnect synchronization remains a separate step below.
 - [ ] Offline users can check or uncheck, mark or undo `Already have`, and adjust
       shopping amounts with immediate local feedback.
-- [ ] Each queued operation has a unique operation ID, client ID, base revision,
+- [x] Each queued operation has a unique operation ID, client ID, base revision,
       attempt count, and visible pending, syncing, failed, or synced state.
 - [ ] Retries cannot duplicate manual additions or lose unrelated item changes;
       the latest server-accepted operation wins for the same field.

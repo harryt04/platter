@@ -357,7 +357,7 @@ interface QueuedOperation {
   baseRevision?: number
   createdAt: string
   attemptCount: number
-  status: 'pending' | 'syncing' | 'failed'
+  status: 'pending' | 'syncing' | 'failed' | 'synced'
 }
 ```
 

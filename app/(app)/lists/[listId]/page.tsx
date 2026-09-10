@@ -39,6 +39,7 @@ export default async function ListPage({
       const selection = selections[index]
       return selection && version ? [{ selection, version }] : []
     }),
+    manualAdditions: run?.manualAdditions ?? [],
   })
   const recipeIds = [
     ...new Set(selections.map((selection) => selection.recipeId)),

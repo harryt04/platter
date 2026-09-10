@@ -18,6 +18,7 @@ import {
   generateGroceryItems,
 } from '@/lib/recipes/groceries'
 import { notFound } from 'next/navigation'
+import { ManualGroceryItems } from '@/components/lists/manual-grocery-items'
 
 export default async function ReviewPage({
   params,
@@ -40,6 +41,7 @@ export default async function ReviewPage({
       const selection = selections[index]
       return selection && version ? [{ selection, version }] : []
     }),
+    manualAdditions: run?.manualAdditions ?? [],
   })
   const mergeSuggestions = findGroceryMergeSuggestions(groceryItems)
 
@@ -77,6 +79,13 @@ export default async function ReviewPage({
           </p>
         )}
       </PageSection>
+      <ManualGroceryItems
+        additions={run?.manualAdditions ?? []}
+        baseRevision={run?.revision}
+        editable={!isReadOnly}
+        listId={listId}
+        listName={list.name}
+      />
       <ManualOverride disabled={isReadOnly} />
     </ContentContainer>
   )

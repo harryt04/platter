@@ -11,6 +11,10 @@ import type {
   RecipeSelectionDocument,
   SelectionMutationReceipt,
 } from '@/lib/recipes/selections'
+import type {
+  ManualGroceryAdditionDocument,
+  ManualGroceryMutationReceipt,
+} from '@/lib/recipes/manual-groceries'
 
 const listNameSchema = z
   .string({ error: 'Enter a list name.' })
@@ -46,9 +50,10 @@ export type ShoppingRunDocument = {
   revision: number
   recipeSelections: RecipeSelectionDocument[]
   groceryItems: unknown[]
-  manualAdditions: unknown[]
+  manualAdditions: ManualGroceryAdditionDocument[]
   ordering: unknown[]
   selectionMutationReceipts?: SelectionMutationReceipt[]
+  manualMutationReceipts?: ManualGroceryMutationReceipt[]
   createdAt: IsoDateTime
   updatedAt: IsoDateTime
 }

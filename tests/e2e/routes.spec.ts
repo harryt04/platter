@@ -100,4 +100,40 @@ test.describe('authenticated list workflow', () => {
     await page.getByRole('button', { name: 'Add to this week' }).click()
     await expect(page.getByText(/scale 1\.5/)).toBeVisible()
   })
+
+  test('adds, edits, and removes a manual grocery item without changing recipes', async ({
+    page,
+  }) => {
+    await page.goto('/sign-in')
+    await page
+      .getByRole('textbox', { name: 'Email' })
+      .fill(process.env.E2E_USER_EMAIL!)
+    await page.getByLabel('Password').fill(process.env.E2E_USER_PASSWORD!)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await expect(page).toHaveURL(/\/lists$/)
+
+    await page.goto('/lists/new')
+    await page
+      .getByRole('textbox', { name: 'List name' })
+      .fill(`Manual groceries ${Date.now()}`)
+    await page.getByRole('button', { name: 'Create list' }).click()
+    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+
+    await page.getByRole('link', { name: 'Review at home' }).click()
+    await page.getByLabel('Add a grocery item').fill('2 bags spinach')
+    await page.getByRole('button', { name: 'Add item' }).click()
+    await expect(page.getByLabel('Manual grocery item 1')).toHaveValue(
+      '2 bags spinach',
+    )
+    await expect(page.getByText('spinach', { exact: true })).toBeVisible()
+
+    await page.getByLabel('Manual grocery item 1').fill('3 bags spinach')
+    await page.getByRole('button', { name: 'Save' }).click()
+    await expect(page.getByLabel('Manual grocery item 1')).toHaveValue(
+      '3 bags spinach',
+    )
+    await page.getByRole('button', { name: 'Remove' }).click()
+    await page.getByRole('button', { name: 'Remove item' }).click()
+    await expect(page.getByLabel('Manual grocery item 1')).toHaveCount(0)
+  })
 })

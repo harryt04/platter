@@ -118,6 +118,11 @@ Selection mutations carry client operation metadata, reject stale active-run
 revisions, and record a run-scoped receipt so a retried create, update,
 duplicate, remove, or repin replays its original result without applying the
 change twice.
+List owners and editors can also add, edit, and remove manual grocery items from
+the review and shopping views. Manual lines are parsed into the same safe
+ingredient facts as recipe lines, persist on the active run with revision-aware
+retry receipts, and remain labeled as independent manual contributions without
+changing any recipe or immutable recipe version.
 The library can search titles, ingredients, source metadata, and tags with
 stable cursor pagination while preserving the same ownership, membership, and
 saved-reference boundaries. Deleting a recipe explains current list impact,

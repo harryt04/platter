@@ -381,17 +381,17 @@ part of a recipe while preserving their independent provenance.
 
 **Blocked by:** 14: Combine compatible grocery contributions
 
-**Status:** ready-for-agent
+**Status:** implemented
 
-- [ ] An owner or editor can add, edit, and remove a manual grocery contribution
+- [x] An owner or editor can add, edit, and remove a manual grocery contribution
       without changing a recipe or recipe version.
-- [ ] A manual contribution participates in safe aggregation and is labeled in
+- [x] A manual contribution participates in safe aggregation and is labeled in
       the contribution breakdown.
-- [ ] Removing a selected recipe preserves unrelated recipe contributions,
+- [x] Removing a selected recipe preserves unrelated recipe contributions,
       manual additions, and intentional item state.
-- [ ] Repeated or retried creation with the same operation ID cannot duplicate
+- [x] Repeated or retried creation with the same operation ID cannot duplicate
       a manual item.
-- [ ] Validation, authorization, optimistic feedback, and contribution-removal
+- [x] Validation, authorization, optimistic feedback, and contribution-removal
       behavior have integration and browser coverage.
 
 ## 17: Override shopping amounts

@@ -19,6 +19,7 @@ import {
   generateGroceryItems,
 } from '@/lib/recipes/groceries'
 import { notFound } from 'next/navigation'
+import { ManualGroceryItems } from '@/components/lists/manual-grocery-items'
 
 export default async function ShopPage({
   params,
@@ -41,6 +42,7 @@ export default async function ShopPage({
       const selection = selections[index]
       return selection && version ? [{ selection, version }] : []
     }),
+    manualAdditions: run?.manualAdditions ?? [],
   })
   const mergeSuggestions = findGroceryMergeSuggestions(groceryItems)
 
@@ -88,6 +90,13 @@ export default async function ShopPage({
           </p>
         )}
       </PageSection>
+      <ManualGroceryItems
+        additions={run?.manualAdditions ?? []}
+        baseRevision={run?.revision}
+        editable={!isReadOnly}
+        listId={listId}
+        listName={list.name}
+      />
     </ContentContainer>
   )
 }

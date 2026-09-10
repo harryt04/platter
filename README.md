@@ -153,7 +153,11 @@ unsafe redirects, and oversized responses become isolated import failures;
 transient DNS, timeout, and upstream failures retry with bounded exponential
 backoff before becoming terminal. Fetched content is held only for the later
 extraction and review stage; it is never treated as approved or public by the
-fetch stage.
+fetch stage. The first extraction stage now recognizes Schema.org `Recipe`
+JSON-LD without executing source markup and maps bounded title, yield,
+ingredients, instructions, timing, classification, and source-attribution facts
+into the structured editor candidate shape; missing fields remain explicit
+warnings for review.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

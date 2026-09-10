@@ -631,7 +631,7 @@ secure import
 
 **Status:** ready-for-agent
 
-- [ ] The base adapter extracts Schema.org `Recipe` data when present and maps
+- [x] The base adapter extracts Schema.org `Recipe` data when present and maps
       title, yield, ingredients, instructions, metadata, and attribution into the
       structured editor.
 - [ ] The preview lets the user correct title, typical yield, ingredient

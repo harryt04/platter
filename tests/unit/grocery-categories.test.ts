@@ -3,6 +3,7 @@ import {
   defaultGroceryCategoryOrder,
   defaultGroceryCategory,
   groupGroceryItemsByDefaultCategory,
+  groupGroceryItemsByCategoryOrder,
   groceryCategoryDefinitions,
   sortGroceryItemsByDefaultOrder,
 } from '@/lib/recipes/grocery-categories'
@@ -85,6 +86,28 @@ describe('default grocery categories', () => {
       { category: 'dairy-eggs', itemIds: ['milk'] },
       { category: 'baking', itemIds: ['flour'] },
       { category: 'other', itemIds: ['zeta'] },
+    ])
+  })
+
+  it('uses a current-run item order only within its existing category', () => {
+    const items = [
+      { id: 'apple', category: 'produce' as const, ingredientName: 'Apple' },
+      { id: 'onion', category: 'produce' as const, ingredientName: 'Onion' },
+      { id: 'milk', category: 'dairy-eggs' as const, ingredientName: 'Milk' },
+    ]
+
+    expect(
+      groupGroceryItemsByCategoryOrder(items, [
+        'onion',
+        'missing',
+        'apple',
+      ]).map(({ category, items }) => ({
+        category,
+        ids: items.map(({ id }) => id),
+      })),
+    ).toEqual([
+      { category: 'produce', ids: ['onion', 'apple'] },
+      { category: 'dairy-eggs', ids: ['milk'] },
     ])
   })
 })

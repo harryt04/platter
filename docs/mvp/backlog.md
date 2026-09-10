@@ -452,7 +452,7 @@ order while allowing that list's members to adapt it temporarily.
       accessible selector.
 - [ ] Members can reorder categories or items for the current run using pointer,
       keyboard, and button-based controls.
-- [ ] Custom ordering is shared within the list but never copied into the next
+- [x] Custom ordering is shared within the list but never copied into the next
       active run.
 - [ ] Ordering mutations are revision-aware, idempotent, and tested for
       accessibility and concurrent edits.

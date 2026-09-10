@@ -23,8 +23,9 @@ import { GroceryAmountOverrideForm } from '@/components/lists/grocery-amount-ove
 import { ManualGroceryItems } from '@/components/lists/manual-grocery-items'
 import { ShoppingModeNavigation } from '@/components/lists/shopping-mode-navigation'
 import { GroceryCategorySelect } from '@/components/lists/grocery-category-select'
+import { GroceryItemOrderControls } from '@/components/lists/grocery-item-order-controls'
 import {
-  groupGroceryItemsByDefaultCategory,
+  groupGroceryItemsByCategoryOrder,
   groceryCategoryDefinitions,
 } from '@/lib/recipes/grocery-categories'
 
@@ -63,7 +64,10 @@ export default async function ShopPage({
   const buyGroceryItems = groceryItems.filter(
     (item) => !alreadyHaveItemIds.has(item.id),
   )
-  const groceryItemGroups = groupGroceryItemsByDefaultCategory(buyGroceryItems)
+  const groceryItemGroups = groupGroceryItemsByCategoryOrder(
+    buyGroceryItems,
+    run?.ordering,
+  )
 
   return (
     <ContentContainer>
@@ -103,7 +107,7 @@ export default async function ShopPage({
                   {groceryCategoryDefinitions[category].label}
                 </h3>
                 <div className="space-y-3">
-                  {items.map((item) => (
+                  {items.map((item, itemIndex) => (
                     <div className="space-y-2" key={item.id}>
                       <GroceryRow
                         item={item}
@@ -117,6 +121,15 @@ export default async function ShopPage({
                       <GroceryCategorySelect
                         baseRevision={run?.revision}
                         category={item.category}
+                        editable={!isReadOnly}
+                        ingredientName={item.ingredientName}
+                        itemId={item.id}
+                        listId={listId}
+                      />
+                      <GroceryItemOrderControls
+                        baseRevision={run?.revision}
+                        canMoveDown={itemIndex < items.length - 1}
+                        canMoveUp={itemIndex > 0}
                         editable={!isReadOnly}
                         ingredientName={item.ingredientName}
                         itemId={item.id}

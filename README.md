@@ -157,6 +157,9 @@ access for each grocery item. Members can mark an item
 view and can be restored with its existing override and provenance intact. The
 review and shopping modes remain directly linked after shopping starts, with
 touch-safe narrow layouts and live state feedback for `Already have` changes.
+The active run also shares a temporary within-category item order: members can
+use accessible move-up and move-down controls, while a newly created run begins
+at the documented default order.
 The library can search titles, ingredients, source metadata, and tags with
 stable cursor pagination while preserving the same ownership, membership, and
 saved-reference boundaries. Deleting a recipe explains current list impact,

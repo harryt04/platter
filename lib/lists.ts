@@ -31,6 +31,7 @@ import type {
   GroceryCategoryOverrideDocument,
   GroceryCategoryOverrideMutationReceipt,
 } from '@/lib/recipes/grocery-categories-overrides'
+import type { GroceryItemOrderMutationReceipt } from '@/lib/recipes/grocery-ordering'
 
 const listNameSchema = z
   .string({ error: 'Enter a list name.' })
@@ -68,7 +69,8 @@ export type ShoppingRunDocument = {
   groceryItems: unknown[]
   manualAdditions: ManualGroceryAdditionDocument[]
   groceryAmountOverrides?: GroceryAmountOverrideDocument[]
-  ordering: unknown[]
+  /** Explicit item order for this active run only; absent IDs are ignored. */
+  ordering: string[]
   selectionMutationReceipts?: SelectionMutationReceipt[]
   manualMutationReceipts?: ManualGroceryMutationReceipt[]
   groceryOverrideMutationReceipts?: GroceryOverrideMutationReceipt[]
@@ -78,6 +80,7 @@ export type ShoppingRunDocument = {
   groceryAlreadyHaveMutationReceipts?: GroceryAlreadyHaveMutationReceipt[]
   groceryCategoryOverrides?: GroceryCategoryOverrideDocument[]
   groceryCategoryOverrideMutationReceipts?: GroceryCategoryOverrideMutationReceipt[]
+  groceryItemOrderMutationReceipts?: GroceryItemOrderMutationReceipt[]
   createdAt: IsoDateTime
   updatedAt: IsoDateTime
 }

@@ -130,6 +130,30 @@ export function groupGroceryItemsByDefaultCategory<
   })
 }
 
+/**
+ * Apply an active run's explicit item order without changing the documented
+ * category route. Unknown or no-longer-generated IDs are ignored, so a later
+ * grocery regeneration safely falls back to the deterministic default.
+ */
+export function groupGroceryItemsByCategoryOrder<
+  T extends CategorizedGroceryItem,
+>(items: readonly T[], itemOrder: readonly string[] = []) {
+  const orderIndex = new Map(itemOrder.map((id, index) => [id, index]))
+  return groupGroceryItemsByDefaultCategory(items).map((group) => ({
+    ...group,
+    items: [...group.items].sort((left, right) => {
+      const leftIndex = orderIndex.get(left.id)
+      const rightIndex = orderIndex.get(right.id)
+      if (leftIndex === undefined && rightIndex === undefined) {
+        return compareGroceryItemsByDefaultOrder(left, right)
+      }
+      if (leftIndex === undefined) return 1
+      if (rightIndex === undefined) return -1
+      return leftIndex - rightIndex
+    }),
+  }))
+}
+
 const categoryKeywords: ReadonlyArray<readonly [GroceryCategory, ...string[]]> =
   [
     [

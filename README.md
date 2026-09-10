@@ -39,7 +39,9 @@ opens to an authorized detail view showing its completion date, completing
 member, immutable recipe versions, and people counts without retaining a final
 checklist. Members can explicitly add those pinned recipe versions and people
 counts to the current run again; the action is idempotent and never restores
-the old checklist state.
+the old checklist state. Repetition rebuilds each selection from its
+allowlisted immutable version and people count, so prior ordering, purchased,
+already-have, override, and pantry state cannot cross the run boundary.
 The ingredient parser now recognizes common quantity forms, preserves source
 text, records qualitative confidence and a stable normalized identity when the
 parse is sufficient, resolves a bounded set of high-confidence ingredient

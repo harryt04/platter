@@ -15,12 +15,14 @@ import {
   type RecipeVersionDocument,
 } from '@/lib/recipes/drafts'
 import {
-  createRecipeSelectionDocument,
   selectionMutationReceiptFor,
   type RecipeSelectionDocument,
   type SelectionMutationReceipt,
 } from '@/lib/recipes/selections'
-import type { ShoppingRunHistoryDocument } from '@/lib/shopping-run-history'
+import {
+  createRepeatedRecipeSelection,
+  type ShoppingRunHistoryDocument,
+} from '@/lib/shopping-run-history'
 import { publishRunMutationEvent } from '@/lib/realtime/events'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { z } from 'zod'
@@ -231,9 +233,7 @@ export async function POST(request: Request, context: RouteContext) {
       return recipeVersionUnavailable()
     }
 
-    historicalSelections.push(
-      createRecipeSelectionDocument(version, reference.desiredPeople),
-    )
+    historicalSelections.push(createRepeatedRecipeSelection(reference, version))
   }
 
   const response = {

@@ -1,6 +1,7 @@
 import type { Db } from 'mongodb'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  createRepeatedRecipeSelection,
   decodeShoppingRunHistoryCursor,
   findShoppingRunHistory,
   formatShoppingRunHistoryDate,
@@ -36,6 +37,64 @@ function history(
 }
 
 describe('shopping run history', () => {
+  it('rebuilds a fresh selection from only the historical version and people count', () => {
+    const selection = createRepeatedRecipeSelection(
+      {
+        _id: 'old-selection',
+        recipeId: 'recipe-1',
+        versionId: 'version-3',
+        versionNumber: 3,
+        desiredPeople: 6,
+      },
+      {
+        _id: 'version-3',
+        recipeId: 'recipe-1',
+        versionNumber: 3,
+        typicalPeopleFed: 4,
+      },
+      new Date('2026-09-10T18:00:00.000Z'),
+    )
+
+    expect(selection).toMatchObject({
+      recipeId: 'recipe-1',
+      versionId: 'version-3',
+      versionNumber: 3,
+      desiredPeople: 6,
+      scaleFactor: '1.5',
+    })
+    expect(selection._id).not.toBe('old-selection')
+    expect(Object.keys(selection).sort()).toEqual([
+      '_id',
+      'createdAt',
+      'desiredPeople',
+      'recipeId',
+      'scaleFactor',
+      'updatedAt',
+      'versionId',
+      'versionNumber',
+    ])
+  })
+
+  it('rejects a mismatched historical version instead of silently repinning', () => {
+    expect(() =>
+      createRepeatedRecipeSelection(
+        {
+          _id: 'old-selection',
+          recipeId: 'recipe-1',
+          versionId: 'version-3',
+          versionNumber: 3,
+          desiredPeople: 2,
+        },
+        {
+          _id: 'version-4',
+          recipeId: 'recipe-1',
+          versionNumber: 4,
+          typicalPeopleFed: 4,
+        },
+      ),
+    ).toThrow('The historical recipe version does not match.')
+  })
+
   it('finds one entry only within its authorized list', async () => {
     const histories = {
       findOne: vi

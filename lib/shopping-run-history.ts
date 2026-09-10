@@ -1,7 +1,11 @@
 import { z } from 'zod'
 import type { Db } from 'mongodb'
 import { isoDateTime, type IsoDateTime } from '@/lib/contracts/ids'
-import type { RecipeSelectionDocument } from '@/lib/recipes/selections'
+import {
+  createRecipeSelectionDocument,
+  type RecipeSelectionDocument,
+} from '@/lib/recipes/selections'
+import type { RecipeVersionDocument } from '@/lib/recipes/drafts'
 
 /** The only recipe facts retained after an active run is completed. */
 export type CompletedRecipeSelection = Pick<
@@ -165,4 +169,27 @@ export function createShoppingRunHistoryDocument(
       }),
     ),
   }
+}
+
+/**
+ * Rebuild one selection from the allowlisted facts retained in history.
+ * Checklist state is deliberately not part of this boundary.
+ */
+export function createRepeatedRecipeSelection(
+  reference: CompletedRecipeSelection,
+  version: Pick<
+    RecipeVersionDocument,
+    '_id' | 'recipeId' | 'versionNumber' | 'typicalPeopleFed'
+  >,
+  now = new Date(),
+): RecipeSelectionDocument {
+  if (
+    version._id !== reference.versionId ||
+    version.recipeId !== reference.recipeId ||
+    version.versionNumber !== reference.versionNumber
+  ) {
+    throw new Error('The historical recipe version does not match.')
+  }
+
+  return createRecipeSelectionDocument(version, reference.desiredPeople, now)
 }

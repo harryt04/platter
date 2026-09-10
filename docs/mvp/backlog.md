@@ -592,7 +592,7 @@ make those selections useful again without restoring an old checklist.
       cooked or that every item was purchased.
 - [x] A member can explicitly add a recent run's recipe versions and people
       counts to the current run through normal selection rules.
-- [ ] Repeating a run generates a fresh checklist with default ordering and no
+- [x] Repeating a run generates a fresh checklist with default ordering and no
       old purchased, already-have, override, or pantry state.
 - [ ] Integration and browser tests cover historical version resolution,
       authorization, date lookup, and repeat behavior.

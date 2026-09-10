@@ -49,6 +49,12 @@ const history = {
       desiredPeople: 6,
     },
   ],
+  // Legacy history documents must not be able to smuggle checklist state into
+  // the repeated selection.
+  purchasedItems: [{ itemId: 'old-grocery-item' }],
+  alreadyHaveItems: [{ itemId: 'old-grocery-item' }],
+  groceryAmountOverrides: [{ itemId: 'old-grocery-item' }],
+  ordering: ['old-grocery-item'],
 }
 
 const recipe = {
@@ -173,6 +179,15 @@ describe('POST /api/v1/lists/[listId]/history/[runId]/repeat', () => {
         $inc: { revision: 1 },
       }),
       { returnDocument: 'after' },
+    )
+    const update = database.runs.findOneAndUpdate.mock.calls[0]?.[1] as {
+      $push?: { recipeSelections?: { $each?: Array<Record<string, unknown>> } }
+    }
+    expect(update.$push?.recipeSelections?.$each?.[0]).not.toHaveProperty(
+      'purchasedItems',
+    )
+    expect(update.$push?.recipeSelections?.$each?.[0]).not.toHaveProperty(
+      'ordering',
     )
   })
 

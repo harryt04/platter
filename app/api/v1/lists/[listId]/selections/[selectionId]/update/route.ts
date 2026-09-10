@@ -8,6 +8,7 @@ import {
 } from '@/lib/lists'
 import { problemResponse } from '@/lib/contracts/problem'
 import { publishRunMutationEvent } from '@/lib/realtime/events'
+import { completedRunProblem } from '@/lib/contracts/run-mutation'
 import {
   ownedRecipeFilter,
   publicRecipeFilter,
@@ -140,6 +141,7 @@ export async function POST(request: Request, context: RouteContext) {
       'Unarchive this list before accepting a recipe update.',
     )
   }
+  if (list.activeRunId !== parsed.data.runId) return completedRunProblem()
 
   const runs = db.collection<ShoppingRunDocument>('shopping_runs')
   const currentRun = await runs.findOne({

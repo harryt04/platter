@@ -14,6 +14,7 @@ import {
   updateManualGroceryAdditionDocument,
 } from '@/lib/recipes/manual-groceries'
 import { selectionMutationMetadataSchema } from '@/lib/recipes/selections'
+import { completedRunProblem } from '@/lib/contracts/run-mutation'
 
 type RouteContext = {
   params: Promise<{ listId: string; additionId: string }>
@@ -40,7 +41,7 @@ function validationFailed(fields?: Record<string, string[]>) {
   })
 }
 
-async function loadRun(listId: string, userId: string) {
+async function loadRun(listId: string, userId: string, runId: string) {
   const db = await getConnectedDatabase()
   const list = await db
     .collection<ListDocument>('lists')
@@ -48,7 +49,7 @@ async function loadRun(listId: string, userId: string) {
   if (!list) return { db, list: null, run: null }
   const run = await db
     .collection<ShoppingRunDocument>('shopping_runs')
-    .findOne({ _id: list.activeRunId, listId, state: 'active' })
+    .findOne({ _id: runId, listId, state: 'active' })
   return { db, list, run }
 }
 
@@ -98,7 +99,11 @@ export async function PATCH(request: Request, context: RouteContext) {
     return validationFailed(fields)
   }
 
-  const { db, list, run } = await loadRun(listId, session.user.id)
+  const { db, list, run } = await loadRun(
+    listId,
+    session.user.id,
+    parsed.data.runId,
+  )
   if (!list)
     return problem(
       'LIST_NOT_FOUND',
@@ -106,6 +111,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       'That list is not available to you.',
       404,
     )
+  if (list.activeRunId !== parsed.data.runId) return completedRunProblem()
   if (list.status !== 'active' || !run)
     return problem(
       'LIST_NOT_ACTIVE',
@@ -241,7 +247,11 @@ export async function DELETE(request: Request, context: RouteContext) {
   const parsed = selectionMutationMetadataSchema.safeParse(body)
   if (!parsed.success) return validationFailed()
 
-  const { db, list, run } = await loadRun(listId, session.user.id)
+  const { db, list, run } = await loadRun(
+    listId,
+    session.user.id,
+    parsed.data.runId,
+  )
   if (!list)
     return problem(
       'LIST_NOT_FOUND',
@@ -249,6 +259,7 @@ export async function DELETE(request: Request, context: RouteContext) {
       'That list is not available to you.',
       404,
     )
+  if (list.activeRunId !== parsed.data.runId) return completedRunProblem()
   if (list.status !== 'active' || !run)
     return problem(
       'LIST_NOT_ACTIVE',

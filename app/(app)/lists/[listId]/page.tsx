@@ -201,6 +201,7 @@ export default async function ListPage({
                     key={selection._id}
                     listId={listId}
                     listName={list.name}
+                    runId={run?._id ?? list.activeRunId}
                     newerVersionNumber={newerVersionNumber}
                     recipeId={selection.recipeId}
                     recipeTitle={version.title}

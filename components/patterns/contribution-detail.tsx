@@ -20,11 +20,13 @@ function contributionSource(contribution: GroceryContribution) {
 export function ContributionDetail({
   item,
   listId,
+  runId,
   baseRevision,
   editable = true,
 }: {
   item?: GroceryItem
   listId?: string
+  runId?: string
   baseRevision?: number
   editable?: boolean
 }) {
@@ -94,6 +96,7 @@ export function ContributionDetail({
                   ingredientName={item.ingredientName}
                   itemId={item.id}
                   listId={listId}
+                  runId={runId}
                 />
               )}
             </div>

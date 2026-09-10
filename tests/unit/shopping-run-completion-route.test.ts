@@ -55,6 +55,7 @@ function request(body: unknown) {
 
 function metadata(operationId = 'complete-1', baseRevision?: number) {
   return {
+    runId: 'run-1',
     operationId,
     clientId: 'client-1',
     localDate: '2026-09-10',

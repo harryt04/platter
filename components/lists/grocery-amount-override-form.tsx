@@ -84,7 +84,7 @@ export function GroceryAmountOverrideForm({
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             quantity: { min: amount.trim() },
-            ...createMutationMetadata(currentRevision),
+            ...createMutationMetadata(currentRevision, runId),
           }),
         },
       )
@@ -136,7 +136,7 @@ export function GroceryAmountOverrideForm({
         {
           method: 'DELETE',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(createMutationMetadata(currentRevision)),
+          body: JSON.stringify(createMutationMetadata(currentRevision, runId)),
         },
       )
       const body = (await response.json()) as {

@@ -10,6 +10,7 @@ import { problemResponse } from '@/lib/contracts/problem'
 import { publishRunMutationEvent } from '@/lib/realtime/events'
 import { resolveRunRecipeVersions } from '@/lib/recipes/versions'
 import { generateGroceryItems } from '@/lib/recipes/groceries'
+import { completedRunProblem } from '@/lib/contracts/run-mutation'
 import {
   createGroceryPurchasedDocument,
   groceryPurchasedMutationReceiptFor,
@@ -124,6 +125,9 @@ async function loadContext(
         409,
       ),
     }
+
+  if (list.activeRunId !== parsed.data.runId)
+    return { response: completedRunProblem() }
 
   const runs = db.collection<ShoppingRunDocument>('shopping_runs')
   const run = await runs.findOne({

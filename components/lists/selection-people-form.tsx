@@ -14,6 +14,7 @@ export function SelectionPeopleForm({
   listName,
   recipeId,
   selectionId,
+  runId,
   recipeTitle,
   initialPeople,
   initialScaleFactor,
@@ -25,6 +26,7 @@ export function SelectionPeopleForm({
   listName: string
   recipeId: string
   selectionId: string
+  runId?: string
   recipeTitle: string
   initialPeople: number
   initialScaleFactor: string
@@ -52,7 +54,7 @@ export function SelectionPeopleForm({
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             desiredPeople,
-            ...createMutationMetadata(baseRevision),
+            ...createMutationMetadata(baseRevision, runId),
           }),
         },
       )
@@ -85,7 +87,7 @@ export function SelectionPeopleForm({
         {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(createMutationMetadata(baseRevision)),
+          body: JSON.stringify(createMutationMetadata(baseRevision, runId)),
         },
       )
       const body = (await response.json()) as {
@@ -173,6 +175,7 @@ export function SelectionPeopleForm({
             listId={listId}
             recipeTitle={recipeTitle}
             selectionId={selectionId}
+            runId={runId}
             baseRevision={baseRevision}
           />
           <RemoveSelectionButton
@@ -181,6 +184,7 @@ export function SelectionPeopleForm({
             recipeTitle={recipeTitle}
             selectionId={selectionId}
             baseRevision={baseRevision}
+            runId={runId}
           />
         </div>
       ) : (

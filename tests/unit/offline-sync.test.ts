@@ -66,11 +66,13 @@ describe('offline mutation synchronization', () => {
       expect.objectContaining({ method: 'DELETE' }),
     )
     expect(JSON.parse(request.mock.calls[0][1].body as string)).toEqual({
+      runId: 'run-1',
       operationId: 'latest',
       clientId: 'client-1',
       baseRevision: 4,
     })
     expect(JSON.parse(request.mock.calls[1][1].body as string)).toEqual({
+      runId: 'run-1',
       operationId: 'other',
       clientId: 'client-1',
       baseRevision: 5,
@@ -107,6 +109,7 @@ describe('offline mutation synchronization', () => {
 
     expect(request).toHaveBeenCalledTimes(2)
     expect(JSON.parse(request.mock.calls[1][1].body as string)).toEqual({
+      runId: 'run-1',
       operationId: 'operation-1',
       clientId: 'client-1',
     })
@@ -133,6 +136,34 @@ describe('offline mutation synchronization', () => {
       expect.objectContaining({
         status: 'failed',
         syncMessage: 'That list is not available to you.',
+      }),
+    )
+  })
+
+  it('fails a queued write for a completed run without replaying it onto the new run', async () => {
+    offline.getOfflineOperations.mockResolvedValue([operation()])
+    const request = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          code: 'RUN_COMPLETED',
+          detail:
+            'This shopping run was completed on another device. Refresh to use the new active run.',
+        }),
+        { status: 409 },
+      ),
+    )
+
+    await expect(
+      synchronizeOfflineOperations('user-1', request),
+    ).resolves.toEqual({ attempted: 1, synced: 0, failed: 1 })
+    expect(request).toHaveBeenCalledOnce()
+    expect(offline.updateOfflineOperation).toHaveBeenLastCalledWith(
+      'user-1',
+      'operation-1',
+      expect.objectContaining({
+        status: 'failed',
+        syncMessage:
+          'This shopping run was completed on another device. Refresh to use the new active run.',
       }),
     )
   })

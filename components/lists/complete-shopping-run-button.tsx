@@ -27,11 +27,13 @@ function localCalendarDate() {
 export function CompleteShoppingRunButton({
   listId,
   listName,
+  runId,
   baseRevision,
   disabled = false,
 }: {
   listId: string
   listName: string
+  runId?: string
   baseRevision?: number
   disabled?: boolean
 }) {
@@ -51,7 +53,7 @@ export function CompleteShoppingRunButton({
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
-            ...createMutationMetadata(baseRevision),
+            ...createMutationMetadata(baseRevision, runId),
             localDate: localCalendarDate(),
           }),
         },

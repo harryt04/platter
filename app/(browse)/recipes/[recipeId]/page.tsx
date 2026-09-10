@@ -93,6 +93,7 @@ export default async function RecipePage({
             lists={memberLists.map((list) => ({
               id: list._id,
               name: list.name,
+              activeRunId: list.activeRunId,
               activeRunRevision: revisionsByRunId.get(list.activeRunId),
             }))}
             recipeId={recipe.recipeId}

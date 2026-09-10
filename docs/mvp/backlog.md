@@ -566,7 +566,7 @@ and reconciliation; 23: Complete a shopping run atomically
 
 - [x] Connected clients promptly receive completion and open or offer the new
       active run with the completing member identified.
-- [ ] The server rejects all later writes to the completed run, regardless of
+- [x] The server rejects all later writes to the completed run, regardless of
       cached membership or base revision.
 - [ ] On reconnection, queued old-run operations fail without mutating history
       and the UI explains that the run was completed on another device.

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { DecimalString, EntityId, IsoDateTime } from './ids'
 
 export interface MutationMetadata {
+  runId?: string
   operationId: string
   clientId: string
   baseRevision?: number
@@ -12,6 +13,7 @@ const mutationClientStorageKey = 'platter-client-id'
 /** Create retry-safe metadata for a client-originated mutation. */
 export function createMutationMetadata(
   baseRevision?: number,
+  runId?: string,
 ): MutationMetadata {
   let clientId = 'server-client'
   if (typeof window !== 'undefined') {
@@ -27,6 +29,7 @@ export function createMutationMetadata(
   }
 
   return {
+    ...(runId === undefined ? {} : { runId }),
     operationId: crypto.randomUUID(),
     clientId,
     ...(baseRevision === undefined ? {} : { baseRevision }),

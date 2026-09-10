@@ -15,10 +15,12 @@ import {
 } from '@/lib/shopping-run-history'
 import { z } from 'zod'
 import { publishRunCompletionEvent } from '@/lib/realtime/events'
+import { completedRunProblem } from '@/lib/contracts/run-mutation'
 
 type RouteContext = { params: Promise<{ listId: string }> }
 
 const completionRequestSchema = z.object({
+  runId: z.string().trim().min(1).max(200),
   operationId: z.string().trim().min(1).max(200),
   clientId: z.string().trim().min(1).max(200),
   baseRevision: z.number().int().nonnegative().optional(),
@@ -135,6 +137,7 @@ export async function POST(request: Request, context: RouteContext) {
   const list = await lists.findOne(listRoleFilter(listId, session.user.id))
   if (!list) return listNotFound()
   if (list.status !== 'active') return runUnavailable()
+  if (list.activeRunId !== parsed.data.runId) return completedRunProblem()
 
   try {
     const receipt = findCompletionReceipt(
@@ -148,7 +151,7 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const run = await runs.findOne({
-    _id: list.activeRunId,
+    _id: parsed.data.runId,
     listId,
     state: 'active',
   })

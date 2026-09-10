@@ -9,6 +9,7 @@ import {
 import { problemResponse } from '@/lib/contracts/problem'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { publishRunMutationEvent } from '@/lib/realtime/events'
+import { completedRunProblem } from '@/lib/contracts/run-mutation'
 import { type RecipeVersionDocument } from '@/lib/recipes/drafts'
 import {
   selectionMutationReceiptFor,
@@ -153,6 +154,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     .findOne(listRoleFilter(listId, session.user.id))
   if (!list) return listNotFound()
   if (list.status !== 'active') return archivedList()
+  if (list.activeRunId !== parsed.data.runId) return completedRunProblem()
 
   const runs = db.collection<ShoppingRunDocument>('shopping_runs')
   const currentRun = await runs.findOne({

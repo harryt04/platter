@@ -79,6 +79,7 @@ describe('grocery category route', () => {
     const response = await PATCH(
       request({
         category: 'pantry',
+        runId: 'run-1',
         operationId: 'category-1',
         clientId: 'client-1',
         baseRevision: 3,
@@ -115,6 +116,7 @@ describe('grocery category route', () => {
     const response = await PATCH(
       request({
         category: 'secret aisle',
+        runId: 'run-1',
         operationId: 'category-1',
         clientId: 'client-1',
       }),

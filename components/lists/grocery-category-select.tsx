@@ -13,6 +13,7 @@ export function GroceryCategorySelect({
   ingredientName,
   category,
   listId,
+  runId,
   baseRevision,
   editable = true,
 }: {
@@ -20,6 +21,7 @@ export function GroceryCategorySelect({
   ingredientName: string
   category: GroceryCategory
   listId: string
+  runId?: string
   baseRevision?: number
   editable?: boolean
 }) {
@@ -39,7 +41,7 @@ export function GroceryCategorySelect({
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             category: nextCategory,
-            ...createMutationMetadata(baseRevision),
+            ...createMutationMetadata(baseRevision, runId),
           }),
         },
       )

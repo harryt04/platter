@@ -93,6 +93,7 @@ describe('grocery item order route', () => {
     const response = await PATCH(
       request({
         direction: 'up',
+        runId: 'run-1',
         operationId: 'order-1',
         clientId: 'client-1',
         baseRevision: 3,
@@ -127,6 +128,7 @@ describe('grocery item order route', () => {
     const response = await PATCH(
       request({
         direction: 'up',
+        runId: 'run-1',
         operationId: 'order-1',
         clientId: 'client-1',
         baseRevision: 2,

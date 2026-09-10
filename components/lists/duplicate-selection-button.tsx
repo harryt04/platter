@@ -10,6 +10,7 @@ export function DuplicateSelectionButton({
   selectionId,
   recipeTitle,
   desiredPeople,
+  runId,
   baseRevision,
   editable = true,
 }: {
@@ -17,6 +18,7 @@ export function DuplicateSelectionButton({
   selectionId: string
   recipeTitle: string
   desiredPeople: number
+  runId?: string
   baseRevision?: number
   editable?: boolean
 }) {
@@ -35,7 +37,7 @@ export function DuplicateSelectionButton({
         {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(createMutationMetadata(baseRevision)),
+          body: JSON.stringify(createMutationMetadata(baseRevision, runId)),
         },
       )
       const body = (await response.json()) as {

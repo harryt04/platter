@@ -67,6 +67,7 @@ function databaseFor(currentRun: Record<string, unknown> = {}) {
   return {
     db: { collection: vi.fn((name: string) => collections[name]) },
     runs,
+    list,
   }
 }
 
@@ -82,11 +83,12 @@ function request(method: string, body: unknown) {
 }
 
 function metadata(operationId: string, baseRevision = 3) {
-  return { operationId, clientId: 'client-1', baseRevision }
+  return { runId: 'run-1', operationId, clientId: 'client-1', baseRevision }
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  list.activeRunId = 'run-1'
   getSession.mockResolvedValue({ user: { id: 'user-1' } })
 })
 
@@ -132,6 +134,26 @@ describe('purchased grocery route', () => {
         actorId: 'user-1',
       }),
     )
+  })
+
+  it('rejects a write carrying the completed run id before reading or changing it', async () => {
+    const database = databaseFor()
+    database.list.activeRunId = 'run-2'
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await PATCH(
+      request('PATCH', metadata('completed-run-write')),
+      context(),
+    )
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({
+      code: 'RUN_COMPLETED',
+      detail:
+        'This shopping run was completed on another device. Refresh to use the new active run.',
+    })
+    expect(database.runs.findOne).not.toHaveBeenCalled()
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
   })
 
   it('keeps purchased separate from already-have and makes repeated checks idempotent', async () => {

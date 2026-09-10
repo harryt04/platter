@@ -10,6 +10,7 @@ export function GroceryItemOrderControls({
   itemId,
   ingredientName,
   listId,
+  runId,
   baseRevision,
   canMoveUp,
   canMoveDown,
@@ -18,6 +19,7 @@ export function GroceryItemOrderControls({
   itemId: string
   ingredientName: string
   listId: string
+  runId?: string
   baseRevision?: number
   canMoveUp: boolean
   canMoveDown: boolean
@@ -38,7 +40,7 @@ export function GroceryItemOrderControls({
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             direction,
-            ...createMutationMetadata(baseRevision),
+            ...createMutationMetadata(baseRevision, runId),
           }),
         },
       )

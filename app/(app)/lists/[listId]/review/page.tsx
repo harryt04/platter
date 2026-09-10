@@ -126,6 +126,7 @@ export default async function ReviewPage({
                 editable={!isReadOnly}
                 key={category}
                 listId={listId}
+                runId={run?._id ?? list.activeRunId}
               >
                 {items.map((item, itemIndex) => (
                   <div className="space-y-2" key={item.id} role="listitem">
@@ -136,6 +137,7 @@ export default async function ReviewPage({
                       )}
                       baseRevision={run?.revision}
                       listId={listId}
+                      runId={run?._id ?? list.activeRunId}
                       editable={!isReadOnly}
                       state={
                         purchasedItemIds.has(item.id) ? 'purchased' : 'buy'
@@ -173,6 +175,7 @@ export default async function ReviewPage({
                       ingredientName={item.ingredientName}
                       itemId={item.id}
                       listId={listId}
+                      runId={run?._id ?? list.activeRunId}
                     />
                     <GroceryItemOrderControls
                       baseRevision={run?.revision}
@@ -182,6 +185,7 @@ export default async function ReviewPage({
                       ingredientName={item.ingredientName}
                       itemId={item.id}
                       listId={listId}
+                      runId={run?._id ?? list.activeRunId}
                     />
                     <GroceryAmountOverrideForm
                       baseRevision={run?.revision}
@@ -209,6 +213,7 @@ export default async function ReviewPage({
         editable={!isReadOnly}
         listId={listId}
         listName={list.name}
+        runId={run?._id ?? list.activeRunId}
       />
     </ContentContainer>
   )

@@ -25,6 +25,10 @@ the completing member in history before creating a clean active run; checklist
 state and current-run ordering are not copied forward.
 Connected list members now receive a typed completion handoff that identifies
 the completing member and refreshes them onto the newly created active run.
+Every run mutation now carries the run identity it was created against; the
+server rejects stale writes before they can reach the replacement run. Queued
+offline writes for a completed run are left failed with a clear completion
+message rather than being replayed against the new checklist.
 The ingredient parser now recognizes common quantity forms, preserves source
 text, records qualitative confidence and a stable normalized identity when the
 parse is sufficient, resolves a bounded set of high-confidence ingredient

@@ -62,6 +62,7 @@ function duplicateRouteContext(selectionId = 'selection-1') {
 
 function mutationMetadata(operationId = 'operation-1', baseRevision?: number) {
   return {
+    runId: 'run-1',
     operationId,
     clientId: 'client-1',
     ...(baseRevision === undefined ? {} : { baseRevision }),

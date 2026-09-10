@@ -21,6 +21,7 @@ export function SplitGroceryContributionButton({
   contributionLabel,
   ingredientName,
   listId,
+  runId,
   baseRevision,
   editable = true,
 }: {
@@ -29,6 +30,7 @@ export function SplitGroceryContributionButton({
   contributionLabel: string
   ingredientName: string
   listId: string
+  runId?: string
   baseRevision?: number
   editable?: boolean
 }) {
@@ -48,7 +50,7 @@ export function SplitGroceryContributionButton({
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             contributionId,
-            ...createMutationMetadata(baseRevision),
+            ...createMutationMetadata(baseRevision, runId),
           }),
         },
       )

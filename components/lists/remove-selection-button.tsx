@@ -20,6 +20,7 @@ export function RemoveSelectionButton({
   listName,
   selectionId,
   recipeTitle,
+  runId,
   baseRevision,
   editable = true,
 }: {
@@ -27,6 +28,7 @@ export function RemoveSelectionButton({
   listName: string
   selectionId: string
   recipeTitle: string
+  runId?: string
   baseRevision?: number
   editable?: boolean
 }) {
@@ -44,7 +46,7 @@ export function RemoveSelectionButton({
         {
           method: 'DELETE',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(createMutationMetadata(baseRevision)),
+          body: JSON.stringify(createMutationMetadata(baseRevision, runId)),
         },
       )
       const body = (await response.json()) as { detail?: string }

@@ -94,6 +94,7 @@ export function GroceryRow({
   state = 'buy',
   mergeSuggestions = [],
   listId,
+  runId,
   baseRevision,
   editable,
   showCalculatedRequirement = false,
@@ -105,6 +106,7 @@ export function GroceryRow({
   state?: 'buy' | 'already-have' | 'purchased'
   mergeSuggestions?: readonly GroceryMergeSuggestion[]
   listId?: string
+  runId?: string
   baseRevision?: number
   editable?: boolean
   showCalculatedRequirement?: boolean
@@ -165,6 +167,7 @@ export function GroceryRow({
             editable={editable}
             item={item}
             listId={listId}
+            runId={runId}
           />
         ) : (
           <Button

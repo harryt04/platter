@@ -14,6 +14,7 @@ export function GroceryCategoryOrderSection({
   category,
   categories,
   listId,
+  runId,
   baseRevision,
   editable = true,
   children,
@@ -21,6 +22,7 @@ export function GroceryCategoryOrderSection({
   category: GroceryCategory
   categories: readonly GroceryCategory[]
   listId: string
+  runId?: string
   baseRevision?: number
   editable?: boolean
 }>) {
@@ -52,7 +54,7 @@ export function GroceryCategoryOrderSection({
             category: sourceCategory,
             targetCategory,
             placement,
-            ...createMutationMetadata(baseRevision),
+            ...createMutationMetadata(baseRevision, runId),
           }),
         },
       )

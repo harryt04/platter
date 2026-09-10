@@ -8,6 +8,7 @@ import {
 } from '@/lib/lists'
 import { problemResponse } from '@/lib/contracts/problem'
 import { publishRunMutationEvent } from '@/lib/realtime/events'
+import { completedRunProblem } from '@/lib/contracts/run-mutation'
 import { resolveRunRecipeVersions } from '@/lib/recipes/versions'
 import { generateGroceryItems } from '@/lib/recipes/groceries'
 import {
@@ -119,6 +120,8 @@ export async function POST(request: Request, context: RouteContext) {
       'Unarchive this list before correcting its groceries.',
       409,
     )
+
+  if (list.activeRunId !== parsed.data.runId) return completedRunProblem()
 
   const runs = db.collection<ShoppingRunDocument>('shopping_runs')
   const run = await runs.findOne({

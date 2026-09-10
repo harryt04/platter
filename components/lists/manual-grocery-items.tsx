@@ -21,12 +21,14 @@ import type { ManualGroceryAdditionDocument } from '@/lib/recipes/manual-groceri
 export function ManualGroceryItems({
   listId,
   listName,
+  runId,
   additions,
   baseRevision,
   editable = true,
 }: {
   listId: string
   listName: string
+  runId?: string
   additions: readonly ManualGroceryAdditionDocument[]
   baseRevision?: number
   editable?: boolean
@@ -67,7 +69,7 @@ export function ManualGroceryItems({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           ...body,
-          ...createMutationMetadata(currentRevision),
+          ...createMutationMetadata(currentRevision, runId),
         }),
       })
       const responseBody = (await response.json()) as {

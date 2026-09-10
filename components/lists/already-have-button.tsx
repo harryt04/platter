@@ -64,7 +64,7 @@ export function AlreadyHaveButton({
         {
           method: localMarked ? 'DELETE' : 'PATCH',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(createMutationMetadata(baseRevision)),
+          body: JSON.stringify(createMutationMetadata(baseRevision, runId)),
         },
       )
       const body = (await response.json()) as { detail?: string }

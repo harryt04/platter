@@ -2,6 +2,7 @@ import { getSession } from '@/lib/auth/authorization'
 import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { publishRunMutationEvent } from '@/lib/realtime/events'
+import { completedRunProblem } from '@/lib/contracts/run-mutation'
 import {
   listIdSchema,
   listRoleFilter,
@@ -106,6 +107,8 @@ export async function PATCH(request: Request, context: RouteContext) {
       'Unarchive this list before reordering its groceries.',
       409,
     )
+
+  if (list.activeRunId !== parsed.data.runId) return completedRunProblem()
 
   const runs = db.collection<ShoppingRunDocument>('shopping_runs')
   const run = await runs.findOne({

@@ -63,6 +63,7 @@ function requestFor(
 ): { url: string; init: RequestInit } {
   const payload = asPayload(operation.payload)
   const metadata = {
+    runId: operation.runId,
     operationId: operation.operationId,
     clientId: operation.clientId,
     ...(baseRevision === undefined ? {} : { baseRevision }),
@@ -182,6 +183,9 @@ async function sendOperation(
 
 function errorMessage(body: Record<string, unknown>, status: number) {
   if (typeof body.detail === 'string' && body.detail.trim()) return body.detail
+  if (body.code === 'RUN_COMPLETED') {
+    return 'This shopping run was completed on another device. Refresh to use the new active run.'
+  }
   if (status === 401 || status === 403) {
     return 'You no longer have permission to apply this offline change.'
   }

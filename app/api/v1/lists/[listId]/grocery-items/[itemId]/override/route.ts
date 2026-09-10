@@ -10,6 +10,7 @@ import { problemResponse } from '@/lib/contracts/problem'
 import { publishRunMutationEvent } from '@/lib/realtime/events'
 import { resolveRunRecipeVersions } from '@/lib/recipes/versions'
 import { generateGroceryItems } from '@/lib/recipes/groceries'
+import { completedRunProblem } from '@/lib/contracts/run-mutation'
 import { selectionMutationMetadataSchema } from '@/lib/recipes/selections'
 import {
   createGroceryAmountOverrideDocument,
@@ -121,6 +122,8 @@ export async function PATCH(request: Request, context: RouteContext) {
       'Unarchive this list before changing its groceries.',
       409,
     )
+
+  if (list.activeRunId !== parsed.data.runId) return completedRunProblem()
 
   const runs = db.collection<ShoppingRunDocument>('shopping_runs')
   const run = await runs.findOne({
@@ -316,6 +319,8 @@ export async function DELETE(request: Request, context: RouteContext) {
       'Unarchive this list before changing its groceries.',
       409,
     )
+
+  if (list.activeRunId !== parsed.data.runId) return completedRunProblem()
 
   const runs = db.collection<ShoppingRunDocument>('shopping_runs')
   const run = await runs.findOne({

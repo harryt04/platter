@@ -75,7 +75,7 @@ function context(itemId = 'grocery:merged:rice:mass:lb') {
 }
 
 function metadata(operationId: string, baseRevision = 3) {
-  return { operationId, clientId: 'client-1', baseRevision }
+  return { runId: 'run-1', operationId, clientId: 'client-1', baseRevision }
 }
 
 beforeEach(() => {

@@ -10,7 +10,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createMutationMetadata } from '@/lib/contracts/mutations'
 
-type ListOption = { id: string; name: string; activeRunRevision?: number }
+type ListOption = {
+  id: string
+  name: string
+  activeRunId?: string
+  activeRunRevision?: number
+}
 
 export function AddRecipeToListForm({
   recipeId,
@@ -47,6 +52,7 @@ export function AddRecipeToListForm({
           desiredPeople,
           ...createMutationMetadata(
             lists.find((list) => list.id === listId)?.activeRunRevision,
+            lists.find((list) => list.id === listId)?.activeRunId,
           ),
         }),
       })

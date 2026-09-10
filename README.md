@@ -30,6 +30,9 @@ stable, provenance-preserving items from pinned selections, while grocery
 correction, collaboration, and moderation remain intentionally deferred
 to the feature lanes described in the
 [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
+Review and shopping rows now render those generated items from the active run,
+including an expandable calculation breakdown for every recipe or manual
+contribution and the aggregate calculated requirement.
 Public recipe reads also have a shared visibility guard: imported content must
 be approved after review, usable, and explicitly public before it can render.
 Recipes now have stable identities and incrementing immutable version IDs;

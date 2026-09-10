@@ -7,7 +7,14 @@ import {
   PageSection,
 } from '@/components/shell/page-header'
 import { requireSession } from '@/lib/auth/authorization'
-import { findListForMember, listAcceptsShoppingOperations } from '@/lib/lists'
+import {
+  findActiveShoppingRun,
+  findListForMember,
+  listAcceptsShoppingOperations,
+} from '@/lib/lists'
+import { getConnectedDatabase } from '@/lib/db/mongo-client'
+import { resolveRunRecipeVersions } from '@/lib/recipes/versions'
+import { generateGroceryItems } from '@/lib/recipes/groceries'
 import { notFound } from 'next/navigation'
 
 export default async function ShopPage({
@@ -20,6 +27,18 @@ export default async function ShopPage({
   const list = await findListForMember(listId, session.user.id)
   if (!list) notFound()
   const isReadOnly = !listAcceptsShoppingOperations(list)
+  const run = await findActiveShoppingRun(list)
+  const db = await getConnectedDatabase()
+  const resolvedSelections = run
+    ? await resolveRunRecipeVersions(db, run.recipeSelections)
+    : []
+  const selections = run?.recipeSelections ?? []
+  const groceryItems = generateGroceryItems({
+    selections: resolvedSelections.flatMap(({ version }, index) => {
+      const selection = selections[index]
+      return selection && version ? [{ selection, version }] : []
+    }),
+  })
 
   return (
     <ContentContainer>
@@ -44,23 +63,19 @@ export default async function ShopPage({
       <div className="mb-6">
         <SyncStatus state="synced" />
       </div>
-      <PageSection title="Produce">
-        <div className="space-y-3">
-          <GroceryRow
-            ingredient="yellow onions"
-            amount="2"
-            category="Produce"
-          />
-          <GroceryRow
-            ingredient="tomatoes"
-            amount="1 cup"
-            category="Produce"
-            state="purchased"
-          />
-        </div>
-      </PageSection>
-      <PageSection title="Meat">
-        <GroceryRow ingredient="ground meat" amount="2 lb" category="Meat" />
+      <PageSection title="Grocery items">
+        {groceryItems.length > 0 ? (
+          <div className="space-y-3">
+            {groceryItems.map((item) => (
+              <GroceryRow item={item} category="Other" key={item.id} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            This shopping run has no grocery items yet. Choose a recipe to add
+            its ingredients.
+          </p>
+        )}
       </PageSection>
     </ContentContainer>
   )

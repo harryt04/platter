@@ -347,7 +347,7 @@ selections while merging only facts that are safe to combine.
       calculation unit and merge without losing decimal precision.
 - [ ] Mass and volume do not convert without ingredient-specific data, and
       uncertain identities or incompatible units remain separate.
-- [ ] Each item exposes its calculated requirement and a readable breakdown of
+- [x] Each item exposes its calculated requirement and a readable breakdown of
       the amount contributed by every selection.
 - [ ] Removing the last recipe contribution removes the item unless an
       intentional manual addition or preserved override still requires it.

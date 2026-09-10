@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { createRecipeSearchProvider } from '@/lib/search/default-provider'
 import {
   encodeRecipeSearchCursor,
   MongoRecipeSearchProvider,
@@ -16,6 +17,14 @@ function createDatabase(documents: object[] = []) {
 }
 
 describe('MongoRecipeSearchProvider', () => {
+  it('uses MongoDB as the default provider without a hosted search dependency', () => {
+    const { db } = createDatabase()
+
+    expect(createRecipeSearchProvider(db as never)).toBeInstanceOf(
+      MongoRecipeSearchProvider,
+    )
+  })
+
   it('uses the public recipe contract for discovery by default', async () => {
     const { db, collection } = createDatabase()
 

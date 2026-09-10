@@ -1,10 +1,8 @@
 import { z } from 'zod'
 import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
-import {
-  decodeRecipeSearchCursor,
-  MongoRecipeSearchProvider,
-} from '@/lib/search/mongo-provider'
+import { decodeRecipeSearchCursor } from '@/lib/search/mongo-provider'
+import { createRecipeSearchProvider } from '@/lib/search/default-provider'
 
 const searchParamsSchema = z.object({
   q: z
@@ -46,7 +44,7 @@ export async function GET(request: Request) {
     return validationFailed()
 
   const db = await getConnectedDatabase()
-  const recipes = await new MongoRecipeSearchProvider(db).searchRecipes({
+  const recipes = await createRecipeSearchProvider(db).searchRecipes({
     text: parsed.data.q,
     cursor: parsed.data.cursor,
     pageSize: parsed.data.pageSize,

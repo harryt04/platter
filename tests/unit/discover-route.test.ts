@@ -14,9 +14,9 @@ const { decodeCursor, getConnectedDatabase, searchRecipes } = vi.hoisted(
 vi.mock('@/lib/db/mongo-client', () => ({ getConnectedDatabase }))
 vi.mock('@/lib/search/mongo-provider', () => ({
   decodeRecipeSearchCursor: decodeCursor,
-  MongoRecipeSearchProvider: class {
-    searchRecipes = searchRecipes
-  },
+}))
+vi.mock('@/lib/search/default-provider', () => ({
+  createRecipeSearchProvider: vi.fn(() => ({ searchRecipes })),
 }))
 
 beforeEach(() => {

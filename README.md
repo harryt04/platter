@@ -47,6 +47,9 @@ search page and API backed by Mongo text search across recipe titles,
 ingredients, source metadata, cuisines, tags, and dietary labels.
 Discovery filters compose with stable rank-and-ID cursor pagination, and the
 page preserves active filters while loading more results.
+Public discovery selects the built-in MongoDB search provider by default, so
+the core search flow remains self-hostable without a paid or proprietary
+search service.
 Discovery ranking combines Mongo's weighted title and ingredient relevance with
 deterministic completeness signals and a capped count of public saves, while
 retaining stable ID tie-breaking and visible source attribution.

@@ -260,7 +260,7 @@ search while keeping source attribution and visibility rules intact.
       engagement signals without hiding or outweighing source identity.
 - [x] Filters compose with stable cursor pagination or progressive loading and
       never return private, shared-only, draft, or suppressed recipes.
-- [ ] Search remains functional through the base Mongo provider with no paid or
+- [x] Search remains functional through the base Mongo provider with no paid or
       proprietary service configured.
 - [ ] Integration and performance fixtures verify field weights, filters,
       visibility, pagination stability, and the two-second load target.

@@ -1,9 +1,14 @@
+import fc from 'fast-check'
+import Decimal from 'decimal.js'
 import { describe, expect, it } from 'vitest'
 import { decimalString } from '@/lib/contracts/ids'
 import {
   generateGroceryItems,
   type GroceryRecipeSelection,
 } from '@/lib/recipes/groceries'
+import { convertIngredientQuantity } from '@/lib/recipes/ingredient-parser'
+
+const CalculationDecimal = Decimal.clone({ precision: 40 })
 
 const ingredient = (
   overrides: Partial<{
@@ -341,5 +346,201 @@ describe('grocery generation', () => {
         contributions: [],
       },
     ])
+  })
+
+  it('keeps low-confidence identities separate for every generated quantity', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 1000 }),
+        fc.integer({ min: 1, max: 1000 }),
+        (firstAmount, secondAmount) => {
+          const items = generateGroceryItems({
+            selections: [
+              selection('first', 'First recipe', '1', [
+                ingredient({
+                  originalText: `${firstAmount} onions`,
+                  quantity: String(firstAmount),
+                  unit: 'each',
+                  normalizedIdentity: 'onions',
+                  parserConfidence: 'low',
+                }),
+              ]),
+              selection('second', 'Second recipe', '1', [
+                ingredient({
+                  originalText: `${secondAmount} onions`,
+                  quantity: String(secondAmount),
+                  unit: 'each',
+                  normalizedIdentity: 'onions',
+                  parserConfidence: 'low',
+                }),
+              ]),
+            ],
+          })
+
+          expect(items).toHaveLength(2)
+          expect(items.every((item) => item.contributions)).toBe(true)
+          expect(items.map((item) => item.contributions)).toEqual(
+            expect.arrayContaining([
+              [expect.objectContaining({ id: 'recipe:first:0' })],
+              [expect.objectContaining({ id: 'recipe:second:0' })],
+            ]),
+          )
+        },
+      ),
+    )
+  })
+
+  it('merges generated mass and volume contributions with exact conversion', () => {
+    const compatibleUnits = [
+      { name: 'g', dimension: 'mass' },
+      { name: 'kg', dimension: 'mass' },
+      { name: 'oz', dimension: 'mass' },
+      { name: 'lb', dimension: 'mass' },
+      { name: 'ml', dimension: 'volume' },
+      { name: 'l', dimension: 'volume' },
+      { name: 'tsp', dimension: 'volume' },
+      { name: 'tbsp', dimension: 'volume' },
+      { name: 'cup', dimension: 'volume' },
+      { name: 'pint', dimension: 'volume' },
+      { name: 'quart', dimension: 'volume' },
+      { name: 'gallon', dimension: 'volume' },
+      { name: 'fl oz', dimension: 'volume' },
+    ] as const
+
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 1000 }),
+        fc.integer({ min: 1, max: 1000 }),
+        fc.constantFrom(...compatibleUnits),
+        fc.constantFrom(...compatibleUnits),
+        (firstAmount, secondAmount, firstUnit, secondUnit) => {
+          fc.pre(firstUnit.dimension === secondUnit.dimension)
+          const items = generateGroceryItems({
+            selections: [
+              selection('first', 'First recipe', '1', [
+                ingredient({
+                  originalText: `${firstAmount} ${firstUnit.name} onions`,
+                  quantity: String(firstAmount),
+                  unit: firstUnit.name,
+                }),
+              ]),
+              selection('second', 'Second recipe', '1', [
+                ingredient({
+                  originalText: `${secondAmount} ${secondUnit.name} onions`,
+                  quantity: String(secondAmount),
+                  unit: secondUnit.name,
+                }),
+              ]),
+            ],
+          })
+          const convertedSecond = convertIngredientQuantity(
+            { min: String(secondAmount) },
+            secondUnit,
+            firstUnit,
+          )
+
+          expect(convertedSecond).not.toBeNull()
+          expect(items).toHaveLength(1)
+          expect(items[0]).toMatchObject({
+            unit: firstUnit,
+            calculatedRequirement: {
+              min: new CalculationDecimal(String(firstAmount))
+                .plus(convertedSecond!.min)
+                .toString(),
+            },
+          })
+        },
+      ),
+    )
+  })
+
+  it('preserves every generated contribution and its recipe provenance', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer({ min: 1, max: 1000 }), {
+          minLength: 1,
+          maxLength: 8,
+        }),
+        (amounts) => {
+          const selections = amounts.map((amount, index) =>
+            selection(String(index), `Recipe ${index}`, '1', [
+              ingredient({
+                originalText: `${amount} cups onions`,
+                quantity: String(amount),
+                unit: 'cup',
+              }),
+            ]),
+          )
+          const generated = generateGroceryItems({ selections })
+          const contributions = generated.flatMap((item) => item.contributions)
+
+          expect(generated).toHaveLength(1)
+          expect(contributions).toHaveLength(amounts.length)
+          expect(contributions.map((contribution) => contribution.id)).toEqual(
+            amounts.map((_, index) => `recipe:${index}:0`),
+          )
+          expect(
+            contributions.map((contribution) => contribution.source),
+          ).toEqual(
+            amounts.map((_, index) => ({
+              kind: 'recipe',
+              selectionId: String(index),
+              recipeId: `recipe-${index}`,
+              versionId: `version-${index}`,
+              recipeTitle: `Recipe ${index}`,
+            })),
+          )
+          expect(
+            contributions.map((contribution) => contribution.originalText),
+          ).toEqual(amounts.map((amount) => `${amount} cups onions`))
+        },
+      ),
+    )
+  })
+
+  it('removes one recipe contribution without changing the remaining aggregate', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer({ min: 1, max: 1000 }), {
+          minLength: 2,
+          maxLength: 8,
+        }),
+        fc.nat(),
+        (amounts, removalSeed) => {
+          const selections = amounts.map((amount, index) =>
+            selection(String(index), `Recipe ${index}`, '1', [
+              ingredient({
+                originalText: `${amount} cups onions`,
+                quantity: String(amount),
+                unit: 'cup',
+              }),
+            ]),
+          )
+          const removedIndex = removalSeed % amounts.length
+          const before = generateGroceryItems({ selections })[0]!
+          const after = generateGroceryItems({
+            selections: selections.filter((_, index) => index !== removedIndex),
+          })[0]!
+          const remainingTotal = amounts.reduce(
+            (total, amount, index) =>
+              index === removedIndex ? total : total.plus(String(amount)),
+            new CalculationDecimal(0),
+          )
+
+          expect(after.contributions).toHaveLength(amounts.length - 1)
+          expect(after.contributions).not.toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                id: `recipe:${removedIndex}:0`,
+              }),
+            ]),
+          )
+          expect(after.calculatedRequirement).toEqual({
+            min: remainingTotal.toString(),
+          })
+          expect(before.contributions).toHaveLength(amounts.length)
+        },
+      ),
+    )
   })
 })

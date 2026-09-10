@@ -339,7 +339,7 @@ selections while merging only facts that are safe to combine.
 
 **Blocked by:** 13: Manage recipe selections
 
-**Status:** in progress
+**Status:** implemented
 
 - [x] Grocery generation is deterministic for identical recipe versions,
       people counts, manual additions, and overrides.
@@ -351,7 +351,7 @@ selections while merging only facts that are safe to combine.
       the amount contributed by every selection.
 - [x] Removing the last recipe contribution removes the item unless an
       intentional manual addition or preserved override still requires it.
-- [ ] Unit and property tests cover merge confidence, conversion, provenance,
+- [x] Unit and property tests cover merge confidence, conversion, provenance,
       and contribution-removal invariants.
 
 ## 15: Correct grocery merges

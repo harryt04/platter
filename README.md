@@ -27,7 +27,8 @@ degrades incomplete lines to readable unknown ingredients without a fabricated
 amount, and performs high-precision locale-aware mass and volume conversions
 within a dimension while refusing to convert mass and volume without
 ingredient-specific data. Cross-dimension, uncertain, and incompatible
-contributions remain separate with regression coverage. The first
+contributions remain separate with unit and property-based regression coverage
+for confidence, conversion, provenance, and contribution removal. The first
 grocery-generation layer now derives stable, provenance-preserving items from
 pinned selections, while grocery
 correction, collaboration, and moderation remain intentionally deferred

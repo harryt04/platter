@@ -5,6 +5,7 @@ import {
   createDraftDocument,
   createDraftSchema,
   createRecipeVersionDocument,
+  ownedRecipeFilter,
   recipeVersions,
   toRecipeDraft,
   type RecipeDraftDocument,
@@ -26,11 +27,7 @@ export async function GET() {
   const db = await getConnectedDatabase()
   const drafts = await db
     .collection<RecipeDraftDocument>('recipes')
-    .find({
-      ownerId: session.user.id,
-      status: { $in: ['draft', 'usable'] },
-      visibility: 'private',
-    })
+    .find(ownedRecipeFilter(session.user.id))
     .sort({ updatedAt: -1 })
     .toArray()
 

@@ -112,11 +112,40 @@ export const recipeVisibilitySchema = z.enum([
   'suppressed',
 ])
 
+export const recipeShareUpdateSchema = z.object({
+  listIds: z
+    .array(
+      z
+        .string({ error: 'Enter a list id.' })
+        .trim()
+        .min(1, 'Enter a list id.')
+        .max(100, 'List ids must be 100 characters or fewer.')
+        .refine(
+          (value) => !/[\u0000-\u001F\u007F]/.test(value),
+          'List ids cannot contain control characters.',
+        ),
+    )
+    .max(50, 'A recipe can be shared with 50 lists or fewer.')
+    .refine(
+      (listIds) => new Set(listIds).size === listIds.length,
+      'Choose each list only once.',
+    ),
+  publishPublic: z.boolean().default(false),
+})
+
 export type RecipeOrigin = z.infer<typeof recipeOriginSchema>
 export type RecipeImportReviewStatus = z.infer<
   typeof recipeImportReviewStatusSchema
 >
 export type RecipeVisibility = z.infer<typeof recipeVisibilitySchema>
+
+export type RecipeShareDocument = {
+  _id: string
+  recipeId: string
+  listId: string
+  ownerId: string
+  createdAt: IsoDateTime
+}
 
 export const recipeIngredientSchema = z.object({
   originalText: requiredIngredientText('line', 500),
@@ -297,15 +326,44 @@ export function recipeVersions(collection: Collection<RecipeVersionDocument>) {
   return collection
 }
 
+export function recipeShares(collection: Collection<RecipeShareDocument>) {
+  return collection
+}
+
 export function draftOwnerFilter(ownerId: string, draftId?: string) {
   return draftId ? { _id: draftId, ownerId } : { ownerId }
 }
 
+export function ownedRecipeFilter(ownerId: string, recipeId?: string) {
+  return {
+    ...draftOwnerFilter(ownerId, recipeId),
+    status: { $in: ['draft', 'usable'] as const },
+  }
+}
+
 export function privateDraftFilter(ownerId: string, draftId?: string) {
   return {
-    ...draftOwnerFilter(ownerId, draftId),
-    status: { $in: ['draft', 'usable'] as const },
+    ...ownedRecipeFilter(ownerId, draftId),
     visibility: 'private' as const,
+  }
+}
+
+export function recipeShareFilter(recipeId: string, listId?: string) {
+  return listId ? { recipeId, listId } : { recipeId }
+}
+
+export function createRecipeShareDocument(
+  recipeId: string,
+  listId: string,
+  ownerId: string,
+  now = new Date(),
+): RecipeShareDocument {
+  return {
+    _id: crypto.randomUUID(),
+    recipeId,
+    listId,
+    ownerId,
+    createdAt: isoDateTime(now),
   }
 }
 

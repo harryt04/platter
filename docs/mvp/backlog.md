@@ -208,7 +208,7 @@ creator to decide who may discover or use each recipe.
 
 - [x] Recipes have stable identities and immutable version identities, and
       edits never silently rewrite a version used by another person or run.
-- [ ] Manually authored recipes remain private by default and can be shared
+- [x] Manually authored recipes remain private by default and can be shared
       with selected lists or explicitly published.
 - [ ] Editing public content creates a new version or private personal variant
       with a visible relationship to its source version.

@@ -5,7 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
 import { requireSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
-import { type RecipeDraftDocument, toRecipeDraft } from '@/lib/recipes/drafts'
+import {
+  ownedRecipeFilter,
+  type RecipeDraftDocument,
+  toRecipeDraft,
+} from '@/lib/recipes/drafts'
 import Link from 'next/link'
 
 export default async function MyRecipesPage() {
@@ -13,11 +17,7 @@ export default async function MyRecipesPage() {
   const db = await getConnectedDatabase()
   const documents = await db
     .collection<RecipeDraftDocument>('recipes')
-    .find({
-      ownerId: session.user.id,
-      status: { $in: ['draft', 'usable'] },
-      visibility: 'private',
-    })
+    .find(ownedRecipeFilter(session.user.id))
     .sort({ updatedAt: -1 })
     .toArray()
   const drafts = documents.map(toRecipeDraft)
@@ -27,7 +27,7 @@ export default async function MyRecipesPage() {
       <PageHeader
         eyebrow="Your recipes"
         title="My recipes"
-        description="Keep private recipe ideas in one place. Add details when you’re ready."
+        description="Keep your recipe ideas in one place. Share a usable recipe with selected lists when you’re ready."
         action={
           <Button asChild>
             <Link href="/recipes/new">Create a recipe</Link>
@@ -49,9 +49,13 @@ export default async function MyRecipesPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="font-data text-muted-foreground text-xs tracking-widest uppercase">
-                      {draft.status === 'usable'
-                        ? 'Ready to use'
-                        : 'Private draft'}
+                      {draft.status !== 'usable'
+                        ? 'Private draft'
+                        : draft.visibility === 'public'
+                          ? 'Published recipe'
+                          : draft.visibility === 'list-shared'
+                            ? 'Shared recipe'
+                            : 'Ready to use'}
                     </p>
                     <CardTitle className="font-display mt-2 text-2xl">
                       {draft.title}

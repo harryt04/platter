@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { PATCH } from '@/app/api/v1/recipes/[recipeId]/route'
+import { GET, PATCH } from '@/app/api/v1/recipes/[recipeId]/route'
 
 const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -479,5 +479,39 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
       'Source URL must use HTTP or HTTPS.',
     ])
     expect(collection.updateOne).not.toHaveBeenCalled()
+  })
+})
+
+describe('GET /api/v1/recipes/[recipeId]', () => {
+  it('allows a current member of a selected list to read a shared recipe', async () => {
+    getSession.mockResolvedValue({ user: { id: 'member-1' } })
+    const collection = {
+      findOne: vi
+        .fn()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ recipeId: 'recipe-1', listId: 'list-1' })
+        .mockResolvedValueOnce({
+          ...draft,
+          status: 'usable' as const,
+          visibility: 'list-shared' as const,
+        }),
+      find: vi.fn().mockReturnValue({
+        toArray: vi.fn().mockResolvedValue([{ _id: 'list-1' }]),
+      }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/recipes/recipe-1'),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).recipe).toMatchObject({
+      id: 'recipe-1',
+      visibility: 'list-shared',
+    })
   })
 })

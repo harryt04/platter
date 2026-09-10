@@ -30,7 +30,9 @@ Public recipe reads also have a shared visibility guard: imported content must
 be approved after review, usable, and explicitly public before it can render.
 Recipes now have stable identities and incrementing immutable version IDs;
 editing or deleting a recipe snapshots the prior version for future run and
-history references.
+history references. Authored usable recipes remain private until the owner
+explicitly shares them with selected active lists or publishes them to the
+public catalog; list-scoped access is checked against current membership.
 
 ## Documentation
 

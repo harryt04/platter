@@ -2,14 +2,17 @@ import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { getSession } from '@/lib/auth/authorization'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
+import { listMembershipFilter, type ListDocument } from '@/lib/lists'
 import {
   createRecipeVersionDocument,
   isUsableRecipe,
-  privateDraftFilter,
+  ownedRecipeFilter,
+  recipeShares,
   recipeVersions,
   toRecipeDraft,
   updateDraftSchema,
   type RecipeDraftDocument,
+  type RecipeShareDocument,
   type RecipeVersionDocument,
 } from '@/lib/recipes/drafts'
 
@@ -34,7 +37,28 @@ async function ownedDraft(recipeId: string, ownerId: string) {
   const db = await getConnectedDatabase()
   return db
     .collection<RecipeDraftDocument>('recipes')
-    .findOne(privateDraftFilter(ownerId, recipeId))
+    .findOne(ownedRecipeFilter(ownerId, recipeId))
+}
+
+async function sharedRecipe(recipeId: string, userId: string) {
+  const db = await getConnectedDatabase()
+  const memberLists = await db
+    .collection<ListDocument>('lists')
+    .find(listMembershipFilter(userId))
+    .toArray()
+  const listIds = memberLists.map((list) => list._id)
+  if (listIds.length === 0) return null
+
+  const share = await recipeShares(
+    db.collection<RecipeShareDocument>('recipe_shares'),
+  ).findOne({ recipeId, listId: { $in: listIds } })
+  if (!share) return null
+
+  return db.collection<RecipeDraftDocument>('recipes').findOne({
+    _id: recipeId,
+    status: 'usable',
+    visibility: 'list-shared',
+  })
 }
 
 function notFoundResponse() {
@@ -93,7 +117,9 @@ export async function GET(_request: Request, context: RouteContext) {
   if (!session) return authenticationRequired('Sign in to view your recipes.')
 
   const { recipeId } = await context.params
-  const draft = await ownedDraft(recipeId, session.user.id)
+  const draft =
+    (await ownedDraft(recipeId, session.user.id)) ??
+    (await sharedRecipe(recipeId, session.user.id))
   return draft
     ? Response.json({ recipe: toRecipeDraft(draft) })
     : notFoundResponse()
@@ -211,7 +237,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     .collection<RecipeDraftDocument>('recipes')
     .updateOne(
       {
-        ...privateDraftFilter(session.user.id, recipeId),
+        ...ownedRecipeFilter(session.user.id, recipeId),
         ...(draft.versionId ? { versionId: draft.versionId } : {}),
       },
       {
@@ -288,6 +314,6 @@ export async function DELETE(request: Request, context: RouteContext) {
   )
   await db
     .collection<RecipeDraftDocument>('recipes')
-    .deleteOne(privateDraftFilter(session.user.id, recipeId))
+    .deleteOne(ownedRecipeFilter(session.user.id, recipeId))
   return new Response(null, { status: 204 })
 }

@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest'
 import {
   createDraftDocument,
   createDraftSchema,
+  createRecipeShareDocument,
   createRecipeVersionDocument,
   draftOwnerFilter,
   isPubliclyRenderableRecipe,
   isUsableRecipe,
   privateDraftFilter,
   publicRecipeFilter,
+  recipeShareFilter,
+  recipeShareUpdateSchema,
   recipeImportReviewStatusSchema,
   recipeIngredientSchema,
   recipeInstructionSchema,
@@ -76,6 +79,37 @@ describe('recipe drafts', () => {
       status: { $in: ['draft', 'usable'] },
       visibility: 'private',
     })
+  })
+
+  it('models list sharing separately from the recipe and validates selections', () => {
+    const share = createRecipeShareDocument(
+      'recipe-1',
+      'list-1',
+      'user-1',
+      new Date('2026-09-10T12:00:00.000Z'),
+    )
+
+    expect(share).toMatchObject({
+      recipeId: 'recipe-1',
+      listId: 'list-1',
+      ownerId: 'user-1',
+      createdAt: '2026-09-10T12:00:00.000Z',
+    })
+    expect(recipeShareFilter('recipe-1')).toEqual({ recipeId: 'recipe-1' })
+    expect(recipeShareFilter('recipe-1', 'list-1')).toEqual({
+      recipeId: 'recipe-1',
+      listId: 'list-1',
+    })
+    expect(
+      recipeShareUpdateSchema.parse({ listIds: ['list-1', 'list-2'] }),
+    ).toEqual({
+      listIds: ['list-1', 'list-2'],
+      publishPublic: false,
+    })
+    expect(
+      recipeShareUpdateSchema.safeParse({ listIds: ['list-1', 'list-1'] })
+        .success,
+    ).toBe(false)
   })
 
   it('requires imported recipes to pass review before public rendering', () => {

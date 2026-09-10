@@ -4,9 +4,13 @@ import { ContentContainer, PageHeader } from '@/components/shell/page-header'
 import { requireSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import {
-  privateDraftFilter,
+  ownedRecipeFilter,
+  recipeShares,
   type RecipeDraftDocument,
+  type RecipeShareDocument,
 } from '@/lib/recipes/drafts'
+import { listMembershipFilter, type ListDocument } from '@/lib/lists'
+import { RecipeSharing } from '@/components/recipes/recipe-sharing'
 
 export default async function EditRecipePage({
   params,
@@ -18,15 +22,31 @@ export default async function EditRecipePage({
   const db = await getConnectedDatabase()
   const draft = await db
     .collection<RecipeDraftDocument>('recipes')
-    .findOne(privateDraftFilter(session.user.id, recipeId))
+    .findOne(ownedRecipeFilter(session.user.id, recipeId))
   if (!draft) notFound()
+  const [lists, shares] = await Promise.all([
+    db
+      .collection<ListDocument>('lists')
+      .find(listMembershipFilter(session.user.id))
+      .sort({ updatedAt: -1 })
+      .toArray(),
+    recipeShares(db.collection<RecipeShareDocument>('recipe_shares'))
+      .find({ recipeId })
+      .toArray(),
+  ])
 
   return (
     <ContentContainer>
       <PageHeader
-        eyebrow="Private recipe draft"
+        eyebrow={
+          draft.visibility === 'public'
+            ? 'Published recipe'
+            : draft.visibility === 'list-shared'
+              ? 'Shared recipe'
+              : 'Private recipe draft'
+        }
         title="Edit recipe"
-        description="Keep shaping this recipe. It remains private until you explicitly share or publish it."
+        description="Keep shaping this recipe. Its visibility changes only when you explicitly share or publish it."
       />
       <DraftEditor
         recipeId={recipeId}
@@ -49,6 +69,18 @@ export default async function EditRecipePage({
         initialDietaryLabels={draft.dietaryLabels}
         initialIngredients={draft.ingredients}
         initialInstructions={draft.instructions}
+      />
+      <RecipeSharing
+        recipeId={recipeId}
+        status={draft.status}
+        origin={draft.origin ?? 'authored'}
+        visibility={draft.visibility}
+        lists={lists.map((list) => ({
+          id: list._id,
+          name: list.name,
+          status: list.status,
+        }))}
+        initialSharedListIds={shares.map((share) => share.listId)}
       />
     </ContentContainer>
   )

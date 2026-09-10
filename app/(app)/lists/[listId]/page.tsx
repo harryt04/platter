@@ -7,6 +7,7 @@ import { requireSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { listMemberFilter, type ListDocument } from '@/lib/lists'
 import { notFound } from 'next/navigation'
+import { RenameListForm } from '@/components/lists/rename-list-form'
 
 export default async function ListPage({
   params,
@@ -67,6 +68,11 @@ export default async function ListPage({
           </CardContent>
         </Card>
       </div>
+      {list.ownerIds.includes(session.user.id) && (
+        <div className="mt-6 max-w-2xl">
+          <RenameListForm listId={listId} currentName={list.name} />
+        </div>
+      )}
     </ContentContainer>
   )
 }

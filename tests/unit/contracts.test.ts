@@ -5,6 +5,8 @@ import {
   createListSchema,
   listMemberFilter,
   listMembershipFilter,
+  listOwnerFilter,
+  updateListSchema,
 } from '@/lib/lists'
 
 describe('lists', () => {
@@ -51,6 +53,23 @@ describe('lists', () => {
         $elemMatch: { userId: 'user-1', invitationState: 'active' },
       },
     })
+    expect(listOwnerFilter('list-1', 'user-1')).toEqual({
+      _id: 'list-1',
+      members: {
+        $elemMatch: {
+          userId: 'user-1',
+          role: 'owner',
+          invitationState: 'active',
+        },
+      },
+    })
+  })
+
+  it('validates renamed list names with the same contract as creation', () => {
+    expect(updateListSchema.parse({ name: '  Weeknight meals  ' }).name).toBe(
+      'Weeknight meals',
+    )
+    expect(updateListSchema.safeParse({ name: ' ' }).success).toBe(false)
   })
 })
 import { decimalString, entityId, isoDateTime } from '@/lib/contracts/ids'

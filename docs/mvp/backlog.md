@@ -45,7 +45,8 @@ they can create and manage without exposing one list to members of another.
       only lists to which they belong.
 - [x] Each new list has at least one owner and exactly one empty active shopping
       run, created atomically.
-- [ ] An authorized owner can rename, archive, unarchive, and delete a list with
+- [x] An authorized owner can rename a list. Archive, unarchive, and delete a
+      list with
       confirmation that names the shared impact.
 - [ ] An editor can leave a list, while an archived or deleted list rejects new
       shopping operations.

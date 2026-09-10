@@ -15,6 +15,7 @@ const listNameSchema = z
   .max(100, 'List names must be 100 characters or fewer.')
 
 export const createListSchema = z.object({ name: listNameSchema })
+export const updateListSchema = z.object({ name: listNameSchema })
 
 export type ListRole = 'owner' | 'editor'
 export type ListStatus = 'active' | 'archived'
@@ -72,6 +73,19 @@ export function listMemberFilter(listId: string, userId: string) {
   return {
     _id: listId,
     members: { $elemMatch: { userId, invitationState: 'active' as const } },
+  }
+}
+
+export function listOwnerFilter(listId: string, userId: string) {
+  return {
+    _id: listId,
+    members: {
+      $elemMatch: {
+        userId,
+        role: 'owner' as const,
+        invitationState: 'active' as const,
+      },
+    },
   }
 }
 

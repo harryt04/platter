@@ -142,4 +142,53 @@ test.describe('authenticated list workflow', () => {
     await page.getByRole('button', { name: 'Remove item' }).click()
     await expect(page.getByLabel('Manual grocery item 1')).toHaveCount(0)
   })
+
+  test('splits a combined grocery contribution and keeps the correction after reload', async ({
+    page,
+  }) => {
+    await page.goto('/sign-in')
+    await page
+      .getByRole('textbox', { name: 'Email' })
+      .fill(process.env.E2E_USER_EMAIL!)
+    await page.getByLabel('Password').fill(process.env.E2E_USER_PASSWORD!)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await expect(page).toHaveURL(/\/lists$/)
+
+    await page.goto('/lists/new')
+    await page
+      .getByRole('textbox', { name: 'List name' })
+      .fill(`Split groceries ${Date.now()}`)
+    await page.getByRole('button', { name: 'Create list' }).click()
+    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+
+    await page.getByRole('link', { name: 'Review at home' }).click()
+    for (const [index, line] of ['2 cups onions', '1 cup onions'].entries()) {
+      await page.getByLabel('Add a grocery item').fill(line)
+      await page.getByRole('button', { name: 'Add item' }).click()
+      await expect(
+        page.getByLabel(`Manual grocery item ${index + 1}`),
+      ).toBeVisible()
+    }
+
+    await page.getByText('View contributions').click()
+    await page
+      .getByRole('button', {
+        name: 'Split 2 cups onions into separate grocery item',
+      })
+      .click()
+    await expect(page.getByText('Split this contribution?')).toBeVisible()
+    await page.getByRole('button', { name: 'Split item' }).click()
+
+    await expect(
+      page.getByRole('button', {
+        name: 'Split 2 cups onions into separate grocery item',
+      }),
+    ).toHaveCount(0)
+    await page.reload()
+    await expect(page.getByText('View contribution')).toHaveCount(2)
+    await page.getByText('View contribution').nth(0).click()
+    await page.getByText('View contribution').nth(1).click()
+    await expect(page.getByText('2 cups onions')).toBeVisible()
+    await expect(page.getByText('1 cup onions')).toBeVisible()
+  })
 })

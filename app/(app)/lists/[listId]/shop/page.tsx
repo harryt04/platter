@@ -45,6 +45,9 @@ export default async function ShopPage({
     }),
     manualAdditions: run?.manualAdditions ?? [],
     overrides: run?.groceryAmountOverrides ?? [],
+    splitContributionIds:
+      run?.groceryMergeSplits?.map(({ contributionId }) => contributionId) ??
+      [],
   })
   const mergeSuggestions = findGroceryMergeSuggestions(groceryItems)
 
@@ -82,6 +85,9 @@ export default async function ShopPage({
                   mergeSuggestions={mergeSuggestions.filter(
                     (suggestion) => suggestion.left.id === item.id,
                   )}
+                  baseRevision={run?.revision}
+                  listId={listId}
+                  editable={!isReadOnly}
                 />
                 <GroceryAmountOverrideForm
                   baseRevision={run?.revision}

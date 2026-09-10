@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { GroceryContribution, GroceryItem } from '@/lib/recipes/groceries'
+import { SplitGroceryContributionButton } from '@/components/lists/split-grocery-contribution-button'
 
 function formatQuantity(
   quantity: GroceryContribution['calculatedQuantity'],
@@ -16,7 +17,17 @@ function contributionSource(contribution: GroceryContribution) {
     : 'Manual grocery item'
 }
 
-export function ContributionDetail({ item }: { item?: GroceryItem }) {
+export function ContributionDetail({
+  item,
+  listId,
+  baseRevision,
+  editable = true,
+}: {
+  item?: GroceryItem
+  listId?: string
+  baseRevision?: number
+  editable?: boolean
+}) {
   if (!item) {
     return (
       <Card>
@@ -74,6 +85,17 @@ export function ContributionDetail({ item }: { item?: GroceryItem }) {
                 {contribution.originalText}
                 {contribution.optional ? ' · Optional' : ''}
               </p>
+              {item.contributions.length > 1 && listId && editable && (
+                <SplitGroceryContributionButton
+                  baseRevision={baseRevision}
+                  contributionId={contribution.id}
+                  contributionLabel={contribution.originalText}
+                  editable={editable}
+                  ingredientName={item.ingredientName}
+                  itemId={item.id}
+                  listId={listId}
+                />
+              )}
             </div>
           ))}
         </div>

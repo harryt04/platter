@@ -30,8 +30,8 @@ ingredient-specific data. Cross-dimension, uncertain, and incompatible
 contributions remain separate with unit and property-based regression coverage
 for confidence, conversion, provenance, and contribution removal. The first
 grocery-generation layer now derives stable, provenance-preserving items from
-pinned selections, while grocery
-correction, collaboration, and moderation remain intentionally deferred
+pinned selections, while remaining grocery correction, collaboration, and
+moderation remain intentionally deferred
 to the feature lanes described in the
 [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
 Review and shopping rows now render those generated items from the active run,
@@ -43,7 +43,9 @@ two separately generated low-confidence items have the same visible identity
 and dimension, the rows expose a deterministic optional comparison suggestion
 without combining their amounts. That comparison can be expanded to inspect
 both item identities, dimensions, original lines, and recipe sources before a
-future merge correction.
+merge correction. Members can split an incorrect combined contribution after
+reviewing its source line; the correction is scoped to the active run, keeps
+recipe facts unchanged, and remains stable when groceries are regenerated.
 Public recipe reads also have a shared visibility guard: imported content must
 be approved after review, usable, and explicitly public before it can render.
 Recipes now have stable identities and incrementing immutable version IDs;

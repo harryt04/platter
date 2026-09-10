@@ -367,7 +367,7 @@ editing the underlying recipes accidentally.
       optional merge suggestions.
 - [x] A user can inspect the identities, dimensions, original lines, and recipe
       contributions involved before accepting a merge.
-- [ ] A user can split an incorrect merge and the corrected structure remains
+- [x] A user can split an incorrect merge and the corrected structure remains
       stable through deterministic regeneration of the current run.
 - [ ] Recipe-level parser corrections require explicit confirmation and create
       or select the appropriate version before derived lists change.

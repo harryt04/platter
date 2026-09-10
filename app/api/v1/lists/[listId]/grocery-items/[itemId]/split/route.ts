@@ -10,10 +10,10 @@ import { problemResponse } from '@/lib/contracts/problem'
 import { resolveRunRecipeVersions } from '@/lib/recipes/versions'
 import { generateGroceryItems } from '@/lib/recipes/groceries'
 import {
-  createGroceryAmountOverrideDocument,
-  groceryAmountOverrideRequestSchema,
-  groceryOverrideMutationReceiptFor,
-} from '@/lib/recipes/grocery-overrides'
+  createGroceryMergeSplitDocument,
+  grocerySplitMutationReceiptFor,
+  splitGroceryContributionRequestSchema,
+} from '@/lib/recipes/grocery-splits'
 
 type RouteContext = {
   params: Promise<{ listId: string; itemId: string }>
@@ -32,9 +32,9 @@ function problem(code: string, title: string, detail: string, status: number) {
 function validationFailed(fields?: Record<string, string[]>) {
   return problemResponse({
     type: 'https://platter.dev/problems/validation-failed',
-    title: 'Check the shopping amount',
+    title: 'Check the grocery correction',
     status: 422,
-    detail: 'Enter a positive shopping amount and retry metadata.',
+    detail: 'Choose a contribution and retry mutation metadata.',
     code: 'VALIDATION_FAILED',
     ...(fields ? { fields } : {}),
   })
@@ -59,13 +59,13 @@ async function currentGroceryItems(
   })
 }
 
-export async function PATCH(request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session)
     return problem(
       'AUTHENTICATION_REQUIRED',
       'Authentication required',
-      'Sign in to change a shopping amount.',
+      'Sign in to correct a grocery merge.',
       401,
     )
 
@@ -87,11 +87,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch {
     return validationFailed()
   }
-  const parsed = groceryAmountOverrideRequestSchema.safeParse(body)
+  const parsed = splitGroceryContributionRequestSchema.safeParse(body)
   if (!parsed.success) {
     const fields = parsed.error.issues.reduce<Record<string, string[]>>(
       (result, issue) => {
-        const field = issue.path[0]?.toString() ?? 'shopping amount'
+        const field = issue.path[0]?.toString() ?? 'correction'
         result[field] = [...(result[field] ?? []), issue.message]
         return result
       },
@@ -115,7 +115,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return problem(
       'LIST_NOT_ACTIVE',
       'List is archived',
-      'Unarchive this list before changing its groceries.',
+      'Unarchive this list before correcting its groceries.',
       409,
     )
 
@@ -133,10 +133,10 @@ export async function PATCH(request: Request, context: RouteContext) {
       409,
     )
 
-  const target = `grocery-item:${itemId}:override`
+  const target = `grocery-item:${itemId}:split:${parsed.data.contributionId}`
   try {
-    const receipt = groceryOverrideMutationReceiptFor(
-      run.groceryOverrideMutationReceipts,
+    const receipt = grocerySplitMutationReceiptFor(
+      run.grocerySplitMutationReceipts,
       parsed.data,
       target,
     )
@@ -145,7 +145,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return problem(
       'OPERATION_ID_REUSED',
       'Mutation could not be retried',
-      'Use a new operation id for this shopping amount.',
+      'Use a new operation id for this grocery correction.',
       409,
     )
   }
@@ -156,7 +156,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return problem(
       'RUN_REVISION_CONFLICT',
       'Shopping run changed',
-      'Reload the shopping run before changing its groceries.',
+      'Reload the shopping run before correcting its groceries.',
       409,
     )
 
@@ -170,31 +170,31 @@ export async function PATCH(request: Request, context: RouteContext) {
       'That grocery item is not in the current shopping run.',
       404,
     )
-  if (!item.calculatedRequirement)
+  if (item.contributions.length < 2)
     return problem(
-      'GROCERY_AMOUNT_UNAVAILABLE',
-      'Calculated amount unavailable',
-      'This item has no calculated requirement to override.',
+      'GROCERY_ITEM_NOT_MERGED',
+      'Grocery item is not merged',
+      'Only a combined grocery item can be split.',
       422,
     )
-
-  const override = createGroceryAmountOverrideDocument(
-    item,
-    parsed.data.quantity,
+  const contribution = item.contributions.find(
+    ({ id }) => id === parsed.data.contributionId,
   )
-  const groceryAmountOverrides = [
-    ...(run.groceryAmountOverrides ?? []).filter(
-      (candidate) => candidate.itemId !== itemId,
-    ),
-    override,
-  ]
+  if (!contribution)
+    return problem(
+      'GROCERY_CONTRIBUTION_NOT_FOUND',
+      'Contribution not found',
+      'That contribution is not part of this grocery item.',
+      404,
+    )
+
+  const split = createGroceryMergeSplitDocument(itemId, contribution.id)
+  const groceryMergeSplits = [...(run.groceryMergeSplits ?? []), split]
   const response = {
-    override,
-    calculatedRequirement: item.calculatedRequirement,
-    shoppingAmount: override.quantity,
+    split,
+    detail: `Split ${contribution.originalText} into a separate grocery item.`,
+    code: 'GROCERY_MERGE_SPLIT',
     revision: run.revision + 1,
-    detail: `Shopping amount for ${item.ingredientName} updated.`,
-    code: 'GROCERY_AMOUNT_OVERRIDDEN',
   }
   const updatedRun = await runs.findOneAndUpdate(
     {
@@ -205,15 +205,15 @@ export async function PATCH(request: Request, context: RouteContext) {
     },
     {
       $set: {
-        groceryAmountOverrides,
-        updatedAt: override.updatedAt,
+        groceryMergeSplits,
+        updatedAt: split.updatedAt,
       },
       $push: {
-        groceryOverrideMutationReceipts: {
+        grocerySplitMutationReceipts: {
           operationId: parsed.data.operationId,
           clientId: parsed.data.clientId,
           target,
-          kind: 'set',
+          kind: 'split',
           status: 200,
           response,
         },
@@ -230,8 +230,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     state: 'active',
   })
   try {
-    const receipt = groceryOverrideMutationReceiptFor(
-      retryRun?.groceryOverrideMutationReceipts,
+    const receipt = grocerySplitMutationReceiptFor(
+      retryRun?.grocerySplitMutationReceipts,
       parsed.data,
       target,
     )
@@ -240,14 +240,14 @@ export async function PATCH(request: Request, context: RouteContext) {
     return problem(
       'OPERATION_ID_REUSED',
       'Mutation could not be retried',
-      'Use a new operation id for this shopping amount.',
+      'Use a new operation id for this grocery correction.',
       409,
     )
   }
   return problem(
     'RUN_REVISION_CONFLICT',
     'Shopping run changed',
-    'Reload the shopping run before changing its groceries.',
+    'Reload the shopping run before correcting its groceries.',
     409,
   )
 }

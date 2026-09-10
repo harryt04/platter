@@ -41,6 +41,9 @@ export default async function ListPage({
     }),
     manualAdditions: run?.manualAdditions ?? [],
     overrides: run?.groceryAmountOverrides ?? [],
+    splitContributionIds:
+      run?.groceryMergeSplits?.map(({ contributionId }) => contributionId) ??
+      [],
   })
   const recipeIds = [
     ...new Set(selections.map((selection) => selection.recipeId)),

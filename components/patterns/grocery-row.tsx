@@ -91,6 +91,9 @@ export function GroceryRow({
   category = 'Produce',
   state = 'buy',
   mergeSuggestions = [],
+  listId,
+  baseRevision,
+  editable,
 }: {
   item?: GroceryItem
   ingredient?: string
@@ -98,6 +101,9 @@ export function GroceryRow({
   category?: string
   state?: 'buy' | 'already-have' | 'purchased'
   mergeSuggestions?: readonly GroceryMergeSuggestion[]
+  listId?: string
+  baseRevision?: number
+  editable?: boolean
 }) {
   const itemIngredient = item?.ingredientName ?? ingredient ?? 'Grocery item'
   const itemAmount = item
@@ -149,7 +155,12 @@ export function GroceryRow({
               : 'Purchased'}
         </Badge>
         {item ? (
-          <ContributionDetail item={item} />
+          <ContributionDetail
+            baseRevision={baseRevision}
+            editable={editable}
+            item={item}
+            listId={listId}
+          />
         ) : (
           <Button
             variant="ghost"

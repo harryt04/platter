@@ -104,6 +104,34 @@ describe('grocery generation', () => {
     })
   })
 
+  it('keeps a corrected contribution separate through deterministic regeneration', () => {
+    const input = {
+      selections: [
+        selection('first', 'Tacos', '1', [ingredient()]),
+        selection('second', 'Curry', '1', [ingredient({ quantity: '3' })]),
+      ],
+      splitContributionIds: ['recipe:first:0'],
+    }
+
+    const first = generateGroceryItems(input)
+    const second = generateGroceryItems(input)
+
+    expect(first).toEqual(second)
+    expect(first).toHaveLength(2)
+    expect(first).toMatchObject([
+      {
+        id: 'grocery:merged:onions:volume:cup',
+        calculatedRequirement: { min: '3' },
+        contributions: [{ id: 'recipe:second:0' }],
+      },
+      {
+        id: 'grocery:split:recipe:first:0',
+        calculatedRequirement: { min: '2' },
+        contributions: [{ id: 'recipe:first:0' }],
+      },
+    ])
+  })
+
   it('keeps uncertain identities, incompatible dimensions, and missing amounts separate', () => {
     const items = generateGroceryItems({
       selections: [

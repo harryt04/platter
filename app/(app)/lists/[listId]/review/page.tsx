@@ -43,6 +43,9 @@ export default async function ReviewPage({
     }),
     manualAdditions: run?.manualAdditions ?? [],
     overrides: run?.groceryAmountOverrides ?? [],
+    splitContributionIds:
+      run?.groceryMergeSplits?.map(({ contributionId }) => contributionId) ??
+      [],
   })
   const mergeSuggestions = findGroceryMergeSuggestions(groceryItems)
 
@@ -70,6 +73,9 @@ export default async function ReviewPage({
                   mergeSuggestions={mergeSuggestions.filter(
                     (suggestion) => suggestion.left.id === item.id,
                   )}
+                  baseRevision={run?.revision}
+                  listId={listId}
+                  editable={!isReadOnly}
                 />
                 <GroceryAmountOverrideForm
                   baseRevision={run?.revision}

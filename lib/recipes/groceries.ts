@@ -254,26 +254,33 @@ export function generateGroceryItems({
   selections,
   manualAdditions = [],
   overrides = [],
+  splitContributionIds = [],
 }: {
   selections: readonly GroceryRecipeSelection[]
   manualAdditions?: readonly GroceryManualAddition[]
   overrides?: readonly GroceryAmountOverride[]
+  splitContributionIds?: readonly string[]
 }): GroceryItem[] {
   const items = new Map<string, GroceryItem>()
+  const splitIds = new Set(splitContributionIds)
 
   const addContribution = (
     contribution: GroceryContribution,
     prepared: PreparedIngredient,
     fallbackKey: string,
   ) => {
-    const itemKey = mergeKey(prepared)
-    const compatibleKey = compatibleIdentity(prepared)
-    let itemId = `grocery:${itemKey ?? fallbackKey}`
+    const isSplit = splitIds.has(contribution.id)
+    const itemKey = isSplit ? null : mergeKey(prepared)
+    const compatibleKey = isSplit ? null : compatibleIdentity(prepared)
+    let itemId = isSplit
+      ? `grocery:split:${contribution.id}`
+      : `grocery:${itemKey ?? fallbackKey}`
     let existing = items.get(itemId)
 
     if (!existing && compatibleKey) {
       existing = [...items.values()].find(
         (item) =>
+          !item.id.startsWith('grocery:split:') &&
           [item.normalizedIdentity, item.dimension].join(':') === compatibleKey,
       )
       if (existing) itemId = existing.id

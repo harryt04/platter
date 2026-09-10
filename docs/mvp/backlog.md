@@ -240,7 +240,7 @@ they authored, imported, saved, or received through a list.
       cursor pagination.
 - [x] Personal notes and variants stay private unless separately shared or
       published.
-- [ ] Deleting a referenced private recipe explains the impact and preserves an
+- [x] Deleting a referenced private recipe explains the impact and preserves an
       immutable minimal snapshot required by list or history references.
 
 ## 10: Browse public recipes

@@ -20,9 +20,11 @@ import { Label } from '@/components/ui/label'
 export function DeleteDraftButton({
   recipeId,
   title,
+  sharedListNames = [],
 }: {
   recipeId: string
   title: string
+  sharedListNames?: string[]
 }) {
   const [open, setOpen] = useState(false)
   const [confirmation, setConfirmation] = useState('')
@@ -68,8 +70,11 @@ export function DeleteDraftButton({
             <AlertDialogHeader>
               <AlertDialogTitle>Delete “{title}”?</AlertDialogTitle>
               <AlertDialogDescription>
-                This permanently removes your private recipe draft. It is not
-                available to lists or public discovery.
+                {sharedListNames.length > 0
+                  ? `This removes the recipe from ${sharedListNames.join(', ')} for its members.`
+                  : 'This permanently removes your private recipe draft.'}{' '}
+                Any existing shopping or history reference keeps its pinned
+                immutable recipe version.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="mt-5 space-y-2">

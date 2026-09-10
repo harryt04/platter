@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { GET, PATCH } from '@/app/api/v1/recipes/[recipeId]/route'
+import { DELETE, GET, PATCH } from '@/app/api/v1/recipes/[recipeId]/route'
 
 const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -545,6 +545,98 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
       'Source URL must use HTTP or HTTPS.',
     ])
     expect(collection.updateOne).not.toHaveBeenCalled()
+  })
+})
+
+describe('DELETE /api/v1/recipes/[recipeId]', () => {
+  it('requires an exact title before changing a recipe or its references', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const recipes = {
+      findOne: vi.fn().mockResolvedValue(draft),
+      deleteOne: vi.fn(),
+    }
+    const db = {
+      collection: vi.fn().mockReturnValue(recipes),
+    }
+    getConnectedDatabase.mockResolvedValue(db)
+
+    const response = await DELETE(
+      new Request('http://localhost/api/v1/recipes/recipe-1', {
+        method: 'DELETE',
+        body: JSON.stringify({ title: 'Wrong title' }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(422)
+    expect((await response.json()).code).toBe('CONFIRMATION_MISMATCH')
+    expect(recipes.deleteOne).not.toHaveBeenCalled()
+  })
+
+  it('preserves the pinned version and removes owner share references', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const recipes = {
+      findOne: vi.fn().mockResolvedValue({
+        ...draft,
+        visibility: 'list-shared' as const,
+        versionId: 'version-2',
+        versionNumber: 2,
+        typicalPeopleFed: 4,
+        ingredients: [
+          {
+            originalText: '2 onions',
+            quantity: '2',
+            unit: 'each',
+            ingredientName: 'onions',
+            optional: false,
+          },
+        ],
+      }),
+      deleteOne: vi.fn().mockResolvedValue({ deletedCount: 1 }),
+    }
+    const versions = { updateOne: vi.fn().mockResolvedValue({}) }
+    const shares = {
+      deleteMany: vi.fn().mockResolvedValue({ deletedCount: 1 }),
+    }
+    const db = {
+      collection: vi.fn((name: string) => {
+        if (name === 'recipes') return recipes
+        if (name === 'recipe_versions') return versions
+        if (name === 'recipe_shares') return shares
+        throw new Error(`Unexpected collection: ${name}`)
+      }),
+    }
+    getConnectedDatabase.mockResolvedValue(db)
+
+    const response = await DELETE(
+      new Request('http://localhost/api/v1/recipes/recipe-1', {
+        method: 'DELETE',
+        body: JSON.stringify({ title: 'Tomato soup' }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(204)
+    expect(versions.updateOne).toHaveBeenCalledWith(
+      { _id: 'version-2' },
+      {
+        $setOnInsert: expect.objectContaining({
+          recipeId: 'recipe-1',
+          versionNumber: 2,
+          title: 'Tomato soup',
+        }),
+      },
+      { upsert: true },
+    )
+    expect(shares.deleteMany).toHaveBeenCalledWith({
+      recipeId: 'recipe-1',
+      ownerId: 'user-1',
+    })
+    expect(recipes.deleteOne).toHaveBeenCalledWith({
+      _id: 'recipe-1',
+      ownerId: 'user-1',
+      status: { $in: ['draft', 'usable'] },
+    })
   })
 })
 

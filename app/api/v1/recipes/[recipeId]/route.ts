@@ -370,6 +370,9 @@ export async function DELETE(request: Request, context: RouteContext) {
     { $setOnInsert: previousVersionContent },
     { upsert: true },
   )
+  await recipeShares(
+    db.collection<RecipeShareDocument>('recipe_shares'),
+  ).deleteMany({ recipeId, ownerId: session.user.id })
   await db
     .collection<RecipeDraftDocument>('recipes')
     .deleteOne(ownedRecipeFilter(session.user.id, recipeId))

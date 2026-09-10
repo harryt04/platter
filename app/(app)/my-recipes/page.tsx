@@ -143,6 +143,7 @@ export default async function MyRecipesPage({
                   {access === 'owned' && (
                     <DeleteDraftButton
                       recipeId={recipe.id}
+                      sharedListNames={sharedListNames}
                       title={recipe.title}
                     />
                   )}

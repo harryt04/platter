@@ -65,7 +65,9 @@ Signed-in users can also save public recipes to that library without adding
 them to a shopping run, then remove only their own saved reference.
 The library can search titles, ingredients, source metadata, and tags with
 stable cursor pagination while preserving the same ownership, membership, and
-saved-reference boundaries.
+saved-reference boundaries. Deleting a recipe explains current list impact,
+removes its owner-scoped share records, and preserves the pinned immutable
+version for shopping or history references.
 Mongo-backed list integration coverage now exercises three-list creation,
 membership isolation, owner lifecycle changes, editor restrictions, and the
 one-active-run database invariant; authenticated browser coverage runs when the

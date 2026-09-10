@@ -168,4 +168,90 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
       expect.objectContaining({ $unset: { description: '' } }),
     )
   })
+
+  it('persists sanitized timing and classification metadata', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(draft),
+      updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/recipes/recipe-1', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          prepTimeMinutes: 15,
+          cookingTimeMinutes: 30,
+          totalTimeMinutes: 45,
+          cuisine: ' Mediterranean\u0000 ',
+          mealType: ' Dinner ',
+          tags: ['weeknight', 'make ahead'],
+          dietaryLabels: ['vegetarian'],
+        }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).recipe).toMatchObject({
+      prepTimeMinutes: 15,
+      cookingTimeMinutes: 30,
+      totalTimeMinutes: 45,
+      cuisine: 'Mediterranean',
+      mealType: 'Dinner',
+      tags: ['weeknight', 'make ahead'],
+      dietaryLabels: ['vegetarian'],
+    })
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          prepTimeMinutes: 15,
+          cookingTimeMinutes: 30,
+          totalTimeMinutes: 45,
+          cuisine: 'Mediterranean',
+          mealType: 'Dinner',
+          tags: ['weeknight', 'make ahead'],
+          dietaryLabels: ['vegetarian'],
+        }),
+      }),
+    )
+  })
+
+  it('clears optional metadata without storing empty values', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue({
+        ...draft,
+        cuisine: 'Mediterranean',
+        prepTimeMinutes: 15,
+      }),
+      updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/recipes/recipe-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ cuisine: '', prepTimeMinutes: null }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    const result = (await response.json()).recipe
+    expect(response.status).toBe(200)
+    expect(result).not.toHaveProperty('cuisine')
+    expect(result).not.toHaveProperty('prepTimeMinutes')
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        $unset: { cuisine: '', prepTimeMinutes: '' },
+      }),
+    )
+  })
 })

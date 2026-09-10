@@ -147,6 +147,9 @@ mobile-friendly editor and make its usable state explicit.
       ingredients, ordered instructions, times, cuisine, meal type, tags,
       dietary labels, household notes, source, attribution, image provenance,
       and optional nutrition data.
+- [x] Recipe timing and classification metadata (prep, cooking, and total
+      minutes, cuisine, meal type, tags, and dietary labels) is validated,
+      sanitized, persisted, editable, and removable.
 - [x] Optional recipe descriptions are sanitized, length-bounded, persisted,
       editable, and removable without changing recipe usability.
 - [x] Each ingredient supports original text, quantity, unit, ingredient name,

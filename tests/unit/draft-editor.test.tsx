@@ -25,6 +25,13 @@ describe('DraftEditor', () => {
         initialTitle="Tomato soup"
         initialDescription="A comforting weeknight soup."
         initialTypicalPeopleFed={4}
+        initialPrepTimeMinutes={15}
+        initialCookingTimeMinutes={30}
+        initialTotalTimeMinutes={45}
+        initialCuisine="Mediterranean"
+        initialMealType="Dinner"
+        initialTags={['weeknight', 'make ahead']}
+        initialDietaryLabels={['vegetarian']}
         initialIngredients={[
           {
             originalText: '2 onions',
@@ -44,6 +51,27 @@ describe('DraftEditor', () => {
     ).toHaveValue(4)
     expect(screen.getByRole('textbox', { name: /Description/ })).toHaveValue(
       'A comforting weeknight soup.',
+    )
+    expect(
+      screen.getByRole('spinbutton', { name: 'Prep time (minutes)' }),
+    ).toHaveValue(15)
+    expect(
+      screen.getByRole('spinbutton', { name: 'Cooking time (minutes)' }),
+    ).toHaveValue(30)
+    expect(
+      screen.getByRole('spinbutton', { name: 'Total time (minutes)' }),
+    ).toHaveValue(45)
+    expect(screen.getByRole('textbox', { name: 'Cuisine' })).toHaveValue(
+      'Mediterranean',
+    )
+    expect(screen.getByRole('textbox', { name: 'Meal type' })).toHaveValue(
+      'Dinner',
+    )
+    expect(screen.getByRole('textbox', { name: 'Tags' })).toHaveValue(
+      'weeknight, make ahead',
+    )
+    expect(screen.getByRole('textbox', { name: 'Dietary labels' })).toHaveValue(
+      'vegetarian',
     )
     expect(
       screen.getByRole('textbox', { name: 'Ingredient name' }),

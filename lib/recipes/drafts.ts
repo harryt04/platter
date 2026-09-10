@@ -21,6 +21,42 @@ const recipeDescriptionSchema = z
   .transform(cleanText)
   .pipe(z.string().max(2000, 'Descriptions must be 2,000 characters or fewer.'))
 
+const optionalMetadataText = (label: string, max: number) =>
+  z.preprocess(
+    (value) => {
+      if (typeof value !== 'string') return value
+      const cleaned = cleanText(value)
+      return cleaned === '' ? undefined : cleaned
+    },
+    z
+      .string({ error: `Enter a recipe ${label}.` })
+      .max(max, `Recipe ${label} must be ${max} characters or fewer.`)
+      .optional()
+      .nullable(),
+  )
+
+const recipeTimeSchema = (label: string) =>
+  z
+    .number({ error: `Enter a valid ${label} in minutes.` })
+    .int(`${label} must be a whole number of minutes.`)
+    .nonnegative(`${label} cannot be negative.`)
+    .max(10080, `${label} must be 7 days or fewer.`)
+
+const recipeLabelSchema = z
+  .string({ error: 'Enter a recipe label.' })
+  .transform(cleanText)
+  .pipe(z.string().min(1, 'Recipe labels cannot be blank.').max(50))
+
+const recipeLabelsSchema = z
+  .array(recipeLabelSchema)
+  .max(20, 'Recipes can have 20 labels or fewer.')
+  .refine(
+    (labels) =>
+      new Set(labels.map((label) => label.toLocaleLowerCase())).size ===
+      labels.length,
+    'Recipe labels must be unique.',
+  )
+
 const requiredIngredientText = (label: string, max: number) =>
   z
     .string({ error: `Enter an ingredient ${label}.` })
@@ -55,6 +91,16 @@ export const typicalPeopleFedSchema = z
   .positive('Typical yield must be greater than zero.')
   .max(1000, 'Typical yield must be 1,000 people or fewer.')
 
+export const recipeMetadataSchema = z.object({
+  prepTimeMinutes: recipeTimeSchema('Prep time').optional().nullable(),
+  cookingTimeMinutes: recipeTimeSchema('Cooking time').optional().nullable(),
+  totalTimeMinutes: recipeTimeSchema('Total time').optional().nullable(),
+  cuisine: optionalMetadataText('cuisine', 100),
+  mealType: optionalMetadataText('meal type', 100),
+  tags: recipeLabelsSchema.optional(),
+  dietaryLabels: recipeLabelsSchema.optional(),
+})
+
 export type RecipeIngredient = z.infer<typeof recipeIngredientSchema>
 export type RecipeInstruction = z.infer<typeof recipeInstructionSchema>
 
@@ -64,6 +110,7 @@ export const updateDraftSchema = z
     title: recipeTitleSchema.optional(),
     description: recipeDescriptionSchema.nullable().optional(),
     typicalPeopleFed: typicalPeopleFedSchema.nullable().optional(),
+    ...recipeMetadataSchema.shape,
     ingredients: z.array(recipeIngredientSchema).max(100).optional(),
     instructions: z
       .array(recipeInstructionSchema)
@@ -82,6 +129,13 @@ export type RecipeDraft = {
   status: 'draft' | 'usable'
   visibility: 'private'
   typicalPeopleFed?: number
+  prepTimeMinutes?: number
+  cookingTimeMinutes?: number
+  totalTimeMinutes?: number
+  cuisine?: string
+  mealType?: string
+  tags?: string[]
+  dietaryLabels?: string[]
   ingredients: RecipeIngredient[]
   instructions: RecipeInstruction[]
   createdAt: IsoDateTime
@@ -124,6 +178,13 @@ export function createDraftDocument(
   details: {
     description?: string
     typicalPeopleFed?: number
+    prepTimeMinutes?: number
+    cookingTimeMinutes?: number
+    totalTimeMinutes?: number
+    cuisine?: string
+    mealType?: string
+    tags?: string[]
+    dietaryLabels?: string[]
     ingredients?: RecipeIngredient[]
     instructions?: RecipeInstruction[]
   } = {},
@@ -145,6 +206,21 @@ export function createDraftDocument(
     ...(details.typicalPeopleFed === undefined
       ? {}
       : { typicalPeopleFed: details.typicalPeopleFed }),
+    ...(details.prepTimeMinutes === undefined
+      ? {}
+      : { prepTimeMinutes: details.prepTimeMinutes }),
+    ...(details.cookingTimeMinutes === undefined
+      ? {}
+      : { cookingTimeMinutes: details.cookingTimeMinutes }),
+    ...(details.totalTimeMinutes === undefined
+      ? {}
+      : { totalTimeMinutes: details.totalTimeMinutes }),
+    ...(details.cuisine === undefined ? {} : { cuisine: details.cuisine }),
+    ...(details.mealType === undefined ? {} : { mealType: details.mealType }),
+    ...(details.tags === undefined ? {} : { tags: details.tags }),
+    ...(details.dietaryLabels === undefined
+      ? {}
+      : { dietaryLabels: details.dietaryLabels }),
     ingredients,
     instructions,
     createdAt: now,
@@ -165,6 +241,21 @@ export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
     ...(document.typicalPeopleFed === undefined
       ? {}
       : { typicalPeopleFed: document.typicalPeopleFed }),
+    ...(document.prepTimeMinutes === undefined
+      ? {}
+      : { prepTimeMinutes: document.prepTimeMinutes }),
+    ...(document.cookingTimeMinutes === undefined
+      ? {}
+      : { cookingTimeMinutes: document.cookingTimeMinutes }),
+    ...(document.totalTimeMinutes === undefined
+      ? {}
+      : { totalTimeMinutes: document.totalTimeMinutes }),
+    ...(document.cuisine === undefined ? {} : { cuisine: document.cuisine }),
+    ...(document.mealType === undefined ? {} : { mealType: document.mealType }),
+    ...(document.tags === undefined ? {} : { tags: document.tags }),
+    ...(document.dietaryLabels === undefined
+      ? {}
+      : { dietaryLabels: document.dietaryLabels }),
     ingredients: document.ingredients ?? [],
     instructions: document.instructions ?? [],
     createdAt: document.createdAt,

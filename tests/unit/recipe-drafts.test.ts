@@ -7,6 +7,7 @@ import {
   privateDraftFilter,
   recipeIngredientSchema,
   recipeInstructionSchema,
+  recipeMetadataSchema,
   typicalPeopleFedSchema,
   toRecipeDraft,
   updateDraftSchema,
@@ -100,6 +101,38 @@ describe('recipe drafts', () => {
       updateDraftSchema.safeParse({
         instructions: Array.from({ length: 101 }, () => 'Do a thing.'),
       }).success,
+    ).toBe(false)
+  })
+
+  it('validates bounded timing and normalized recipe labels', () => {
+    expect(
+      recipeMetadataSchema.parse({
+        prepTimeMinutes: 15,
+        cookingTimeMinutes: 30,
+        totalTimeMinutes: 45,
+        cuisine: '  Mediterranean\u0000 ',
+        mealType: ' Dinner ',
+        tags: ['weeknight', 'make ahead'],
+        dietaryLabels: ['vegetarian'],
+      }),
+    ).toEqual({
+      prepTimeMinutes: 15,
+      cookingTimeMinutes: 30,
+      totalTimeMinutes: 45,
+      cuisine: 'Mediterranean',
+      mealType: 'Dinner',
+      tags: ['weeknight', 'make ahead'],
+      dietaryLabels: ['vegetarian'],
+    })
+    expect(
+      recipeMetadataSchema.safeParse({ prepTimeMinutes: -1 }).success,
+    ).toBe(false)
+    expect(
+      recipeMetadataSchema.safeParse({ tags: ['Weeknight', 'weeknight'] })
+        .success,
+    ).toBe(false)
+    expect(
+      recipeMetadataSchema.safeParse({ tags: ['x'.repeat(51)] }).success,
     ).toBe(false)
   })
 })

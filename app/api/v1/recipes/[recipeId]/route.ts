@@ -12,6 +12,16 @@ import {
 
 type RouteContext = { params: Promise<{ recipeId: string }> }
 
+const recipeMetadataFields = [
+  'prepTimeMinutes',
+  'cookingTimeMinutes',
+  'totalTimeMinutes',
+  'cuisine',
+  'mealType',
+  'tags',
+  'dietaryLabels',
+] as const
+
 async function ownedDraft(recipeId: string, ownerId: string) {
   const db = await getConnectedDatabase()
   return db
@@ -145,6 +155,15 @@ export async function PATCH(request: Request, context: RouteContext) {
       setFields.typicalPeopleFed = parsed.data.typicalPeopleFed
     }
   }
+  for (const field of recipeMetadataFields) {
+    if (!(field in parsed.data)) continue
+    const value = parsed.data[field]
+    if (value === null || value === undefined || value === '') {
+      unsetFields[field] = ''
+    } else {
+      ;(setFields as Record<string, unknown>)[field] = value
+    }
+  }
   await db
     .collection<RecipeDraftDocument>('recipes')
     .updateOne(privateDraftFilter(session.user.id, recipeId), {
@@ -166,6 +185,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       parsed.data.description === '')
   ) {
     delete updatedDraft.description
+  }
+  for (const field of recipeMetadataFields) {
+    if (field in unsetFields) Reflect.deleteProperty(updatedDraft, field)
   }
   return Response.json({
     recipe: toRecipeDraft(updatedDraft),

@@ -40,11 +40,25 @@ function moveItem<T>(items: T[], index: number, offset: -1 | 1) {
   return next
 }
 
+function splitLabels(value: string) {
+  return value
+    .split(',')
+    .map((label) => label.trim())
+    .filter(Boolean)
+}
+
 export function DraftEditor({
   recipeId,
   initialTitle = '',
   initialDescription = '',
   initialTypicalPeopleFed,
+  initialPrepTimeMinutes,
+  initialCookingTimeMinutes,
+  initialTotalTimeMinutes,
+  initialCuisine = '',
+  initialMealType = '',
+  initialTags = [],
+  initialDietaryLabels = [],
   initialIngredients = [],
   initialInstructions = [],
 }: {
@@ -52,6 +66,13 @@ export function DraftEditor({
   initialTitle?: string
   initialDescription?: string
   initialTypicalPeopleFed?: number
+  initialPrepTimeMinutes?: number
+  initialCookingTimeMinutes?: number
+  initialTotalTimeMinutes?: number
+  initialCuisine?: string
+  initialMealType?: string
+  initialTags?: string[]
+  initialDietaryLabels?: string[]
   initialIngredients?: RecipeIngredient[]
   initialInstructions?: RecipeInstruction[]
 }) {
@@ -60,6 +81,21 @@ export function DraftEditor({
   const [description, setDescription] = useState(initialDescription)
   const [typicalPeopleFed, setTypicalPeopleFed] = useState(
     initialTypicalPeopleFed?.toString() ?? '',
+  )
+  const [prepTimeMinutes, setPrepTimeMinutes] = useState(
+    initialPrepTimeMinutes?.toString() ?? '',
+  )
+  const [cookingTimeMinutes, setCookingTimeMinutes] = useState(
+    initialCookingTimeMinutes?.toString() ?? '',
+  )
+  const [totalTimeMinutes, setTotalTimeMinutes] = useState(
+    initialTotalTimeMinutes?.toString() ?? '',
+  )
+  const [cuisine, setCuisine] = useState(initialCuisine)
+  const [mealType, setMealType] = useState(initialMealType)
+  const [tags, setTags] = useState(initialTags.join(', '))
+  const [dietaryLabels, setDietaryLabels] = useState(
+    initialDietaryLabels.join(', '),
   )
   const [ingredients, setIngredients] =
     useState<IngredientForm[]>(initialIngredients)
@@ -93,6 +129,18 @@ export function DraftEditor({
                   description,
                   typicalPeopleFed:
                     typicalPeopleFed === '' ? null : Number(typicalPeopleFed),
+                  prepTimeMinutes:
+                    prepTimeMinutes === '' ? null : Number(prepTimeMinutes),
+                  cookingTimeMinutes:
+                    cookingTimeMinutes === ''
+                      ? null
+                      : Number(cookingTimeMinutes),
+                  totalTimeMinutes:
+                    totalTimeMinutes === '' ? null : Number(totalTimeMinutes),
+                  cuisine,
+                  mealType,
+                  tags: splitLabels(tags),
+                  dietaryLabels: splitLabels(dietaryLabels),
                   ingredients,
                   instructions,
                 }
@@ -186,6 +234,128 @@ export function DraftEditor({
                   it also has an ingredient.
                 </p>
               </div>
+              <fieldset className="space-y-4">
+                <legend className="text-sm font-medium">Recipe details</legend>
+                <p className="text-muted-foreground text-xs">
+                  Add timing and labels to make this recipe easier to recognize
+                  later. All of these details are optional.
+                </p>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="prep-time-minutes">
+                      Prep time (minutes)
+                    </Label>
+                    <Input
+                      id="prep-time-minutes"
+                      name="prepTimeMinutes"
+                      type="number"
+                      min="0"
+                      max="10080"
+                      step="1"
+                      inputMode="numeric"
+                      value={prepTimeMinutes}
+                      onChange={(event) =>
+                        setPrepTimeMinutes(event.target.value)
+                      }
+                      placeholder="15"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cooking-time-minutes">
+                      Cooking time (minutes)
+                    </Label>
+                    <Input
+                      id="cooking-time-minutes"
+                      name="cookingTimeMinutes"
+                      type="number"
+                      min="0"
+                      max="10080"
+                      step="1"
+                      inputMode="numeric"
+                      value={cookingTimeMinutes}
+                      onChange={(event) =>
+                        setCookingTimeMinutes(event.target.value)
+                      }
+                      placeholder="30"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="total-time-minutes">
+                      Total time (minutes)
+                    </Label>
+                    <Input
+                      id="total-time-minutes"
+                      name="totalTimeMinutes"
+                      type="number"
+                      min="0"
+                      max="10080"
+                      step="1"
+                      inputMode="numeric"
+                      value={totalTimeMinutes}
+                      onChange={(event) =>
+                        setTotalTimeMinutes(event.target.value)
+                      }
+                      placeholder="45"
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="recipe-cuisine">Cuisine</Label>
+                    <Input
+                      id="recipe-cuisine"
+                      name="cuisine"
+                      value={cuisine}
+                      onChange={(event) => setCuisine(event.target.value)}
+                      placeholder="Mediterranean"
+                      maxLength={100}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="recipe-meal-type">Meal type</Label>
+                    <Input
+                      id="recipe-meal-type"
+                      name="mealType"
+                      value={mealType}
+                      onChange={(event) => setMealType(event.target.value)}
+                      placeholder="Dinner"
+                      maxLength={100}
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="recipe-tags">Tags</Label>
+                    <Input
+                      id="recipe-tags"
+                      name="tags"
+                      value={tags}
+                      onChange={(event) => setTags(event.target.value)}
+                      placeholder="weeknight, make ahead"
+                      maxLength={1050}
+                    />
+                    <p className="text-muted-foreground text-xs">
+                      Separate labels with commas, up to 20.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="recipe-dietary-labels">
+                      Dietary labels
+                    </Label>
+                    <Input
+                      id="recipe-dietary-labels"
+                      name="dietaryLabels"
+                      value={dietaryLabels}
+                      onChange={(event) => setDietaryLabels(event.target.value)}
+                      placeholder="vegetarian, gluten-free"
+                      maxLength={1050}
+                    />
+                    <p className="text-muted-foreground text-xs">
+                      Separate labels with commas, up to 20.
+                    </p>
+                  </div>
+                </div>
+              </fieldset>
               <fieldset className="space-y-4">
                 <legend className="text-sm font-medium">Ingredients</legend>
                 <p className="text-muted-foreground text-xs">

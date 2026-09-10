@@ -89,6 +89,19 @@ export function listOwnerFilter(listId: string, userId: string) {
   }
 }
 
+export function listEditorFilter(listId: string, userId: string) {
+  return {
+    _id: listId,
+    members: {
+      $elemMatch: {
+        userId,
+        role: 'editor' as const,
+        invitationState: 'active' as const,
+      },
+    },
+  }
+}
+
 export function listMembershipFilter(userId: string) {
   return {
     members: { $elemMatch: { userId, invitationState: 'active' as const } },

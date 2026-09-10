@@ -8,6 +8,7 @@ import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { listMemberFilter, type ListDocument } from '@/lib/lists'
 import { notFound } from 'next/navigation'
 import { RenameListForm } from '@/components/lists/rename-list-form'
+import { LeaveListButton } from '@/components/lists/leave-list-button'
 
 export default async function ListPage({
   params,
@@ -71,6 +72,14 @@ export default async function ListPage({
       {list.ownerIds.includes(session.user.id) && (
         <div className="mt-6 max-w-2xl">
           <RenameListForm listId={listId} currentName={list.name} />
+        </div>
+      )}
+      {list.members.some(
+        (member) =>
+          member.userId === session.user.id && member.role === 'editor',
+      ) && (
+        <div className="mt-6 max-w-2xl">
+          <LeaveListButton listId={listId} listName={list.name} />
         </div>
       )}
     </ContentContainer>

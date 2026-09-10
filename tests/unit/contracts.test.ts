@@ -3,6 +3,7 @@ import {
   createActiveShoppingRunDocument,
   createListDocument,
   createListSchema,
+  listEditorFilter,
   listMemberFilter,
   listMembershipFilter,
   listOwnerFilter,
@@ -59,6 +60,16 @@ describe('lists', () => {
         $elemMatch: {
           userId: 'user-1',
           role: 'owner',
+          invitationState: 'active',
+        },
+      },
+    })
+    expect(listEditorFilter('list-1', 'editor-1')).toEqual({
+      _id: 'list-1',
+      members: {
+        $elemMatch: {
+          userId: 'editor-1',
+          role: 'editor',
           invitationState: 'active',
         },
       },

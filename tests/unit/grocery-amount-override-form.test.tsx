@@ -10,7 +10,12 @@ import { GroceryAmountOverrideForm } from '@/components/lists/grocery-amount-ove
 import type { GroceryItem } from '@/lib/recipes/groceries'
 
 const refresh = vi.fn()
+const offline = vi.hoisted(() => ({
+  browserIsOffline: vi.fn(),
+  queueBrowserMutation: vi.fn(),
+}))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }))
+vi.mock('@/lib/offline/mutations', () => offline)
 
 const item: GroceryItem = {
   id: 'grocery:merged:rice:mass:lb',
@@ -45,6 +50,8 @@ afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
   refresh.mockReset()
+  offline.browserIsOffline.mockReset()
+  offline.queueBrowserMutation.mockReset()
 })
 
 describe('GroceryAmountOverrideForm', () => {
@@ -168,5 +175,40 @@ describe('GroceryAmountOverrideForm', () => {
     expect(
       screen.queryByRole('button', { name: 'Reset shopping amount for rice' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('queues an offline amount override without pretending it reached the server', async () => {
+    offline.browserIsOffline.mockReturnValue(true)
+    offline.queueBrowserMutation.mockResolvedValue({ operationId: 'op-1' })
+
+    render(
+      <GroceryAmountOverrideForm
+        baseRevision={3}
+        item={item}
+        listId="list-1"
+        runId="run-1"
+        userId="user-1"
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Shopping amount for rice'), {
+      target: { value: '5.25' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Set shopping amount' }))
+
+    await waitFor(() =>
+      expect(offline.queueBrowserMutation).toHaveBeenCalledOnce(),
+    )
+    expect(offline.queueBrowserMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        listId: 'list-1',
+        runId: 'run-1',
+        baseRevision: 3,
+        kind: 'grocery.amount-override.set',
+        payload: { itemId: item.id, quantity: { min: '5.25' } },
+      }),
+    )
+    expect(screen.getByText('Pending sync')).toBeInTheDocument()
+    expect(refresh).not.toHaveBeenCalled()
   })
 })

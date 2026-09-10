@@ -114,7 +114,7 @@ export interface QueuedOperation {
   baseRevision?: number
   createdAt: IsoDateTime
   attemptCount: number
-  status: 'pending' | 'syncing' | 'failed'
+  status: 'pending' | 'syncing' | 'failed' | 'synced'
 }
 
 export interface GroceryAmountPreview {

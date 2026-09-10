@@ -514,6 +514,9 @@ and synchronize it honestly and safely when connectivity returns.
 
 - [x] After a connected load, the active-list shell, latest run, and recipe
       selection summary remain available offline to the same authenticated user.
+- [x] Offline Purchased, Already have, and shopping-amount changes are stored
+      as user-scoped pending operations with immediate local control feedback;
+      reconnect synchronization remains a separate step below.
 - [ ] Offline users can check or uncheck, mark or undo `Already have`, and adjust
       shopping amounts with immediate local feedback.
 - [ ] Each queued operation has a unique operation ID, client ID, base revision,

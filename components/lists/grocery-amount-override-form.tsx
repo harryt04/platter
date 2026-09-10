@@ -7,6 +7,8 @@ import { createMutationMetadata } from '@/lib/contracts/mutations'
 import type { GroceryItem } from '@/lib/recipes/groceries'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SyncStatus } from '@/components/states/sync-status'
+import { browserIsOffline, queueBrowserMutation } from '@/lib/offline/mutations'
 
 function formatQuantity(
   quantity: GroceryItem['calculatedRequirement'],
@@ -27,11 +29,15 @@ export function GroceryAmountOverrideForm({
   item,
   listId,
   baseRevision,
+  runId,
+  userId,
   editable = true,
 }: {
   item: GroceryItem
   listId: string
   baseRevision?: number
+  runId?: string
+  userId?: string
   editable?: boolean
 }) {
   const router = useRouter()
@@ -42,6 +48,7 @@ export function GroceryAmountOverrideForm({
   const [pending, setPending] = React.useState(false)
   const [message, setMessage] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const [offlinePending, setOfflinePending] = React.useState(false)
   const suggestion = formatSuggestion(item)
 
   const currentRevision =
@@ -55,6 +62,21 @@ export function GroceryAmountOverrideForm({
     setMessage(null)
     setError(null)
     try {
+      if (browserIsOffline()) {
+        await queueBrowserMutation({
+          userId,
+          listId,
+          runId,
+          baseRevision: currentRevision,
+          kind: 'grocery.amount-override.set',
+          payload: { itemId: item.id, quantity: { min: amount.trim() } },
+        })
+        setOfflinePending(true)
+        setMessage(
+          'Saved on this device. We’ll sync it when you’re back online.',
+        )
+        return
+      }
       const response = await fetch(
         `/api/v1/lists/${encodeURIComponent(listId)}/grocery-items/${encodeURIComponent(item.id)}/override`,
         {
@@ -75,6 +97,7 @@ export function GroceryAmountOverrideForm({
       }
       if (body.revision !== undefined) setMutationRevision(body.revision)
       setMessage(body.detail ?? 'Shopping amount updated.')
+      setOfflinePending(false)
       router.refresh()
     } catch (caught) {
       setError(
@@ -92,6 +115,22 @@ export function GroceryAmountOverrideForm({
     setMessage(null)
     setError(null)
     try {
+      if (browserIsOffline()) {
+        await queueBrowserMutation({
+          userId,
+          listId,
+          runId,
+          baseRevision: currentRevision,
+          kind: 'grocery.amount-override.reset',
+          payload: { itemId: item.id },
+        })
+        setAmount(item.calculatedRequirement?.min ?? '')
+        setOfflinePending(true)
+        setMessage(
+          'Saved on this device. We’ll sync it when you’re back online.',
+        )
+        return
+      }
       const response = await fetch(
         `/api/v1/lists/${encodeURIComponent(listId)}/grocery-items/${encodeURIComponent(item.id)}/override`,
         {
@@ -115,6 +154,7 @@ export function GroceryAmountOverrideForm({
       setMessage(
         body.detail ?? 'Shopping amount reset to calculated requirement.',
       )
+      setOfflinePending(false)
       router.refresh()
     } catch (caught) {
       setError(
@@ -212,6 +252,7 @@ export function GroceryAmountOverrideForm({
       <p aria-live="polite" className="text-muted-foreground mt-2 text-xs">
         {error ?? message}
       </p>
+      {offlinePending && <SyncStatus state="pending" />}
     </form>
   )
 }

@@ -7,8 +7,9 @@ a mobile-first recipe-to-grocery app. Private recipe drafts, recipe parsing and
 scaling, deterministic grocery generation, the first grocery correction slice,
 and conservative grocery categorization, current-run recategorization,
 temporary shared grocery ordering, and the active-checklist membership,
-Purchased, connected realtime, and first user-scoped offline snapshot slices
-are implemented; the remaining offline mutation, reconciliation, correction,
+Purchased, connected realtime, and first user-scoped offline snapshot and
+optimistic mutation-queue slices are implemented; the remaining offline
+reconciliation, correction,
 collaboration, and feature workflows are still planned in the backlog.
 
 - `README.md` — project overview and documentation entry point.

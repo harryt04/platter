@@ -189,6 +189,11 @@ putting private HTML or API responses in Cache Storage; the offline route reads
 the saved list names, recipe selections, revision, and grocery-item count from
 the authenticated user's local database. Signing out deletes that local
 database and its remembered account marker.
+While offline, Purchased, Already have, and shopping-amount changes now give
+immediate local feedback and are recorded as pending operations in that same
+user-scoped database. Reconnection reconciliation and server acceptance are
+still planned, so pending changes are clearly labeled and are not presented as
+synced.
 The active run also shares a temporary within-category item order: members can
 use accessible move-up and move-down controls, while a newly created run begins
 at the documented default order. Members can also drag a category or use its

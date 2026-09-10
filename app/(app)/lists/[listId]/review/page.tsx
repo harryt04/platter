@@ -153,6 +153,8 @@ export default async function ReviewPage({
                           (alreadyHave) => alreadyHave.itemId === item.id,
                         ),
                       )}
+                      runId={run?._id ?? list.activeRunId}
+                      userId={session.user.id}
                     />
                     <PurchasedButton
                       baseRevision={run?.revision}
@@ -161,6 +163,8 @@ export default async function ReviewPage({
                       itemId={item.id}
                       listId={listId}
                       marked={purchasedItemIds.has(item.id)}
+                      runId={run?._id ?? list.activeRunId}
+                      userId={session.user.id}
                     />
                     <GroceryCategorySelect
                       baseRevision={run?.revision}
@@ -184,6 +188,8 @@ export default async function ReviewPage({
                       editable={!isReadOnly}
                       item={item}
                       listId={listId}
+                      runId={run?._id ?? list.activeRunId}
+                      userId={session.user.id}
                     />
                   </div>
                 ))}

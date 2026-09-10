@@ -409,8 +409,8 @@ contract without changing envelope fields.
   and `/offline`. Use network-first navigation. Never generically cache auth
   responses, private HTML, `/api/auth`, or `/api/v1` responses.
 - Create a Dexie database factory scoped to the authenticated user. Define
-  versioned tables for active-run snapshots and queued operations without
-  adding product-specific payloads yet.
+  versioned tables for active-run snapshots and queued operations; product
+  payloads must remain behind the typed mutation boundary.
 - On sign-out, close and delete the prior user's private database and clear
   private caches before navigating to public content.
 - Expose `offline`, `pending`, `syncing`, `synced`, and `failed` states. Never

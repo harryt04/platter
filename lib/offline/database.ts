@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie'
 import type { QueuedOperation } from '@/lib/contracts/mutations'
+import { isoDateTime, type IsoDateTime } from '@/lib/contracts/ids'
 
 export type OfflineRecipeSelectionSummary = {
   id: string
@@ -44,6 +45,13 @@ export interface ShellSnapshot {
   userId: string
   payload: OfflineShellSnapshotPayload
   updatedAt: string
+}
+
+export type OfflineOperationInput = Omit<
+  QueuedOperation,
+  'createdAt' | 'attemptCount' | 'status'
+> & {
+  createdAt?: IsoDateTime
 }
 
 class PlatterOfflineDatabase extends Dexie {
@@ -134,6 +142,64 @@ export async function getOfflineShellSnapshot(userId: string) {
   return snapshots.sort((left, right) =>
     right.updatedAt.localeCompare(left.updatedAt),
   )[0]
+}
+
+/** Add one retry-safe operation to the authenticated user's local queue. */
+export async function queueOfflineOperation(
+  userId: string,
+  input: OfflineOperationInput,
+) {
+  rememberOfflineUser(userId)
+  const db = openOfflineDatabase(userId)
+  try {
+    return await db.transaction('rw', db.operations, async () => {
+      const existing = await db.operations
+        .where('operationId')
+        .equals(input.operationId)
+        .first()
+      if (existing) return existing
+
+      const operation: QueuedOperation = {
+        ...input,
+        createdAt: input.createdAt ?? isoDateTime(new Date()),
+        attemptCount: 0,
+        status: 'pending',
+      }
+      const id = await db.operations.add(operation)
+      return { ...operation, id }
+    })
+  } finally {
+    db.close()
+  }
+}
+
+export async function getOfflineOperations(userId: string) {
+  const db = openOfflineDatabase(userId)
+  try {
+    return await db.operations.orderBy('createdAt').toArray()
+  } finally {
+    db.close()
+  }
+}
+
+export async function updateOfflineOperation(
+  userId: string,
+  operationId: string,
+  update: Pick<QueuedOperation, 'status'> &
+    Partial<Pick<QueuedOperation, 'attemptCount'>>,
+) {
+  const db = openOfflineDatabase(userId)
+  try {
+    const operation = await db.operations
+      .where('operationId')
+      .equals(operationId)
+      .first()
+    if (!operation?.id) return false
+    await db.operations.update(operation.id, update)
+    return true
+  } finally {
+    db.close()
+  }
 }
 
 export async function clearOfflineDatabase(userId: string) {

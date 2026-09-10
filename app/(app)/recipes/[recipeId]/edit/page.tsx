@@ -48,6 +48,13 @@ export default async function EditRecipePage({
         title="Edit recipe"
         description="Keep shaping this recipe. Its visibility changes only when you explicitly share or publish it."
       />
+      {draft.derivedFrom && (
+        <p className="text-muted-foreground mb-6 text-sm" role="status">
+          This private variant started from published version{' '}
+          {draft.derivedFrom.versionNumber}. Saving changes here will not alter
+          the published recipe.
+        </p>
+      )}
       <DraftEditor
         recipeId={recipeId}
         initialTitle={draft.title}

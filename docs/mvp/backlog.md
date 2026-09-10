@@ -210,7 +210,7 @@ creator to decide who may discover or use each recipe.
       edits never silently rewrite a version used by another person or run.
 - [x] Manually authored recipes remain private by default and can be shared
       with selected lists or explicitly published.
-- [ ] Editing public content creates a new version or private personal variant
+- [x] Editing public content creates a new version or private personal variant
       with a visible relationship to its source version.
 - [ ] Private, list-shared, public, draft, usable, and suppressed rules are
       independently enforced on reads, writes, and search results.

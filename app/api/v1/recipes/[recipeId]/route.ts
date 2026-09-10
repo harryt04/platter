@@ -5,6 +5,7 @@ import { problemResponse } from '@/lib/contracts/problem'
 import { listMembershipFilter, type ListDocument } from '@/lib/lists'
 import {
   createRecipeVersionDocument,
+  createPrivateRecipeVariantDocument,
   isUsableRecipe,
   ownedRecipeFilter,
   recipeShares,
@@ -167,11 +168,15 @@ export async function PATCH(request: Request, context: RouteContext) {
   const status = isUsableRecipe(nextTypicalPeopleFed, nextIngredients)
   const updatedAt = isoDateTime(new Date())
   const db = await getConnectedDatabase()
+  const editingPublicRecipe = draft.visibility === 'public'
+  const variant = editingPublicRecipe
+    ? createPrivateRecipeVariantDocument(draft)
+    : null
   const setFields: Partial<RecipeDraftDocument> = {
     status: status ? 'usable' : 'draft',
     updatedAt,
     versionId: crypto.randomUUID(),
-    versionNumber: (draft.versionNumber ?? 1) + 1,
+    versionNumber: editingPublicRecipe ? 1 : (draft.versionNumber ?? 1) + 1,
   }
   const unsetFields: Record<string, ''> = {}
   if ('title' in parsed.data && parsed.data.title !== undefined) {
@@ -233,6 +238,35 @@ export async function PATCH(request: Request, context: RouteContext) {
     { $setOnInsert: previousVersionContent },
     { upsert: true },
   )
+  if (variant) {
+    const updatedVariant: RecipeDraftDocument = {
+      ...variant,
+      ...setFields,
+    }
+    if (
+      'typicalPeopleFed' in parsed.data &&
+      parsed.data.typicalPeopleFed === null
+    ) {
+      delete updatedVariant.typicalPeopleFed
+    }
+    if (
+      'description' in parsed.data &&
+      (parsed.data.description === null ||
+        parsed.data.description === undefined ||
+        parsed.data.description === '')
+    ) {
+      delete updatedVariant.description
+    }
+    if ('image' in unsetFields) delete updatedVariant.image
+    if ('nutrition' in unsetFields) delete updatedVariant.nutrition
+    for (const field of recipeMetadataFields) {
+      if (field in unsetFields) Reflect.deleteProperty(updatedVariant, field)
+    }
+    await db
+      .collection<RecipeDraftDocument>('recipes')
+      .insertOne(updatedVariant)
+    return Response.json({ recipe: toRecipeDraft(updatedVariant) })
+  }
   const updateResult = await db
     .collection<RecipeDraftDocument>('recipes')
     .updateOne(

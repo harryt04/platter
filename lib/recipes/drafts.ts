@@ -139,6 +139,18 @@ export type RecipeImportReviewStatus = z.infer<
 >
 export type RecipeVisibility = z.infer<typeof recipeVisibilitySchema>
 
+export type RecipeLineageDocument = {
+  recipeId: string
+  versionId: string
+  versionNumber: number
+}
+
+export type RecipeLineage = {
+  recipeId: EntityId
+  versionId: EntityId
+  versionNumber: number
+}
+
 export type RecipeShareDocument = {
   _id: string
   recipeId: string
@@ -263,6 +275,7 @@ export type RecipeDraft = {
   origin: RecipeOrigin
   importReviewStatus: RecipeImportReviewStatus
   visibility: RecipeVisibility
+  derivedFrom?: RecipeLineage
   typicalPeopleFed?: number
   prepTimeMinutes?: number
   cookingTimeMinutes?: number
@@ -292,6 +305,7 @@ export type RecipeDraftDocument = Omit<
   | 'versionNumber'
   | 'origin'
   | 'importReviewStatus'
+  | 'derivedFrom'
 > & {
   _id: string
   /** Stable identity is the recipe document id. Legacy documents use _id. */
@@ -302,6 +316,8 @@ export type RecipeDraftDocument = Omit<
   /** Legacy documents predate the explicit import review contract. */
   origin?: RecipeOrigin
   importReviewStatus?: RecipeImportReviewStatus
+  /** A private variant's source recipe and immutable source version. */
+  derivedFrom?: RecipeLineageDocument
 }
 
 /**
@@ -517,6 +533,42 @@ export function createRecipeVersionDocument(
   }
 }
 
+export function createPrivateRecipeVariantDocument(
+  source: RecipeDraftDocument,
+): RecipeDraftDocument {
+  const {
+    _id: sourceRecipeId,
+    recipeId: sourceStableRecipeId,
+    versionId: sourceVersionId,
+    versionNumber: sourceVersionNumber,
+    derivedFrom: _sourceLineage,
+    createdAt: _sourceCreatedAt,
+    updatedAt: _sourceUpdatedAt,
+    visibility: _sourceVisibility,
+    ...content
+  } = source
+  void _sourceLineage
+  void _sourceCreatedAt
+  void _sourceUpdatedAt
+  void _sourceVisibility
+
+  const now = isoDateTime(new Date())
+  return {
+    ...content,
+    _id: crypto.randomUUID(),
+    versionId: crypto.randomUUID(),
+    versionNumber: 1,
+    visibility: 'private',
+    derivedFrom: {
+      recipeId: sourceStableRecipeId ?? sourceRecipeId,
+      versionId: sourceVersionId ?? sourceRecipeId,
+      versionNumber: sourceVersionNumber ?? 1,
+    },
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
 export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
   return {
     id: entityId(document._id),
@@ -535,6 +587,15 @@ export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
         ? (document.importReviewStatus ?? 'pending')
         : 'not-required',
     visibility: document.visibility,
+    ...(document.derivedFrom === undefined
+      ? {}
+      : {
+          derivedFrom: {
+            recipeId: entityId(document.derivedFrom.recipeId),
+            versionId: entityId(document.derivedFrom.versionId),
+            versionNumber: document.derivedFrom.versionNumber,
+          },
+        }),
     ...(document.typicalPeopleFed === undefined
       ? {}
       : { typicalPeopleFed: document.typicalPeopleFed }),

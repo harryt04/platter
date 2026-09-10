@@ -33,6 +33,8 @@ editing or deleting a recipe snapshots the prior version for future run and
 history references. Authored usable recipes remain private until the owner
 explicitly shares them with selected active lists or publishes them to the
 public catalog; list-scoped access is checked against current membership.
+Editing a published recipe creates a private personal variant with lineage to
+the published version, leaving the public source unchanged.
 
 ## Documentation
 

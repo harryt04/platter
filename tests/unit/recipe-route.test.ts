@@ -132,6 +132,72 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
     )
   })
 
+  it('creates a private variant instead of mutating a published recipe', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const publicDraft = {
+      ...draft,
+      status: 'usable' as const,
+      visibility: 'public' as const,
+      versionId: 'public-version-3',
+      versionNumber: 3,
+      typicalPeopleFed: 4,
+      ingredients: [
+        {
+          originalText: '2 onions',
+          quantity: '2',
+          unit: 'each',
+          ingredientName: 'onions',
+          optional: false,
+        },
+      ],
+    }
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(publicDraft),
+      updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 }),
+      insertOne: vi.fn().mockResolvedValue({ acknowledged: true }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/recipes/recipe-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ title: 'My modified soup' }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(200)
+    const result = (await response.json()).recipe
+    expect(result).toMatchObject({
+      title: 'My modified soup',
+      visibility: 'private',
+      versionNumber: 1,
+      derivedFrom: {
+        recipeId: 'recipe-1',
+        versionId: 'public-version-3',
+        versionNumber: 3,
+      },
+    })
+    expect(result.id).not.toBe('recipe-1')
+    expect(collection.insertOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'My modified soup',
+        visibility: 'private',
+        derivedFrom: {
+          recipeId: 'recipe-1',
+          versionId: 'public-version-3',
+          versionNumber: 3,
+        },
+      }),
+    )
+    expect(collection.updateOne).not.toHaveBeenCalledWith(
+      expect.objectContaining({ _id: 'recipe-1', ownerId: 'user-1' }),
+      expect.anything(),
+    )
+  })
+
   it('rejects a stale version instead of claiming an edit was saved', async () => {
     getSession.mockResolvedValue({ user: { id: 'user-1' } })
     const collection = {

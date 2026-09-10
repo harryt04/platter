@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createDraftDocument,
   createDraftSchema,
+  createPrivateRecipeVariantDocument,
   createRecipeShareDocument,
   createRecipeVersionDocument,
   draftOwnerFilter,
@@ -65,6 +66,40 @@ describe('recipe drafts', () => {
       ingredients: draft.ingredients,
     })
     expect(version).not.toHaveProperty('versionId')
+  })
+
+  it('creates a private variant with visible source-version lineage', () => {
+    const source = {
+      ...createDraftDocument('user-1', 'Published soup', {
+        typicalPeopleFed: 4,
+      }),
+      status: 'usable' as const,
+      visibility: 'public' as const,
+      versionId: 'public-version-3',
+      versionNumber: 3,
+    }
+
+    const variant = createPrivateRecipeVariantDocument(source)
+
+    expect(variant).toMatchObject({
+      ownerId: 'user-1',
+      title: 'Published soup',
+      status: 'usable',
+      visibility: 'private',
+      versionNumber: 1,
+      derivedFrom: {
+        recipeId: source._id,
+        versionId: 'public-version-3',
+        versionNumber: 3,
+      },
+    })
+    expect(variant._id).not.toBe(source._id)
+    expect(variant.versionId).not.toBe(source.versionId)
+    expect(toRecipeDraft(variant).derivedFrom).toEqual({
+      recipeId: source._id,
+      versionId: 'public-version-3',
+      versionNumber: 3,
+    })
   })
 
   it('scopes every lookup to both the draft id and owner', () => {

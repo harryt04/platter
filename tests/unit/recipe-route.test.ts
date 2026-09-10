@@ -188,6 +188,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
           totalTimeMinutes: 45,
           cuisine: ' Mediterranean\u0000 ',
           mealType: ' Dinner ',
+          householdNotes: ' Use less salt for the kids.\u0000 ',
           tags: ['weeknight', 'make ahead'],
           dietaryLabels: ['vegetarian'],
         }),
@@ -202,6 +203,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
       totalTimeMinutes: 45,
       cuisine: 'Mediterranean',
       mealType: 'Dinner',
+      householdNotes: 'Use less salt for the kids.',
       tags: ['weeknight', 'make ahead'],
       dietaryLabels: ['vegetarian'],
     })
@@ -214,6 +216,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
           totalTimeMinutes: 45,
           cuisine: 'Mediterranean',
           mealType: 'Dinner',
+          householdNotes: 'Use less salt for the kids.',
           tags: ['weeknight', 'make ahead'],
           dietaryLabels: ['vegetarian'],
         }),
@@ -227,6 +230,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
       findOne: vi.fn().mockResolvedValue({
         ...draft,
         cuisine: 'Mediterranean',
+        householdNotes: 'Use less salt for the kids.',
         prepTimeMinutes: 15,
       }),
       updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 }),
@@ -238,7 +242,11 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
     const response = await PATCH(
       new Request('http://localhost/api/v1/recipes/recipe-1', {
         method: 'PATCH',
-        body: JSON.stringify({ cuisine: '', prepTimeMinutes: null }),
+        body: JSON.stringify({
+          cuisine: '',
+          householdNotes: '',
+          prepTimeMinutes: null,
+        }),
       }),
       { params: Promise.resolve({ recipeId: 'recipe-1' }) },
     )
@@ -246,11 +254,12 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
     const result = (await response.json()).recipe
     expect(response.status).toBe(200)
     expect(result).not.toHaveProperty('cuisine')
+    expect(result).not.toHaveProperty('householdNotes')
     expect(result).not.toHaveProperty('prepTimeMinutes')
     expect(collection.updateOne).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        $unset: { cuisine: '', prepTimeMinutes: '' },
+        $unset: { cuisine: '', householdNotes: '', prepTimeMinutes: '' },
       }),
     )
   })

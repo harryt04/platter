@@ -30,6 +30,7 @@ describe('DraftEditor', () => {
         initialTotalTimeMinutes={45}
         initialCuisine="Mediterranean"
         initialMealType="Dinner"
+        initialHouseholdNotes="Use less salt for the kids."
         initialTags={['weeknight', 'make ahead']}
         initialDietaryLabels={['vegetarian']}
         initialIngredients={[
@@ -67,6 +68,9 @@ describe('DraftEditor', () => {
     expect(screen.getByRole('textbox', { name: 'Meal type' })).toHaveValue(
       'Dinner',
     )
+    expect(
+      screen.getByRole('textbox', { name: /Household notes/ }),
+    ).toHaveValue('Use less salt for the kids.')
     expect(screen.getByRole('textbox', { name: 'Tags' })).toHaveValue(
       'weeknight, make ahead',
     )

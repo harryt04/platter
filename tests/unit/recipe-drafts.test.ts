@@ -112,6 +112,7 @@ describe('recipe drafts', () => {
         totalTimeMinutes: 45,
         cuisine: '  Mediterranean\u0000 ',
         mealType: ' Dinner ',
+        householdNotes: '  Use less salt for the kids.\u0000 ',
         tags: ['weeknight', 'make ahead'],
         dietaryLabels: ['vegetarian'],
       }),
@@ -121,6 +122,7 @@ describe('recipe drafts', () => {
       totalTimeMinutes: 45,
       cuisine: 'Mediterranean',
       mealType: 'Dinner',
+      householdNotes: 'Use less salt for the kids.',
       tags: ['weeknight', 'make ahead'],
       dietaryLabels: ['vegetarian'],
     })
@@ -133,6 +135,11 @@ describe('recipe drafts', () => {
     ).toBe(false)
     expect(
       recipeMetadataSchema.safeParse({ tags: ['x'.repeat(51)] }).success,
+    ).toBe(false)
+    expect(
+      recipeMetadataSchema.safeParse({
+        householdNotes: 'x'.repeat(2001),
+      }).success,
     ).toBe(false)
   })
 })

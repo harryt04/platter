@@ -38,6 +38,7 @@ export default async function EditRecipePage({
         initialTotalTimeMinutes={draft.totalTimeMinutes}
         initialCuisine={draft.cuisine}
         initialMealType={draft.mealType}
+        initialHouseholdNotes={draft.householdNotes}
         initialTags={draft.tags}
         initialDietaryLabels={draft.dietaryLabels}
         initialIngredients={draft.ingredients}

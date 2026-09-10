@@ -5,8 +5,8 @@ Platter is a mobile-first recipe-to-grocery app you can install on your device. 
 ## Project status
 
 The foundation scaffold, private recipe drafts with structured yield,
-ingredients, ordered instructions, and timing/classification metadata, and the
-first list management flows are in place. Product behavior such as recipe
+ingredients, ordered instructions, timing/classification metadata, and household
+notes, plus the first list management flows are in place. Product behavior such as recipe
 parsing, ingredient normalization, grocery calculations, collaboration, and
 moderation remains intentionally deferred to the feature lanes described in the
 [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).

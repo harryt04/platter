@@ -18,6 +18,7 @@ const recipeMetadataFields = [
   'totalTimeMinutes',
   'cuisine',
   'mealType',
+  'householdNotes',
   'tags',
   'dietaryLabels',
 ] as const

@@ -97,6 +97,7 @@ export const recipeMetadataSchema = z.object({
   totalTimeMinutes: recipeTimeSchema('Total time').optional().nullable(),
   cuisine: optionalMetadataText('cuisine', 100),
   mealType: optionalMetadataText('meal type', 100),
+  householdNotes: optionalMetadataText('household notes', 2000),
   tags: recipeLabelsSchema.optional(),
   dietaryLabels: recipeLabelsSchema.optional(),
 })
@@ -134,6 +135,7 @@ export type RecipeDraft = {
   totalTimeMinutes?: number
   cuisine?: string
   mealType?: string
+  householdNotes?: string
   tags?: string[]
   dietaryLabels?: string[]
   ingredients: RecipeIngredient[]
@@ -183,6 +185,7 @@ export function createDraftDocument(
     totalTimeMinutes?: number
     cuisine?: string
     mealType?: string
+    householdNotes?: string
     tags?: string[]
     dietaryLabels?: string[]
     ingredients?: RecipeIngredient[]
@@ -217,6 +220,9 @@ export function createDraftDocument(
       : { totalTimeMinutes: details.totalTimeMinutes }),
     ...(details.cuisine === undefined ? {} : { cuisine: details.cuisine }),
     ...(details.mealType === undefined ? {} : { mealType: details.mealType }),
+    ...(details.householdNotes === undefined
+      ? {}
+      : { householdNotes: details.householdNotes }),
     ...(details.tags === undefined ? {} : { tags: details.tags }),
     ...(details.dietaryLabels === undefined
       ? {}
@@ -252,6 +258,9 @@ export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
       : { totalTimeMinutes: document.totalTimeMinutes }),
     ...(document.cuisine === undefined ? {} : { cuisine: document.cuisine }),
     ...(document.mealType === undefined ? {} : { mealType: document.mealType }),
+    ...(document.householdNotes === undefined
+      ? {}
+      : { householdNotes: document.householdNotes }),
     ...(document.tags === undefined ? {} : { tags: document.tags }),
     ...(document.dietaryLabels === undefined
       ? {}

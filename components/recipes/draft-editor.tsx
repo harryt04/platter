@@ -57,6 +57,7 @@ export function DraftEditor({
   initialTotalTimeMinutes,
   initialCuisine = '',
   initialMealType = '',
+  initialHouseholdNotes = '',
   initialTags = [],
   initialDietaryLabels = [],
   initialIngredients = [],
@@ -71,6 +72,7 @@ export function DraftEditor({
   initialTotalTimeMinutes?: number
   initialCuisine?: string
   initialMealType?: string
+  initialHouseholdNotes?: string
   initialTags?: string[]
   initialDietaryLabels?: string[]
   initialIngredients?: RecipeIngredient[]
@@ -93,6 +95,7 @@ export function DraftEditor({
   )
   const [cuisine, setCuisine] = useState(initialCuisine)
   const [mealType, setMealType] = useState(initialMealType)
+  const [householdNotes, setHouseholdNotes] = useState(initialHouseholdNotes)
   const [tags, setTags] = useState(initialTags.join(', '))
   const [dietaryLabels, setDietaryLabels] = useState(
     initialDietaryLabels.join(', '),
@@ -139,6 +142,7 @@ export function DraftEditor({
                     totalTimeMinutes === '' ? null : Number(totalTimeMinutes),
                   cuisine,
                   mealType,
+                  householdNotes,
                   tags: splitLabels(tags),
                   dietaryLabels: splitLabels(dietaryLabels),
                   ingredients,
@@ -354,6 +358,24 @@ export function DraftEditor({
                       Separate labels with commas, up to 20.
                     </p>
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="recipe-household-notes">
+                    Household notes{' '}
+                    <span className="text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Textarea
+                    id="recipe-household-notes"
+                    name="householdNotes"
+                    value={householdNotes}
+                    onChange={(event) => setHouseholdNotes(event.target.value)}
+                    placeholder="Use less salt for the kids."
+                    maxLength={2000}
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    Keep notes useful for your household. Platter removes
+                    control characters before saving.
+                  </p>
                 </div>
               </fieldset>
               <fieldset className="space-y-4">

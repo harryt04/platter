@@ -14,6 +14,20 @@ export function PublicHeader() {
         Platter
       </Link>
       <nav className="ml-auto flex items-center gap-1 sm:gap-2">
+        <Button
+          className="hidden px-2 sm:inline-flex sm:px-3"
+          variant="ghost"
+          asChild
+        >
+          <Link href="/sources">Sources</Link>
+        </Button>
+        <Button
+          className="hidden px-2 sm:inline-flex sm:px-3"
+          variant="ghost"
+          asChild
+        >
+          <Link href="/copyright">Copyright</Link>
+        </Button>
         <Button className="px-2 sm:px-4" variant="ghost" asChild>
           <Link href="/sign-in">Sign in</Link>
         </Button>

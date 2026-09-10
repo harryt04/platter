@@ -725,7 +725,7 @@ imported-content rights and provenance
 
 **Status:** ready-for-agent
 
-- [ ] The public copyright and contact experience explains how to submit a
+- [x] The public copyright and contact experience explains how to submit a
       removal request and how contact information will be handled.
 - [ ] A rate-limited report can identify an affected recipe or source and create
       a complaint with type, status, timestamps, and minimum necessary contacts.

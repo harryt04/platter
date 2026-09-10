@@ -188,6 +188,10 @@ keep concurrent or retried saves from creating duplicate identities or
 versions. Mongo-backed integration coverage now verifies this workflow's
 deduplication, source-version coexistence, discovery visibility, private
 boundaries, and complete provenance.
+Public copyright and removal pages explain the information needed for a
+content request and state that complaint contacts stay out of public recipe
+responses and general application logs; the restricted complaint intake and
+administrative workflow remain the next moderation slice.
 The import extraction stage now runs through a typed replaceable adapter
 contract: bounded fetched HTML can produce a normalized candidate, a partial
 candidate with warnings, or an isolated typed failure. Selection tries

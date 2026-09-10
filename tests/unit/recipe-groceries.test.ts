@@ -303,6 +303,51 @@ describe('grocery generation', () => {
     ])
   })
 
+  it('preserves an override and warns when regeneration changes its calculation', () => {
+    const input = {
+      selections: [selection('recipe', 'Tacos', '1', [ingredient()])],
+      overrides: [
+        {
+          itemId: 'grocery:merged:onions:volume:cup',
+          quantity: { min: '5' },
+          calculatedRequirementAtOverride: { min: '2' },
+        },
+      ],
+    }
+
+    expect(
+      generateGroceryItems({
+        ...input,
+        selections: [selection('recipe', 'Tacos', '1.5', [ingredient()])],
+      }),
+    ).toMatchObject([
+      {
+        calculatedRequirement: { min: '3' },
+        shoppingAmount: { min: '5' },
+        override: { min: '5' },
+        overrideWarning: {
+          previousCalculatedRequirement: { min: '2' },
+          currentCalculatedRequirement: { min: '3' },
+        },
+      },
+    ])
+  })
+
+  it('does not warn when a regenerated requirement is numerically unchanged', () => {
+    const items = generateGroceryItems({
+      selections: [selection('recipe', 'Tacos', '1', [ingredient()])],
+      overrides: [
+        {
+          itemId: 'grocery:merged:onions:volume:cup',
+          quantity: { min: '5' },
+          calculatedRequirementAtOverride: { min: '2.0' },
+        },
+      ],
+    })
+
+    expect(items[0]?.overrideWarning).toBeUndefined()
+  })
+
   it('removes an item when its last recipe contribution is removed', () => {
     const input = {
       selections: [selection('recipe', 'Tacos', '1', [ingredient()])],

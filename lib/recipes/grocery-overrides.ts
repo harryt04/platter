@@ -62,6 +62,9 @@ export function createGroceryAmountOverrideDocument(
   return {
     itemId: item.id,
     quantity,
+    ...(item.calculatedRequirement
+      ? { calculatedRequirementAtOverride: item.calculatedRequirement }
+      : {}),
     preservedItem: {
       ingredientName: item.ingredientName,
       ...(item.normalizedIdentity

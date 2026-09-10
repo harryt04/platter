@@ -116,6 +116,7 @@ describe('PATCH grocery amount override route', () => {
             expect.objectContaining({
               itemId: 'grocery:merged:rice:mass:lb',
               quantity: { min: '5.25' },
+              calculatedRequirementAtOverride: { min: '2' },
             }),
           ],
         }),

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ContributionDetail } from '@/components/patterns/contribution-detail'
+import { GroceryOverrideWarning } from '@/components/patterns/grocery-override-warning'
 import type {
   GroceryItem,
   GroceryMergeSuggestion,
@@ -171,6 +172,7 @@ export function GroceryRow({
           </Button>
         )}
       </Card>
+      {item && <GroceryOverrideWarning item={item} />}
       {mergeSuggestions.map((suggestion) => {
         const otherItem =
           suggestion.left.id === item?.id ? suggestion.right : suggestion.left

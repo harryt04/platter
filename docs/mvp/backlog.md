@@ -401,13 +401,13 @@ actually intend to buy without corrupting recipe math.
 
 **Blocked by:** 13: Manage recipe selections; 16: Manage manual grocery items
 
-**Status:** ready-for-agent
+**Status:** in progress
 
 - [x] A member can replace the shopping amount with a smaller or larger amount
       while the calculated requirement and contributions remain unchanged.
 - [x] The UI displays both values and offers a one-action reset only while an
       override exists.
-- [ ] Serving, recipe-version, or contribution changes preserve an explicit
+- [x] Serving, recipe-version, or contribution changes preserve an explicit
       override and warn with both the old intent and new calculated requirement.
 - [ ] Optional package-size or whole-unit suggestions are editable guidance and
       are never represented as guaranteed facts.

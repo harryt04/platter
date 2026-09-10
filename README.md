@@ -130,7 +130,10 @@ without changing its calculated requirement or contribution breakdown. The
 override is stored on the active run, scoped to the current list membership,
 and uses the same revision and retry protections as other shared grocery edits.
 The review and shopping views show both amounts and offer a one-action reset
-back to the current calculated requirement only while an override exists.
+back to the current calculated requirement only while an override exists. If a
+serving, recipe-version, or contribution change recalculates the requirement,
+the explicit shopping intent remains and the row calls out both the previous
+calculation and the new one for review.
 The library can search titles, ingredients, source metadata, and tags with
 stable cursor pagination while preserving the same ownership, membership, and
 saved-reference boundaries. Deleting a recipe explains current list impact,

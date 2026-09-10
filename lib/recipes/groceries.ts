@@ -38,6 +38,8 @@ export type GroceryManualAddition = {
 export type GroceryAmountOverride = {
   itemId: string
   quantity: ParsedIngredientQuantity
+  /** The calculated requirement the shopper saw when choosing the override. */
+  calculatedRequirementAtOverride?: ParsedIngredientQuantity
   /**
    * The stable identity facts needed to keep an intentional shopping amount
    * visible after its final recipe contribution is removed. The current
@@ -81,6 +83,10 @@ export type GroceryItem = {
   calculatedRequirement: ParsedIngredientQuantity | null
   shoppingAmount: ParsedIngredientQuantity | null
   override?: ParsedIngredientQuantity
+  overrideWarning?: {
+    previousCalculatedRequirement: ParsedIngredientQuantity
+    currentCalculatedRequirement: ParsedIngredientQuantity | null
+  }
   contributions: GroceryContribution[]
 }
 
@@ -199,6 +205,47 @@ function convertForUnit(
 ) {
   if (!quantity) return null
   return convertIngredientQuantity(quantity, fromUnit, toUnit)
+}
+
+function quantitiesEqual(
+  left: ParsedIngredientQuantity | null | undefined,
+  right: ParsedIngredientQuantity | null,
+) {
+  if (!left || !right) return left === right
+  return (
+    new CalculationDecimal(left.min).eq(right.min) &&
+    (left.max === undefined
+      ? right.max === undefined
+      : right.max !== undefined &&
+        new CalculationDecimal(left.max).eq(right.max))
+  )
+}
+
+function applyOverride(
+  item: GroceryItem,
+  override: GroceryAmountOverride,
+): GroceryItem {
+  const changedSinceOverride =
+    override.calculatedRequirementAtOverride !== undefined &&
+    !quantitiesEqual(
+      override.calculatedRequirementAtOverride,
+      item.calculatedRequirement,
+    )
+
+  return {
+    ...item,
+    shoppingAmount: override.quantity,
+    override: override.quantity,
+    ...(changedSinceOverride
+      ? {
+          overrideWarning: {
+            previousCalculatedRequirement:
+              override.calculatedRequirementAtOverride!,
+            currentCalculatedRequirement: item.calculatedRequirement,
+          },
+        }
+      : {}),
+  }
 }
 
 function contributionFromIngredient(
@@ -364,24 +411,22 @@ export function generateGroceryItems({
     .map((item) => {
       const override = overridesByItemId.get(item.id)
       if (!override) return item
-      return {
-        ...item,
-        shoppingAmount: override.quantity,
-        override: override.quantity,
-      }
+      return applyOverride(item, override)
     })
     .concat(
       overrides.flatMap((override) => {
         if (items.has(override.itemId) || !override.preservedItem) return []
         return [
-          {
-            id: override.itemId,
-            ...override.preservedItem,
-            calculatedRequirement: null,
-            shoppingAmount: override.quantity,
-            override: override.quantity,
-            contributions: [],
-          },
+          applyOverride(
+            {
+              id: override.itemId,
+              ...override.preservedItem,
+              calculatedRequirement: null,
+              shoppingAmount: override.quantity,
+              contributions: [],
+            },
+            override,
+          ),
         ]
       }),
     )

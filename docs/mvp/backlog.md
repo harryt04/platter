@@ -214,7 +214,7 @@ creator to decide who may discover or use each recipe.
       with a visible relationship to its source version.
 - [x] Private, list-shared, public, draft, usable, and suppressed rules are
       independently enforced on reads, writes, and search results.
-- [ ] Active and completed runs can resolve pinned historical versions even
+- [x] Active and completed runs can resolve pinned historical versions even
       after later edits or permitted deletion.
 - [ ] Integration tests cover public/private/shared visibility and immutable
       version references.

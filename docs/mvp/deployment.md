@@ -76,6 +76,13 @@ third-party license or attribution requirement. Any future external fixture
 must record its source, license or permission, and attribution next to the
 fixture before it is added to the test suite.
 
+The Mongo-backed import fixture in
+[`tests/integration/recipe-imports.test.ts`](../../tests/integration/recipe-imports.test.ts)
+uses synthetic attribution and CC BY 4.0 image-rights metadata. It verifies
+that normalization output remains visible in public discovery, immutable
+version snapshots, and public reads after the source is marked unavailable;
+the fixture contains no external recipe prose or image bytes.
+
 Import normalization keeps structured ingredient facts, yield, timing, and
 concise procedural steps separate from source editorial prose. Descriptions
 are not copied, and instruction values over 500 characters are excluded from

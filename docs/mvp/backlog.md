@@ -712,7 +712,7 @@ recipe experience and prevent unlicensed media or prose from entering it.
       presence of Schema.org data or public accessibility.
 - [ ] Bulk-ingested datasets require recorded compatible terms and attribution;
       noncommercial data cannot silently enter a potentially commercial catalog.
-- [ ] Attribution and license fixtures verify visibility after normalization,
+- [x] Attribution and license fixtures verify visibility after normalization,
       discovery, versioning, and source unavailability.
 
 ## 31: Process public-content complaints

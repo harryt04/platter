@@ -26,6 +26,8 @@ const canonicalUrl = `https://source-${fixtureToken}.test/recipes/soup`
 const versionedSourceUrl = `https://source-${fixtureToken}.test/recipes/versioned-soup`
 const versionedCanonicalUrl = `https://source-${fixtureToken}.test/recipes/versioned-soup`
 const timestamp = isoDateTime('2026-09-10T12:00:00.000Z')
+const fixtureAttribution = 'Synthetic fixture attribution under CC BY 4.0.'
+const fixtureImageLicense = 'CC BY 4.0'
 const fingerprint = (label: string) =>
   `sha256:${createHash('sha256').update(`${fixtureToken}-${label}`).digest('hex')}`
 const originalFingerprint = fingerprint('original')
@@ -71,6 +73,7 @@ function recipeImport(
       instructions: ['Simmer the soup.'],
       sourceName: `${fixtureToken} source`,
       sourceUrl,
+      attribution: fixtureAttribution,
       warnings: [],
     },
     ...overrides,
@@ -86,7 +89,7 @@ function requestBody(
     sourceName: `${fixtureToken} source`,
     sourceUrl,
     sourceAuthor: 'Synthetic source author',
-    attribution: 'Synthetic fixture for integration testing.',
+    attribution: fixtureAttribution,
     ingredients: [
       {
         originalText: '2 carrots',
@@ -189,7 +192,7 @@ describe('Mongo-backed public recipe import workflow', () => {
     await getMongoClient().close()
   })
 
-  it('publishes independently provenanced permitted images without exposing unknown rights', async () => {
+  it('preserves attribution and licensed image metadata through public surfaces', async () => {
     const publicImport = recipeImport()
     const privateImport = recipeImport({
       sourceUrl: `${sourceUrl}/incomplete`,
@@ -219,7 +222,7 @@ describe('Mongo-backed public recipe import workflow', () => {
               sourceName: `${fixtureToken} image source`,
               sourceUrl: `https://images.${fixtureToken}.test/license`,
               creator: 'Synthetic image creator',
-              license: 'CC BY 4.0',
+              license: fixtureImageLicense,
               rightsStatus: 'licensed',
             },
           }),
@@ -248,13 +251,16 @@ describe('Mongo-backed public recipe import workflow', () => {
       versionRelationship: 'source-original',
       rightsStatus: 'unknown',
     })
+    expect(publicRecipe).toMatchObject({
+      attribution: fixtureAttribution,
+    })
     expect(publicRecipe.image).toEqual({
       url: `https://images.${fixtureToken}.test/soup.jpg`,
       altText: 'A bowl of synthetic soup',
       sourceName: `${fixtureToken} image source`,
       sourceUrl: `https://images.${fixtureToken}.test/license`,
       creator: 'Synthetic image creator',
-      license: 'CC BY 4.0',
+      license: fixtureImageLicense,
       rightsStatus: 'licensed',
     })
 
@@ -265,8 +271,10 @@ describe('Mongo-backed public recipe import workflow', () => {
       recipeId: publicRecipe.id,
       image: expect.objectContaining({
         url: `https://images.${fixtureToken}.test/soup.jpg`,
+        license: fixtureImageLicense,
         rightsStatus: 'licensed',
       }),
+      attribution: fixtureAttribution,
       importProvenance: expect.objectContaining({
         contentFingerprint: originalFingerprint,
       }),
@@ -279,6 +287,7 @@ describe('Mongo-backed public recipe import workflow', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: publicRecipe.id,
+          attribution: fixtureAttribution,
           image: {
             url: `https://images.${fixtureToken}.test/soup.jpg`,
             altText: 'A bowl of synthetic soup',
@@ -349,8 +358,10 @@ describe('Mongo-backed public recipe import workflow', () => {
       recipe: {
         image: {
           url: `https://images.${fixtureToken}.test/soup.jpg`,
+          license: fixtureImageLicense,
           rightsStatus: 'licensed',
         },
+        attribution: fixtureAttribution,
         importProvenance: { sourceAvailability: 'unavailable' },
       },
     })
@@ -479,6 +490,16 @@ describe('Mongo-backed public recipe import workflow', () => {
       expect.arrayContaining([
         versionedOriginalFingerprint,
         updatedFingerprint,
+      ]),
+    )
+    expect(publicVersions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          attribution: fixtureAttribution,
+          importProvenance: expect.objectContaining({
+            rightsStatus: 'unknown',
+          }),
+        }),
       ]),
     )
 

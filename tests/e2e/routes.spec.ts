@@ -126,6 +126,12 @@ test.describe('authenticated list workflow', () => {
       '2 bags spinach',
     )
     await expect(page.getByText('spinach', { exact: true })).toBeVisible()
+    await page.getByLabel('Shopping amount for spinach').fill('3.5')
+    await page.getByRole('button', { name: 'Set shopping amount' }).click()
+    await expect(page.getByLabel('Shopping amount for spinach')).toHaveValue(
+      '3.5',
+    )
+    await expect(page.getByText('Calculated requirement: 2 bag')).toBeVisible()
 
     await page.getByLabel('Manual grocery item 1').fill('3 bags spinach')
     await page.getByRole('button', { name: 'Save' }).click()

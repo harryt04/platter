@@ -123,6 +123,10 @@ the review and shopping views. Manual lines are parsed into the same safe
 ingredient facts as recipe lines, persist on the active run with revision-aware
 retry receipts, and remain labeled as independent manual contributions without
 changing any recipe or immutable recipe version.
+Members can also set a precise shopping amount for a generated grocery item
+without changing its calculated requirement or contribution breakdown. The
+override is stored on the active run, scoped to the current list membership,
+and uses the same revision and retry protections as other shared grocery edits.
 The library can search titles, ingredients, source metadata, and tags with
 stable cursor pagination while preserving the same ownership, membership, and
 saved-reference boundaries. Deleting a recipe explains current list impact,

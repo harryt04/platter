@@ -16,6 +16,14 @@ function formatQuantity(item: GroceryItem) {
   return item.unit.name ? `${amount} ${item.unit.name}` : amount
 }
 
+function formatRequirement(item: GroceryItem) {
+  if (!item.calculatedRequirement) return 'As needed'
+  const amount = item.calculatedRequirement.max
+    ? `${item.calculatedRequirement.min}–${item.calculatedRequirement.max}`
+    : item.calculatedRequirement.min
+  return item.unit.name ? `${amount} ${item.unit.name}` : amount
+}
+
 function suggestionSource(item: GroceryItem) {
   const contribution = item.contributions[0]
   if (!contribution) return 'another grocery item'
@@ -119,6 +127,11 @@ export function GroceryRow({
                     : 'From Tacos + Curry'}
             </span>
           </div>
+          {item?.override && (
+            <p className="text-muted-foreground mt-2 text-xs">
+              Calculated requirement: {formatRequirement(item)}
+            </p>
+          )}
         </div>
         <Badge
           variant={

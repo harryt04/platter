@@ -403,7 +403,7 @@ actually intend to buy without corrupting recipe math.
 
 **Status:** ready-for-agent
 
-- [ ] A member can replace the shopping amount with a smaller or larger amount
+- [x] A member can replace the shopping amount with a smaller or larger amount
       while the calculated requirement and contributions remain unchanged.
 - [ ] The UI displays both values and offers a one-action reset only while an
       override exists.

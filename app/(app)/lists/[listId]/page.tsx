@@ -40,6 +40,7 @@ export default async function ListPage({
       return selection && version ? [{ selection, version }] : []
     }),
     manualAdditions: run?.manualAdditions ?? [],
+    overrides: run?.groceryAmountOverrides ?? [],
   })
   const recipeIds = [
     ...new Set(selections.map((selection) => selection.recipeId)),

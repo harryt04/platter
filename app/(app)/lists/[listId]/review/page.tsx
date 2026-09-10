@@ -1,5 +1,4 @@
 import { GroceryRow } from '@/components/patterns/grocery-row'
-import { ManualOverride } from '@/components/patterns/manual-override'
 import {
   ContentContainer,
   PageHeader,
@@ -18,6 +17,7 @@ import {
   generateGroceryItems,
 } from '@/lib/recipes/groceries'
 import { notFound } from 'next/navigation'
+import { GroceryAmountOverrideForm } from '@/components/lists/grocery-amount-override-form'
 import { ManualGroceryItems } from '@/components/lists/manual-grocery-items'
 
 export default async function ReviewPage({
@@ -42,6 +42,7 @@ export default async function ReviewPage({
       return selection && version ? [{ selection, version }] : []
     }),
     manualAdditions: run?.manualAdditions ?? [],
+    overrides: run?.groceryAmountOverrides ?? [],
   })
   const mergeSuggestions = findGroceryMergeSuggestions(groceryItems)
 
@@ -62,14 +63,21 @@ export default async function ReviewPage({
         {groceryItems.length > 0 ? (
           <div className="space-y-3">
             {groceryItems.map((item) => (
-              <GroceryRow
-                item={item}
-                category="Other"
-                key={item.id}
-                mergeSuggestions={mergeSuggestions.filter(
-                  (suggestion) => suggestion.left.id === item.id,
-                )}
-              />
+              <div className="space-y-2" key={item.id}>
+                <GroceryRow
+                  item={item}
+                  category="Other"
+                  mergeSuggestions={mergeSuggestions.filter(
+                    (suggestion) => suggestion.left.id === item.id,
+                  )}
+                />
+                <GroceryAmountOverrideForm
+                  baseRevision={run?.revision}
+                  editable={!isReadOnly}
+                  item={item}
+                  listId={listId}
+                />
+              </div>
             ))}
           </div>
         ) : (
@@ -86,7 +94,6 @@ export default async function ReviewPage({
         listId={listId}
         listName={list.name}
       />
-      <ManualOverride disabled={isReadOnly} />
     </ContentContainer>
   )
 }

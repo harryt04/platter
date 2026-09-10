@@ -32,6 +32,7 @@ export function ManualGroceryItems({
   editable?: boolean
 }) {
   const router = useRouter()
+  const [mutationRevision, setMutationRevision] = React.useState<number>()
   const [newLine, setNewLine] = React.useState('')
   const [lines, setLines] = React.useState(() =>
     Object.fromEntries(
@@ -45,6 +46,11 @@ export function ManualGroceryItems({
   const [confirmId, setConfirmId] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+
+  const currentRevision =
+    mutationRevision === undefined || baseRevision === undefined
+      ? (mutationRevision ?? baseRevision)
+      : Math.max(mutationRevision, baseRevision)
 
   async function mutate(
     url: string,
@@ -61,14 +67,20 @@ export function ManualGroceryItems({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           ...body,
-          ...createMutationMetadata(baseRevision),
+          ...createMutationMetadata(currentRevision),
         }),
       })
-      const responseBody = (await response.json()) as { detail?: string }
+      const responseBody = (await response.json()) as {
+        detail?: string
+        revision?: number
+      }
       if (!response.ok) {
         throw new Error(
           responseBody.detail ?? 'The grocery item could not change.',
         )
+      }
+      if (responseBody.revision !== undefined) {
+        setMutationRevision(responseBody.revision)
       }
       setMessage(responseBody.detail ?? 'Grocery item updated.')
       router.refresh()

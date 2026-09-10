@@ -15,6 +15,10 @@ import type {
   ManualGroceryAdditionDocument,
   ManualGroceryMutationReceipt,
 } from '@/lib/recipes/manual-groceries'
+import type {
+  GroceryAmountOverrideDocument,
+  GroceryOverrideMutationReceipt,
+} from '@/lib/recipes/grocery-overrides'
 
 const listNameSchema = z
   .string({ error: 'Enter a list name.' })
@@ -51,9 +55,11 @@ export type ShoppingRunDocument = {
   recipeSelections: RecipeSelectionDocument[]
   groceryItems: unknown[]
   manualAdditions: ManualGroceryAdditionDocument[]
+  groceryAmountOverrides?: GroceryAmountOverrideDocument[]
   ordering: unknown[]
   selectionMutationReceipts?: SelectionMutationReceipt[]
   manualMutationReceipts?: ManualGroceryMutationReceipt[]
+  groceryOverrideMutationReceipts?: GroceryOverrideMutationReceipt[]
   createdAt: IsoDateTime
   updatedAt: IsoDateTime
 }
@@ -206,6 +212,7 @@ export function createActiveShoppingRunDocument(
     recipeSelections: [],
     groceryItems: [],
     manualAdditions: [],
+    groceryAmountOverrides: [],
     ordering: [],
     createdAt: timestamp,
     updatedAt: timestamp,

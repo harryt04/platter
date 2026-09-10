@@ -19,6 +19,7 @@ import {
   generateGroceryItems,
 } from '@/lib/recipes/groceries'
 import { notFound } from 'next/navigation'
+import { GroceryAmountOverrideForm } from '@/components/lists/grocery-amount-override-form'
 import { ManualGroceryItems } from '@/components/lists/manual-grocery-items'
 
 export default async function ShopPage({
@@ -43,6 +44,7 @@ export default async function ShopPage({
       return selection && version ? [{ selection, version }] : []
     }),
     manualAdditions: run?.manualAdditions ?? [],
+    overrides: run?.groceryAmountOverrides ?? [],
   })
   const mergeSuggestions = findGroceryMergeSuggestions(groceryItems)
 
@@ -73,14 +75,21 @@ export default async function ShopPage({
         {groceryItems.length > 0 ? (
           <div className="space-y-3">
             {groceryItems.map((item) => (
-              <GroceryRow
-                item={item}
-                category="Other"
-                key={item.id}
-                mergeSuggestions={mergeSuggestions.filter(
-                  (suggestion) => suggestion.left.id === item.id,
-                )}
-              />
+              <div className="space-y-2" key={item.id}>
+                <GroceryRow
+                  item={item}
+                  category="Other"
+                  mergeSuggestions={mergeSuggestions.filter(
+                    (suggestion) => suggestion.left.id === item.id,
+                  )}
+                />
+                <GroceryAmountOverrideForm
+                  baseRevision={run?.revision}
+                  editable={!isReadOnly}
+                  item={item}
+                  listId={listId}
+                />
+              </div>
             ))}
           </div>
         ) : (

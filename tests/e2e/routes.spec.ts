@@ -157,6 +157,53 @@ test.describe('authenticated list workflow', () => {
     await expect(page).toHaveURL(/\/lists\/[^/]+\/review$/)
   })
 
+  test('checks and unchecks a grocery item independently while shopping', async ({
+    page,
+  }) => {
+    await page.goto('/sign-in')
+    await page
+      .getByRole('textbox', { name: 'Email' })
+      .fill(process.env.E2E_USER_EMAIL!)
+    await page.getByLabel('Password').fill(process.env.E2E_USER_PASSWORD!)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await expect(page).toHaveURL(/\/lists$/)
+
+    await page.goto('/lists/new')
+    await page
+      .getByRole('textbox', { name: 'List name' })
+      .fill(`Purchased groceries ${Date.now()}`)
+    await page.getByRole('button', { name: 'Create list' }).click()
+    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+
+    await page
+      .getByRole('link', { name: 'Review at home', exact: true })
+      .click()
+    await page.getByLabel('Add a grocery item').fill('2 bags spinach')
+    await page.getByRole('button', { name: 'Add item' }).click()
+    await page.getByRole('link', { name: 'Start shopping' }).click()
+    await expect(page).toHaveURL(/\/lists\/[^/]+\/shop$/)
+
+    const markPurchased = page.getByRole('button', {
+      name: 'Mark spinach purchased',
+    })
+    await expect(markPurchased).toBeVisible()
+    await markPurchased.click()
+    await expect(
+      page.getByRole('button', { name: 'Undo purchased for spinach' }),
+    ).toBeVisible()
+    await expect(
+      page.getByText('Purchased', { exact: true }).last(),
+    ).toBeVisible()
+
+    await page
+      .getByRole('button', { name: 'Undo purchased for spinach' })
+      .click()
+    await expect(
+      page.getByRole('button', { name: 'Mark spinach purchased' }),
+    ).toBeVisible()
+    await expect(page.getByText('To buy', { exact: true })).toBeVisible()
+  })
+
   test('splits a combined grocery contribution and keeps the correction after reload', async ({
     page,
   }) => {

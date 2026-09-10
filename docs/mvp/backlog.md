@@ -465,13 +465,13 @@ the current run's groceries.
 **Blocked by:** 18: Review groceries at home; 19: Categorize and reorder the
 current run
 
-**Status:** ready-for-agent
+**Status:** in progress
 
 - [ ] All current list members can open the categorized checklist, while
       non-members and public visitors cannot.
-- [ ] A one-tap check or uncheck updates `Purchased` independently of `Already
+- [x] A one-tap check or uncheck updates `Purchased` independently of `Already
       have` and records the acting member.
-- [ ] Repeating the same check is idempotent and does not create a conflicting
+- [x] Repeating the same check is idempotent and does not create a conflicting
       state or duplicate audit metadata.
 - [ ] Each row keeps amount, unit, ingredient, state, category, and contribution
       access legible without horizontal scrolling at 320px.

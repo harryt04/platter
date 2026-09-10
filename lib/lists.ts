@@ -34,6 +34,10 @@ import type {
 import type { GroceryItemOrderMutationReceipt } from '@/lib/recipes/grocery-ordering'
 import type { GroceryCategoryOrderMutationReceipt } from '@/lib/recipes/grocery-category-ordering'
 import type { GroceryCategory } from '@/lib/recipes/grocery-categories'
+import type {
+  GroceryPurchasedDocument,
+  GroceryPurchasedMutationReceipt,
+} from '@/lib/recipes/grocery-purchased'
 
 const listNameSchema = z
   .string({ error: 'Enter a list name.' })
@@ -82,6 +86,8 @@ export type ShoppingRunDocument = {
   grocerySplitMutationReceipts?: GrocerySplitMutationReceipt[]
   alreadyHaveItems?: GroceryAlreadyHaveDocument[]
   groceryAlreadyHaveMutationReceipts?: GroceryAlreadyHaveMutationReceipt[]
+  purchasedItems?: GroceryPurchasedDocument[]
+  groceryPurchasedMutationReceipts?: GroceryPurchasedMutationReceipt[]
   groceryCategoryOverrides?: GroceryCategoryOverrideDocument[]
   groceryCategoryOverrideMutationReceipts?: GroceryCategoryOverrideMutationReceipt[]
   groceryItemOrderMutationReceipts?: GroceryItemOrderMutationReceipt[]
@@ -241,6 +247,7 @@ export function createActiveShoppingRunDocument(
     groceryAmountOverrides: [],
     groceryMergeSplits: [],
     alreadyHaveItems: [],
+    purchasedItems: [],
     groceryCategoryOverrides: [],
     ordering: [],
     createdAt: timestamp,

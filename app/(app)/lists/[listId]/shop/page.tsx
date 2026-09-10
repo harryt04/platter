@@ -26,6 +26,7 @@ import { GroceryCategorySelect } from '@/components/lists/grocery-category-selec
 import { GroceryItemOrderControls } from '@/components/lists/grocery-item-order-controls'
 import { GroceryCategoryOrderSection } from '@/components/lists/grocery-category-order-section'
 import { groupGroceryItemsByCategoryOrder } from '@/lib/recipes/grocery-categories'
+import { PurchasedButton } from '@/components/lists/purchased-button'
 
 export default async function ShopPage({
   params,
@@ -58,6 +59,9 @@ export default async function ShopPage({
   const mergeSuggestions = findGroceryMergeSuggestions(groceryItems)
   const alreadyHaveItemIds = new Set(
     run?.alreadyHaveItems?.map(({ itemId }) => itemId) ?? [],
+  )
+  const purchasedItemIds = new Set(
+    run?.purchasedItems?.map(({ itemId }) => itemId) ?? [],
   )
   const buyGroceryItems = groceryItems.filter(
     (item) => !alreadyHaveItemIds.has(item.id),
@@ -116,6 +120,17 @@ export default async function ShopPage({
                       baseRevision={run?.revision}
                       listId={listId}
                       editable={!isReadOnly}
+                      state={
+                        purchasedItemIds.has(item.id) ? 'purchased' : 'buy'
+                      }
+                    />
+                    <PurchasedButton
+                      baseRevision={run?.revision}
+                      editable={!isReadOnly}
+                      ingredientName={item.ingredientName}
+                      itemId={item.id}
+                      listId={listId}
+                      marked={purchasedItemIds.has(item.id)}
                     />
                     <GroceryCategorySelect
                       baseRevision={run?.revision}

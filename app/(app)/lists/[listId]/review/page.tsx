@@ -25,6 +25,7 @@ import { GroceryItemOrderControls } from '@/components/lists/grocery-item-order-
 import { GroceryCategoryOrderSection } from '@/components/lists/grocery-category-order-section'
 import { ShoppingModeNavigation } from '@/components/lists/shopping-mode-navigation'
 import { groupGroceryItemsByCategoryOrder } from '@/lib/recipes/grocery-categories'
+import { PurchasedButton } from '@/components/lists/purchased-button'
 
 export default async function ReviewPage({
   params,
@@ -55,6 +56,9 @@ export default async function ReviewPage({
       [],
   })
   const mergeSuggestions = findGroceryMergeSuggestions(groceryItems)
+  const purchasedItemIds = new Set(
+    run?.purchasedItems?.map(({ itemId }) => itemId) ?? [],
+  )
   const groceryItemGroups = groupGroceryItemsByCategoryOrder(
     groceryItems,
     run?.ordering,
@@ -97,6 +101,9 @@ export default async function ReviewPage({
                       baseRevision={run?.revision}
                       listId={listId}
                       editable={!isReadOnly}
+                      state={
+                        purchasedItemIds.has(item.id) ? 'purchased' : 'buy'
+                      }
                       showCalculatedRequirement
                     />
                     <AlreadyHaveButton
@@ -110,6 +117,14 @@ export default async function ReviewPage({
                           (alreadyHave) => alreadyHave.itemId === item.id,
                         ),
                       )}
+                    />
+                    <PurchasedButton
+                      baseRevision={run?.revision}
+                      editable={!isReadOnly}
+                      ingredientName={item.ingredientName}
+                      itemId={item.id}
+                      listId={listId}
+                      marked={purchasedItemIds.has(item.id)}
                     />
                     <GroceryCategorySelect
                       baseRevision={run?.revision}

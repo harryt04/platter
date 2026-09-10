@@ -2,6 +2,7 @@ import { getSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase, getMongoClient } from '@/lib/db/mongo-client'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
+import { checkRateLimit } from '@/lib/security/rate-limit'
 import {
   findInvitationByToken,
   hashInvitationToken,
@@ -65,6 +66,28 @@ function invitedAccountRequired() {
   })
 }
 
+function invitationRateLimited(retryAfterSeconds: number) {
+  const response = problemResponse({
+    type: 'https://platter.dev/problems/rate-limit-exceeded',
+    title: 'Too many acceptance attempts',
+    status: 429,
+    detail:
+      'Too many attempts were made to accept invitations. Try again later.',
+    code: 'RATE_LIMIT_EXCEEDED',
+  })
+  response.headers.set('Retry-After', String(retryAfterSeconds))
+  return response
+}
+
+function clientKey(request: Request) {
+  const forwarded = request.headers.get('x-forwarded-for')
+  return (
+    forwarded?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    'unknown'
+  )
+}
+
 function invitationStateError(invitation: InvitationDocument) {
   if (invitation.status !== 'pending') return invitationNoLongerAvailable()
   if (invitationIsExpired(invitation)) return invitationExpired()
@@ -93,13 +116,21 @@ export async function GET(_request: Request, context: RouteContext) {
 
 class ListUnavailableError extends Error {}
 
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session) return authenticationRequired()
 
   const { token } = await context.params
   if (!invitationTokenSchema.safeParse(token).success) {
     return invitationNotFound()
+  }
+
+  const rateLimit = checkRateLimit(`invitation:accept:${clientKey(request)}`, {
+    limit: 10,
+    windowMs: 60 * 1000,
+  })
+  if (!rateLimit.allowed) {
+    return invitationRateLimited(rateLimit.retryAfterSeconds)
   }
 
   const record = await findInvitationByToken(token)

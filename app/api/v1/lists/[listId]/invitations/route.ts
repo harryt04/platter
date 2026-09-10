@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth/authorization'
 import { problemResponse } from '@/lib/contracts/problem'
 import { listIdSchema, listOwnerFilter, type ListDocument } from '@/lib/lists'
 import { serverEnv } from '@/lib/env/server'
+import { checkRateLimit } from '@/lib/security/rate-limit'
 import {
   createInvitationDocument,
   createInvitationSchema,
@@ -68,6 +69,18 @@ function invalidJson() {
   })
 }
 
+function invitationRateLimited(retryAfterSeconds: number) {
+  const response = problemResponse({
+    type: 'https://platter.dev/problems/rate-limit-exceeded',
+    title: 'Too many invitations',
+    status: 429,
+    detail: 'Too many invitations were created. Try again later.',
+    code: 'RATE_LIMIT_EXCEEDED',
+  })
+  response.headers.set('Retry-After', String(retryAfterSeconds))
+  return response
+}
+
 export async function POST(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session) return authenticationRequired()
@@ -98,6 +111,14 @@ export async function POST(request: Request, context: RouteContext) {
       code: 'VALIDATION_FAILED',
       fields: { email: parsed.error.issues.map((issue) => issue.message) },
     })
+  }
+
+  const rateLimit = checkRateLimit(`invitation:create:${session.user.id}`, {
+    limit: 20,
+    windowMs: 60 * 60 * 1000,
+  })
+  if (!rateLimit.allowed) {
+    return invitationRateLimited(rateLimit.retryAfterSeconds)
   }
 
   const env = serverEnv()

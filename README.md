@@ -9,7 +9,7 @@ ingredients, ordered instructions, timing/classification metadata, household
 notes, source attribution, and image provenance, plus list management,
 owner-managed active members, owner-only invitation management, and recipient
 invitation acceptance, ownership-safe member leaving, and recipient invitation
-acceptance are in place. Recipe drafts also accept optional
+acceptance with bounded invitation attempts are in place. Recipe drafts also accept optional
 informational nutrition values per person.
 Product behavior such as recipe
 parsing, ingredient normalization, grocery calculations, collaboration, and

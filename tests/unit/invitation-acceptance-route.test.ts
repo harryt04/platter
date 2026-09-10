@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GET, POST } from '@/app/api/v1/invitations/[token]/route'
+import { resetRateLimitsForTests } from '@/lib/security/rate-limit'
 
 const { getSession, getConnectedDatabase, getMongoClient } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock('@/lib/db/mongo-client', () => ({
 
 afterEach(() => {
   vi.clearAllMocks()
+  resetRateLimitsForTests()
 })
 
 const token = 'a'.repeat(43)
@@ -156,6 +158,37 @@ describe('invitation recipient route', () => {
 
     expect(response.status).toBe(403)
     expect((await response.json()).code).toBe('INVITATION_ACCOUNT_MISMATCH')
+  })
+
+  it('limits acceptance attempts by client and returns a retry hint', async () => {
+    getSession.mockResolvedValue({
+      user: { id: 'other-1', email: 'other@example.com' },
+    })
+    const invitationCollection = {
+      findOne: vi.fn().mockResolvedValue(invitation),
+    }
+    const listCollection = { findOne: vi.fn().mockResolvedValue(list) }
+    getConnectedDatabase.mockResolvedValue(
+      database(invitationCollection, listCollection),
+    )
+
+    const responses = await Promise.all(
+      Array.from({ length: 11 }, () =>
+        POST(
+          new Request(`http://localhost/api/v1/invitations/${token}`, {
+            method: 'POST',
+            headers: { 'x-forwarded-for': '203.0.113.9' },
+          }),
+          context(),
+        ),
+      ),
+    )
+
+    expect(
+      responses.slice(0, 10).every((response) => response.status === 403),
+    ).toBe(true)
+    expect(responses[10]?.status).toBe(429)
+    expect(responses[10]?.headers.get('Retry-After')).toMatch(/^\d+$/)
   })
 
   it('accepts atomically and adds the invited account as an editor', async () => {

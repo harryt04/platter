@@ -1,15 +1,21 @@
 import { createHash } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GET, POST } from '@/app/api/v1/lists/[listId]/invitations/route'
 import {
   DELETE,
   POST as RESEND,
 } from '@/app/api/v1/lists/[listId]/invitations/[invitationId]/route'
+import { resetRateLimitsForTests } from '@/lib/security/rate-limit'
 
 const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
   getSession: vi.fn(),
   getConnectedDatabase: vi.fn(),
 }))
+
+afterEach(() => {
+  vi.clearAllMocks()
+  resetRateLimitsForTests()
+})
 
 vi.mock('@/lib/auth/authorization', () => ({ getSession }))
 vi.mock('@/lib/db/mongo-client', () => ({ getConnectedDatabase }))
@@ -168,6 +174,36 @@ describe('POST /api/v1/lists/[listId]/invitations', () => {
       createHash('sha256').update(token).digest('hex'),
     )
     expect(stored).not.toHaveProperty('token')
+  })
+
+  it('limits invitation creation for an owner and returns a retry hint', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(list),
+      insertOne: vi.fn().mockResolvedValue({ acknowledged: true }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const responses = await Promise.all(
+      Array.from({ length: 21 }, () =>
+        POST(
+          new Request('http://localhost/api/v1/lists/list-1/invitations', {
+            method: 'POST',
+            body: JSON.stringify({ email: 'guest@example.com' }),
+          }),
+          context('list-1'),
+        ),
+      ),
+    )
+
+    expect(
+      responses.slice(0, 20).every((response) => response.status === 201),
+    ).toBe(true)
+    expect(responses[20]?.status).toBe(429)
+    expect(responses[20]?.headers.get('Retry-After')).toMatch(/^\d+$/)
+    expect(collection.insertOne).toHaveBeenCalledTimes(20)
   })
 })
 

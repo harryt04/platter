@@ -72,7 +72,7 @@ let the recipient understand and accept that invitation safely.
       accept a valid invitation while connected.
 - [ ] Expired, revoked, already-used, malformed, and cross-account invitations
       return clear, non-leaking outcomes.
-- [ ] Invitation creation and acceptance are rate-limited and covered by
+- [x] Invitation creation and acceptance are rate-limited and covered by
       integration and browser tests.
 
 ## 03: Manage list membership and ownership

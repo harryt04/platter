@@ -28,28 +28,47 @@ function operationLabel(operation: QueuedOperation) {
   return operationLabels[operation.kind] ?? 'Shopping change'
 }
 
-export function OfflineSnapshotView() {
+export function OfflineSnapshotView({ userId }: { userId?: string }) {
   const [snapshots, setSnapshots] = useState<RunSnapshot[]>([])
   const [shell, setShell] = useState<ShellSnapshot | undefined>()
   const [operations, setOperations] = useState<QueuedOperation[]>([])
-  const [loaded, setLoaded] = useState(true)
+  const [loaded, setLoaded] = useState(false)
+  const [available, setAvailable] = useState(false)
 
   useEffect(() => {
-    const userId = getRememberedOfflineUser()
-    if (!userId) return
-    void Promise.all([
-      getOfflineSnapshots(userId),
-      getOfflineShellSnapshot(userId),
-      getOfflineOperations(userId),
-    ])
-      .then(([runSnapshots, shellSnapshot, queuedOperations]) => {
+    let cancelled = false
+    const load = async () => {
+      await Promise.resolve()
+      if (cancelled) return
+      const rememberedUserId = getRememberedOfflineUser()
+      const effectiveUserId = userId ?? rememberedUserId
+      if (!effectiveUserId || rememberedUserId !== effectiveUserId) {
+        setLoaded(true)
+        return
+      }
+      setAvailable(true)
+      try {
+        const [runSnapshots, shellSnapshot, queuedOperations] =
+          await Promise.all([
+            getOfflineSnapshots(effectiveUserId),
+            getOfflineShellSnapshot(effectiveUserId),
+            getOfflineOperations(effectiveUserId),
+          ])
+        if (cancelled) return
         setSnapshots(runSnapshots)
         setShell(shellSnapshot)
         setOperations(queuedOperations)
-      })
-      .catch(() => undefined)
-      .finally(() => setLoaded(true))
-  }, [])
+      } catch {
+        // Treat storage failures as an unavailable offline view.
+      } finally {
+        if (!cancelled) setLoaded(true)
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
 
   const lists = shell?.payload.lists ?? []
 
@@ -65,6 +84,14 @@ export function OfflineSnapshotView() {
         <Card>
           <CardContent className="text-muted-foreground p-6 text-sm">
             Loading saved shopping runs…
+          </CardContent>
+        </Card>
+      ) : !available ? (
+        <Card>
+          <CardContent className="text-muted-foreground p-6 text-sm">
+            Offline shopping data is available only to the account that saved
+            it. Sign in again with that account while connected to refresh this
+            view.
           </CardContent>
         </Card>
       ) : (

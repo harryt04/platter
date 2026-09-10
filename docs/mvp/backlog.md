@@ -510,7 +510,7 @@ and synchronize it honestly and safely when connectivity returns.
 
 **Blocked by:** 21: Synchronize connected shoppers
 
-**Status:** ready-for-agent
+**Status:** in progress
 
 - [x] After a connected load, the active-list shell, latest run, and recipe
       selection summary remain available offline to the same authenticated user.
@@ -527,7 +527,7 @@ and synchronize it honestly and safely when connectivity returns.
       and explains permission loss or a change made while offline.
 - [x] Invitations and URL imports explain that connectivity is required instead
       of pretending to queue unsupported work.
-- [ ] Sign-out cleanup prevents another account from seeing the previous user's
+- [x] Sign-out cleanup prevents another account from seeing the previous user's
       private snapshot, operations, or cached content on a shared device.
 
 ## 23: Complete a shopping run atomically

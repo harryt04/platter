@@ -211,10 +211,13 @@ export async function clearOfflineDatabase(userId: string) {
 export async function clearOfflineSession() {
   const userId = getRememberedOfflineUser()
   if (!userId) return
-  await clearOfflineDatabase(userId)
   try {
-    window.localStorage.removeItem(offlineUserStorageKey)
-  } catch {
-    // The database is already removed even if local storage is unavailable.
+    await clearOfflineDatabase(userId)
+  } finally {
+    try {
+      window.localStorage.removeItem(offlineUserStorageKey)
+    } catch {
+      // The database is still removed even if local storage is unavailable.
+    }
   }
 }

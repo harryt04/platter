@@ -1,5 +1,5 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { OfflineSnapshotView } from '@/components/states/offline-snapshot-view'
 
 const mocks = vi.hoisted(() => ({
@@ -16,6 +16,10 @@ vi.mock('@/lib/offline/database', () => ({
 }))
 
 describe('OfflineSnapshotView', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.getRememberedOfflineUser.mockReturnValue('user-1')
@@ -65,7 +69,7 @@ describe('OfflineSnapshotView', () => {
   })
 
   it('renders the cached list and recipe selection summary', async () => {
-    render(<OfflineSnapshotView />)
+    render(<OfflineSnapshotView userId="user-1" />)
 
     await waitFor(() =>
       expect(
@@ -86,7 +90,7 @@ describe('OfflineSnapshotView', () => {
     mocks.getOfflineSnapshots.mockResolvedValue([])
     mocks.getOfflineOperations.mockResolvedValue([])
 
-    render(<OfflineSnapshotView />)
+    render(<OfflineSnapshotView userId="user-1" />)
 
     await waitFor(() =>
       expect(
@@ -111,7 +115,7 @@ describe('OfflineSnapshotView', () => {
       })),
     ])
 
-    render(<OfflineSnapshotView />)
+    render(<OfflineSnapshotView userId="user-1" />)
 
     await waitFor(() =>
       expect(
@@ -123,5 +127,30 @@ describe('OfflineSnapshotView', () => {
     expect(screen.getByText('Sync needs attention')).toBeInTheDocument()
     expect(screen.getByText('Synced')).toBeInTheDocument()
     expect(screen.queryByText(/private-item/)).not.toBeInTheDocument()
+  })
+
+  it('does not expose cached data without the matching authenticated user', async () => {
+    render(<OfflineSnapshotView userId="different-user" />)
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/available only to the account that saved it/i),
+      ).toBeInTheDocument(),
+    )
+    expect(mocks.getOfflineSnapshots).not.toHaveBeenCalled()
+    expect(screen.queryByText('Family')).not.toBeInTheDocument()
+  })
+
+  it('does not expose cached data to a signed-out visitor', async () => {
+    mocks.getRememberedOfflineUser.mockReturnValue(null)
+    render(<OfflineSnapshotView />)
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/available only to the account that saved it/i),
+      ).toBeInTheDocument(),
+    )
+    expect(mocks.getOfflineSnapshots).not.toHaveBeenCalled()
+    expect(screen.queryByText('Family')).not.toBeInTheDocument()
   })
 })

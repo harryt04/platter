@@ -191,8 +191,9 @@ user-scoped shell and active-run summary in Dexie. The production service
 worker keeps the offline route and static application assets available without
 putting private HTML or API responses in Cache Storage; the offline route reads
 the saved list names, recipe selections, revision, and grocery-item count from
-the authenticated user's local database. Signing out deletes that local
-database and its remembered account marker.
+the authenticated user's local database. The offline route requires the current
+authenticated account to match the database owner, and signing out deletes
+that local database and its remembered account marker before public navigation.
 While offline, Purchased, Already have, and shopping-amount changes now give
 immediate local feedback and are recorded as retry-safe operations in that same
 user-scoped database with client, revision, attempt, and lifecycle metadata.

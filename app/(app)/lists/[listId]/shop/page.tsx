@@ -24,10 +24,8 @@ import { ManualGroceryItems } from '@/components/lists/manual-grocery-items'
 import { ShoppingModeNavigation } from '@/components/lists/shopping-mode-navigation'
 import { GroceryCategorySelect } from '@/components/lists/grocery-category-select'
 import { GroceryItemOrderControls } from '@/components/lists/grocery-item-order-controls'
-import {
-  groupGroceryItemsByCategoryOrder,
-  groceryCategoryDefinitions,
-} from '@/lib/recipes/grocery-categories'
+import { GroceryCategoryOrderSection } from '@/components/lists/grocery-category-order-section'
+import { groupGroceryItemsByCategoryOrder } from '@/lib/recipes/grocery-categories'
 
 export default async function ShopPage({
   params,
@@ -67,6 +65,7 @@ export default async function ShopPage({
   const groceryItemGroups = groupGroceryItemsByCategoryOrder(
     buyGroceryItems,
     run?.ordering,
+    run?.categoryOrdering,
   )
 
   return (
@@ -99,52 +98,51 @@ export default async function ShopPage({
         {buyGroceryItems.length > 0 ? (
           <div className="space-y-6">
             {groceryItemGroups.map(({ category, items }) => (
-              <section aria-labelledby={`${category}-heading`} key={category}>
-                <h3
-                  className="text-muted-foreground mb-3 text-sm font-semibold"
-                  id={`${category}-heading`}
-                >
-                  {groceryCategoryDefinitions[category].label}
-                </h3>
-                <div className="space-y-3">
-                  {items.map((item, itemIndex) => (
-                    <div className="space-y-2" key={item.id}>
-                      <GroceryRow
-                        item={item}
-                        mergeSuggestions={mergeSuggestions.filter(
-                          (suggestion) => suggestion.left.id === item.id,
-                        )}
-                        baseRevision={run?.revision}
-                        listId={listId}
-                        editable={!isReadOnly}
-                      />
-                      <GroceryCategorySelect
-                        baseRevision={run?.revision}
-                        category={item.category}
-                        editable={!isReadOnly}
-                        ingredientName={item.ingredientName}
-                        itemId={item.id}
-                        listId={listId}
-                      />
-                      <GroceryItemOrderControls
-                        baseRevision={run?.revision}
-                        canMoveDown={itemIndex < items.length - 1}
-                        canMoveUp={itemIndex > 0}
-                        editable={!isReadOnly}
-                        ingredientName={item.ingredientName}
-                        itemId={item.id}
-                        listId={listId}
-                      />
-                      <GroceryAmountOverrideForm
-                        baseRevision={run?.revision}
-                        editable={!isReadOnly}
-                        item={item}
-                        listId={listId}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </section>
+              <GroceryCategoryOrderSection
+                baseRevision={run?.revision}
+                categories={groceryItemGroups.map(({ category }) => category)}
+                category={category}
+                editable={!isReadOnly}
+                key={category}
+                listId={listId}
+              >
+                {items.map((item, itemIndex) => (
+                  <div className="space-y-2" key={item.id}>
+                    <GroceryRow
+                      item={item}
+                      mergeSuggestions={mergeSuggestions.filter(
+                        (suggestion) => suggestion.left.id === item.id,
+                      )}
+                      baseRevision={run?.revision}
+                      listId={listId}
+                      editable={!isReadOnly}
+                    />
+                    <GroceryCategorySelect
+                      baseRevision={run?.revision}
+                      category={item.category}
+                      editable={!isReadOnly}
+                      ingredientName={item.ingredientName}
+                      itemId={item.id}
+                      listId={listId}
+                    />
+                    <GroceryItemOrderControls
+                      baseRevision={run?.revision}
+                      canMoveDown={itemIndex < items.length - 1}
+                      canMoveUp={itemIndex > 0}
+                      editable={!isReadOnly}
+                      ingredientName={item.ingredientName}
+                      itemId={item.id}
+                      listId={listId}
+                    />
+                    <GroceryAmountOverrideForm
+                      baseRevision={run?.revision}
+                      editable={!isReadOnly}
+                      item={item}
+                      listId={listId}
+                    />
+                  </div>
+                ))}
+              </GroceryCategoryOrderSection>
             ))}
           </div>
         ) : (

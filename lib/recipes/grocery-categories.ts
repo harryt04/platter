@@ -137,21 +137,40 @@ export function groupGroceryItemsByDefaultCategory<
  */
 export function groupGroceryItemsByCategoryOrder<
   T extends CategorizedGroceryItem,
->(items: readonly T[], itemOrder: readonly string[] = []) {
+>(
+  items: readonly T[],
+  itemOrder: readonly string[] = [],
+  runCategoryOrder: readonly GroceryCategory[] = [],
+) {
   const orderIndex = new Map(itemOrder.map((id, index) => [id, index]))
-  return groupGroceryItemsByDefaultCategory(items).map((group) => ({
-    ...group,
-    items: [...group.items].sort((left, right) => {
-      const leftIndex = orderIndex.get(left.id)
-      const rightIndex = orderIndex.get(right.id)
-      if (leftIndex === undefined && rightIndex === undefined) {
-        return compareGroceryItemsByDefaultOrder(left, right)
-      }
+  const categoryOrderIndex = new Map(
+    runCategoryOrder.map((category, index) => [category, index]),
+  )
+  return groupGroceryItemsByDefaultCategory(items)
+    .map((group) => ({
+      ...group,
+      items: [...group.items].sort((left, right) => {
+        const leftIndex = orderIndex.get(left.id)
+        const rightIndex = orderIndex.get(right.id)
+        if (leftIndex === undefined && rightIndex === undefined) {
+          return compareGroceryItemsByDefaultOrder(left, right)
+        }
+        if (leftIndex === undefined) return 1
+        if (rightIndex === undefined) return -1
+        return leftIndex - rightIndex
+      }),
+    }))
+    .sort((left, right) => {
+      const leftIndex = categoryOrderIndex.get(left.category)
+      const rightIndex = categoryOrderIndex.get(right.category)
+      if (leftIndex === undefined && rightIndex === undefined)
+        return (
+          categoryOrder.get(left.category)! - categoryOrder.get(right.category)!
+        )
       if (leftIndex === undefined) return 1
       if (rightIndex === undefined) return -1
       return leftIndex - rightIndex
-    }),
-  }))
+    })
 }
 
 const categoryKeywords: ReadonlyArray<readonly [GroceryCategory, ...string[]]> =

@@ -159,7 +159,9 @@ review and shopping modes remain directly linked after shopping starts, with
 touch-safe narrow layouts and live state feedback for `Already have` changes.
 The active run also shares a temporary within-category item order: members can
 use accessible move-up and move-down controls, while a newly created run begins
-at the documented default order.
+at the documented default order. Members can also drag a category or use its
+equivalent move buttons to share a temporary store route for the current run;
+the route is revision-aware and resets for the next run.
 The library can search titles, ingredients, source metadata, and tags with
 stable cursor pagination while preserving the same ownership, membership, and
 saved-reference boundaries. Deleting a recipe explains current list impact,

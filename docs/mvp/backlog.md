@@ -450,11 +450,11 @@ order while allowing that list's members to adapt it temporarily.
       deterministic order within each category.
 - [x] Members can recategorize grocery items for the current run with an
       accessible selector.
-- [ ] Members can reorder categories or items for the current run using pointer,
+- [x] Members can reorder categories or items for the current run using pointer,
       keyboard, and button-based controls.
 - [x] Custom ordering is shared within the list but never copied into the next
       active run.
-- [ ] Ordering mutations are revision-aware, idempotent, and tested for
+- [x] Ordering mutations are revision-aware, idempotent, and tested for
       accessibility and concurrent edits.
 
 ## 20: Shop with the active checklist

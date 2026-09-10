@@ -5,8 +5,8 @@
 This repo contains the Platter foundation scaffold and product/design plans for
 a mobile-first recipe-to-grocery app. Private recipe drafts, recipe parsing and
 scaling, deterministic grocery generation, the first grocery correction slice,
-and conservative grocery categorization with current-run recategorization are
-implemented; the remaining
+and conservative grocery categorization, current-run recategorization, and
+temporary shared grocery ordering are implemented; the remaining
 correction, collaboration, and feature workflows are still planned in the
 backlog.
 

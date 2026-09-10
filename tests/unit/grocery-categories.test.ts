@@ -110,4 +110,18 @@ describe('default grocery categories', () => {
       { category: 'dairy-eggs', ids: ['milk'] },
     ])
   })
+
+  it('uses a current-run category order while leaving uncaptured categories deterministic', () => {
+    const items = [
+      { id: 'apple', category: 'produce' as const, ingredientName: 'Apple' },
+      { id: 'milk', category: 'dairy-eggs' as const, ingredientName: 'Milk' },
+      { id: 'flour', category: 'baking' as const, ingredientName: 'Flour' },
+    ]
+
+    expect(
+      groupGroceryItemsByCategoryOrder(items, [], ['baking', 'produce']).map(
+        ({ category }) => category,
+      ),
+    ).toEqual(['baking', 'produce', 'dairy-eggs'])
+  })
 })

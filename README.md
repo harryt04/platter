@@ -161,8 +161,12 @@ warnings for review, while safe partial facts remain available. Preview-ready
 imports now open an authenticated, owner-scoped manual-completion editor when
 facts are missing, preserving the extracted title, ingredients, instructions,
 source facts, attribution, and metadata for correction before saving a private
-imported draft. Saving preserves the imported origin and pending review state,
-is safe to retry, and never adds the recipe to an active shopping run.
+imported draft. The import worker also records the submitted and canonical URLs,
+source domain and title, source author, acquisition method and timestamp, the
+Schema.org importer, a SHA-256 content fingerprint, and unknown rights status;
+that provenance is copied to the immutable recipe version. Saving preserves the
+imported origin and pending review state, is safe to retry, and never adds the
+recipe to an active shopping run.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

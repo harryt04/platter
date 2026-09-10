@@ -26,13 +26,14 @@ describe('recipe import worker fetch stage', () => {
       requestedUrl: document.sourceUrl,
       finalUrl: document.sourceUrl,
       contentType: 'text/html',
-      body: `<script type="application/ld+json">${JSON.stringify({
-        '@type': 'Recipe',
-        name: 'Worker soup',
-        recipeYield: '4',
-        recipeIngredient: ['1 cup carrots'],
-        recipeInstructions: ['Simmer.'],
-      })}</script>`,
+      body: `<link rel="canonical" href="/recipes/worker-soup">
+        <script type="application/ld+json">${JSON.stringify({
+          '@type': 'Recipe',
+          name: 'Worker soup',
+          recipeYield: '4',
+          recipeIngredient: ['1 cup carrots'],
+          recipeInstructions: ['Simmer.'],
+        })}</script>`,
       byteLength: 180,
     })
 
@@ -73,6 +74,14 @@ describe('recipe import worker fetch stage', () => {
             typicalPeopleFed: 4,
             sourceUrl: document.sourceUrl,
           }),
+          canonicalUrl: 'https://example.com/recipes/worker-soup',
+          sourceDomain: 'example.com',
+          sourceTitle: 'Worker soup',
+          importer: 'schema-org-json-ld',
+          acquiredAt: expect.any(String),
+          acquisitionMethod: 'server-fetch',
+          contentFingerprint: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+          rightsStatus: 'unknown',
           updatedAt: expect.any(String),
         },
         $unset: { failureCode: '' },

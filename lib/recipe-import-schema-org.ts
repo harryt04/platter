@@ -223,6 +223,42 @@ function sourceNameFromUrl(sourceUrl: string) {
   }
 }
 
+/** Return a safe HTML canonical link without treating source markup as active content. */
+export function extractCanonicalUrl(html: string, sourceUrl: string) {
+  const linkPattern = /<link\b([^>]*)>/gi
+  for (const match of html.matchAll(linkPattern)) {
+    const attributes = match[1] ?? ''
+    const relMatch = /\brel\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(
+      attributes,
+    )
+    const rel = (relMatch?.[1] ?? relMatch?.[2] ?? relMatch?.[3] ?? '')
+      .split(/\s+/)
+      .map((value) => value.toLowerCase())
+    if (!rel.includes('canonical')) continue
+
+    const hrefMatch = /\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(
+      attributes,
+    )
+    const href = hrefMatch?.[1] ?? hrefMatch?.[2] ?? hrefMatch?.[3]
+    if (!href) continue
+    try {
+      const canonical = new URL(href, sourceUrl)
+      if (
+        (canonical.protocol !== 'https:' && canonical.protocol !== 'http:') ||
+        canonical.username ||
+        canonical.password
+      ) {
+        continue
+      }
+      canonical.hash = ''
+      return canonical.toString()
+    } catch {
+      continue
+    }
+  }
+  return undefined
+}
+
 /**
  * Extract only Schema.org Recipe facts from a bounded fetched HTML body.
  * JSON-LD is parsed as data; no source markup is executed or rendered. Text

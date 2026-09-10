@@ -14,6 +14,7 @@ import {
   typicalPeopleFedSchema,
   toRecipeDraft,
   type RecipeDraftDocument,
+  type RecipeImportProvenanceDocument,
   type RecipeVersionDocument,
 } from '@/lib/recipes/drafts'
 import {
@@ -73,6 +74,44 @@ function notReady() {
     detail: 'Wait for the recipe preview before saving it.',
     code: 'IMPORT_NOT_READY',
   })
+}
+
+function createImportProvenance(
+  source: RecipeImportDocument,
+  importedAt: ReturnType<typeof isoDateTime>,
+): RecipeImportProvenanceDocument | undefined {
+  if (!source.contentFingerprint) return undefined
+
+  const canonicalUrl = source.canonicalUrl ?? source.preview?.sourceUrl
+  if (!canonicalUrl) return undefined
+
+  let sourceDomain = source.sourceDomain
+  if (!sourceDomain) {
+    try {
+      sourceDomain = new URL(canonicalUrl).hostname.replace(/^www\./i, '')
+    } catch {
+      return undefined
+    }
+  }
+
+  return {
+    submittedUrl: source.sourceUrl,
+    canonicalUrl,
+    sourceDomain,
+    ...((source.sourceTitle ?? source.preview?.title)
+      ? { sourceTitle: source.sourceTitle ?? source.preview?.title }
+      : {}),
+    ...((source.sourceAuthor ?? source.preview?.sourceAuthor)
+      ? { sourceAuthor: source.sourceAuthor ?? source.preview?.sourceAuthor }
+      : {}),
+    importer: source.importer ?? 'schema-org-json-ld',
+    importedAt,
+    acquiredAt: source.acquiredAt ?? source.updatedAt,
+    acquisitionMethod: source.acquisitionMethod ?? 'server-fetch',
+    contentFingerprint: source.contentFingerprint,
+    versionRelationship: 'source-original',
+    rightsStatus: source.rightsStatus ?? 'unknown',
+  }
 }
 
 export async function POST(
@@ -139,6 +178,7 @@ export async function POST(
     dietaryLabels: parsed.data.dietaryLabels ?? undefined,
     image: parsed.data.image ?? undefined,
     nutrition: parsed.data.nutrition ?? undefined,
+    importProvenance: createImportProvenance(source, isoDateTime(new Date())),
     ingredients: parsed.data.ingredients,
     instructions: parsed.data.instructions,
   })

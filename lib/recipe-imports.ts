@@ -8,6 +8,22 @@ import {
 } from '@/lib/contracts/ids'
 import type { RecipeImportCandidate } from '@/lib/recipe-import-schema-org'
 
+export const recipeImportAcquisitionMethodSchema = z.enum(['server-fetch'])
+export const recipeImportImporterSchema = z.enum(['schema-org-json-ld'])
+export const recipeImportRightsStatusSchema = z.enum([
+  'unknown',
+  'licensed',
+  'permission-granted',
+])
+
+export type RecipeImportAcquisitionMethod = z.infer<
+  typeof recipeImportAcquisitionMethodSchema
+>
+export type RecipeImportImporter = z.infer<typeof recipeImportImporterSchema>
+export type RecipeImportRightsStatus = z.infer<
+  typeof recipeImportRightsStatusSchema
+>
+
 export const recipeImportStatusSchema = z.enum([
   'queued',
   'processing',
@@ -59,6 +75,15 @@ export type RecipeImportDocument = {
   attemptCount: number
   submittedAt: IsoDateTime
   updatedAt: IsoDateTime
+  canonicalUrl?: string
+  sourceDomain?: string
+  sourceTitle?: string
+  sourceAuthor?: string
+  importer?: RecipeImportImporter
+  acquiredAt?: IsoDateTime
+  acquisitionMethod?: RecipeImportAcquisitionMethod
+  contentFingerprint?: string
+  rightsStatus?: RecipeImportRightsStatus
   failureCode?: string
   preview?: RecipeImportCandidate
   savedRecipeId?: string

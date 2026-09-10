@@ -655,7 +655,7 @@ recipe data
 
 **Status:** ready-for-agent
 
-- [ ] Saving records submitted and canonical URLs, source domain, source title
+- [x] Saving records submitted and canonical URLs, source domain, source title
       and author when present, importer, timestamp, acquisition method, content
       fingerprint, version relationship, and known rights metadata.
 - [ ] Canonical URL and fingerprint checks reuse or propose the existing public

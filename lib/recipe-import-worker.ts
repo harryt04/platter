@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type { Db } from 'mongodb'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { validateJobPayload } from '@/lib/jobs/registry'
@@ -6,7 +7,10 @@ import {
   isRecipeImportFetchError,
   type RecipeImportFetchResult,
 } from '@/lib/recipe-import-fetcher'
-import { extractSchemaOrgRecipe } from '@/lib/recipe-import-schema-org'
+import {
+  extractCanonicalUrl,
+  extractSchemaOrgRecipe,
+} from '@/lib/recipe-import-schema-org'
 import type { RecipeImportDocument } from '@/lib/recipe-imports'
 
 export const recipeImportRetryPolicy = {
@@ -78,12 +82,30 @@ export function createRecipeImportJobHandler(
         )
         return
       }
+      const acquiredAt = isoDateTime(new Date())
+      const canonicalUrl =
+        extractCanonicalUrl(fetched.body, fetched.finalUrl) ?? fetched.finalUrl
+      const sourceDomain = new URL(canonicalUrl).hostname.replace(/^www\./i, '')
+      const contentFingerprint = `sha256:${createHash('sha256')
+        .update(fetched.body, 'utf8')
+        .digest('hex')}`
       await collection.updateOne(
         { _id: payload.importId, userId: payload.userId, status: 'processing' },
         {
           $set: {
             status: 'preview-ready',
             preview,
+            canonicalUrl,
+            sourceDomain,
+            ...(preview.title ? { sourceTitle: preview.title } : {}),
+            ...(preview.sourceAuthor
+              ? { sourceAuthor: preview.sourceAuthor }
+              : {}),
+            importer: 'schema-org-json-ld',
+            acquiredAt,
+            acquisitionMethod: 'server-fetch',
+            contentFingerprint,
+            rightsStatus: 'unknown',
             updatedAt: isoDateTime(new Date()),
           },
           $unset: { failureCode: '' },

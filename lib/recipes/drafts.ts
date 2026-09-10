@@ -242,6 +242,23 @@ export type RecipeInstruction = z.infer<typeof recipeInstructionSchema>
 export type RecipeImageProvenance = z.infer<typeof recipeImageProvenanceSchema>
 export type RecipeNutrition = z.infer<typeof recipeNutritionSchema>
 
+export type RecipeImportProvenanceDocument = {
+  submittedUrl: string
+  canonicalUrl: string
+  sourceDomain: string
+  sourceTitle?: string
+  sourceAuthor?: string
+  importer: 'schema-org-json-ld'
+  importedAt: IsoDateTime
+  acquiredAt: IsoDateTime
+  acquisitionMethod: 'server-fetch'
+  contentFingerprint: string
+  versionRelationship: 'source-original'
+  rightsStatus: 'unknown' | 'licensed' | 'permission-granted'
+}
+
+export type RecipeImportProvenance = RecipeImportProvenanceDocument
+
 export const createDraftSchema = z.object({ title: recipeTitleSchema })
 export const updateDraftSchema = z
   .object({
@@ -291,6 +308,7 @@ export type RecipeDraft = {
   dietaryLabels?: string[]
   image?: RecipeImageProvenance
   nutrition?: RecipeNutrition
+  importProvenance?: RecipeImportProvenance
   ingredients: RecipeIngredient[]
   instructions: RecipeInstruction[]
   createdAt: IsoDateTime
@@ -320,6 +338,7 @@ export type RecipeDraftDocument = Omit<
   importReviewStatus?: RecipeImportReviewStatus
   /** A private variant's source recipe and immutable source version. */
   derivedFrom?: RecipeLineageDocument
+  importProvenance?: RecipeImportProvenanceDocument
 }
 
 /**
@@ -449,6 +468,7 @@ export function createDraftDocument(
     dietaryLabels?: string[]
     image?: RecipeImageProvenance
     nutrition?: RecipeNutrition
+    importProvenance?: RecipeImportProvenanceDocument
     ingredients?: RecipeIngredient[]
     instructions?: RecipeInstruction[]
   } = {},
@@ -508,6 +528,9 @@ export function createDraftDocument(
     ...(details.nutrition === undefined
       ? {}
       : { nutrition: details.nutrition }),
+    ...(details.importProvenance === undefined
+      ? {}
+      : { importProvenance: details.importProvenance }),
     ingredients,
     instructions,
     createdAt: now,
@@ -635,6 +658,9 @@ export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
     ...(document.nutrition === undefined
       ? {}
       : { nutrition: document.nutrition }),
+    ...(document.importProvenance === undefined
+      ? {}
+      : { importProvenance: document.importProvenance }),
     ingredients: document.ingredients ?? [],
     instructions: document.instructions ?? [],
     createdAt: document.createdAt,

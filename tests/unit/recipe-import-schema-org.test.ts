@@ -1,9 +1,27 @@
 import { describe, expect, it } from 'vitest'
-import { extractSchemaOrgRecipe } from '@/lib/recipe-import-schema-org'
+import {
+  extractCanonicalUrl,
+  extractSchemaOrgRecipe,
+} from '@/lib/recipe-import-schema-org'
 
 const sourceUrl = 'https://recipes.example.test/roasted-vegetables'
 
 describe('Schema.org recipe import adapter', () => {
+  it('extracts an HTTP(S) canonical link without accepting credentials or active schemes', () => {
+    expect(
+      extractCanonicalUrl(
+        '<link rel="canonical" href="/recipes/roasted-vegetables#details">',
+        sourceUrl,
+      ),
+    ).toBe('https://recipes.example.test/recipes/roasted-vegetables')
+    expect(
+      extractCanonicalUrl(
+        '<link rel="canonical" href="javascript:alert(1)">',
+        sourceUrl,
+      ),
+    ).toBeUndefined()
+  })
+
   it('maps JSON-LD Recipe facts into the structured editor shape', () => {
     const html = `
       <html>

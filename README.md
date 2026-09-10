@@ -110,7 +110,9 @@ detail pages now read through the same approved-import and public-visibility
 guard, render the saved ingredient and direction data, and preserve source,
 version, attribution, and image-rights context. Ingredient quantities and
 recipe provenance use the documented data typography and remain visibly labeled
-on the detail page. Anonymous readers receive an
+on the detail page. Unknown image rights are shown explicitly as “Unknown — not
+displayed publicly”; public pages never infer reuse permission from Schema.org
+metadata or public source accessibility. Anonymous readers receive an
 explicit sign-in handoff on the detail page before saving or adding a recipe to
 a list, with the recipe URL preserved through authentication.
 Suppressed, draft, and list-shared recipe versions remain available through

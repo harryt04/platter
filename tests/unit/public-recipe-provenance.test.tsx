@@ -61,4 +61,19 @@ describe('PublicRecipeProvenance', () => {
       ),
     ).toBeInTheDocument()
   })
+
+  it('states unknown image rights and confirms the image is not shown publicly', () => {
+    render(
+      <PublicRecipeProvenance
+        imageRightsStatus="unknown"
+        sourceName="Imported kitchen"
+        versionNumber={1}
+      />,
+    )
+
+    expect(screen.getByText('Image rights')).toBeInTheDocument()
+    expect(
+      screen.getByText('Unknown — not displayed publicly'),
+    ).toBeInTheDocument()
+  })
 })

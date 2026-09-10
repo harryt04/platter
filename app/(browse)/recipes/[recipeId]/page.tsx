@@ -151,6 +151,7 @@ export default async function RecipePage({
             <PublicRecipeProvenance
               attribution={recipe.attribution}
               imageLicense={recipe.image?.license ?? undefined}
+              imageRightsStatus={recipe.image?.rightsStatus}
               sourceAuthor={sourceAuthor}
               sourceName={sourceName}
               sourceUrl={sourceUrl}

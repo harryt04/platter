@@ -1,4 +1,18 @@
 import type { RecipeImportSourceAvailability } from '@/lib/recipe-imports'
+import type { RecipeImageProvenance } from '@/lib/recipes/drafts'
+
+function imageRightsLabel(status: RecipeImageProvenance['rightsStatus']) {
+  switch (status) {
+    case 'user-owned':
+      return 'User-owned'
+    case 'licensed':
+      return 'Licensed for reuse'
+    case 'permission-granted':
+      return 'Permission granted'
+    case 'unknown':
+      return 'Unknown — not displayed publicly'
+  }
+}
 
 export function PublicRecipeProvenance({
   sourceName,
@@ -7,6 +21,7 @@ export function PublicRecipeProvenance({
   attribution,
   versionNumber,
   imageLicense,
+  imageRightsStatus,
   sourceAvailability,
 }: {
   sourceName: string
@@ -15,6 +30,7 @@ export function PublicRecipeProvenance({
   attribution?: string
   versionNumber: number
   imageLicense?: string
+  imageRightsStatus?: RecipeImageProvenance['rightsStatus']
   sourceAvailability?: RecipeImportSourceAvailability
 }) {
   return (
@@ -60,11 +76,14 @@ export function PublicRecipeProvenance({
         <p className="font-medium">Version</p>
         <p className="font-data text-muted-foreground">{versionNumber}</p>
       </div>
-      {imageLicense && (
+      {(imageLicense || imageRightsStatus) && (
         <div>
           <p className="font-medium">Image rights</p>
           <p className="font-data text-muted-foreground break-words">
-            {imageLicense}
+            {imageRightsStatus
+              ? imageRightsLabel(imageRightsStatus)
+              : imageLicense}
+            {imageRightsStatus && imageLicense ? ` · ${imageLicense}` : null}
           </p>
         </div>
       )}

@@ -113,6 +113,10 @@ describe('recipe drafts', () => {
         cuisine: '  Mediterranean\u0000 ',
         mealType: ' Dinner ',
         householdNotes: '  Use less salt for the kids.\u0000 ',
+        sourceName: '  Neighborhood cookbook\u0000 ',
+        sourceUrl: ' https://example.com/recipe ',
+        sourceAuthor: ' Alex Rivera ',
+        attribution: '  Adapted with permission.\u0000 ',
         tags: ['weeknight', 'make ahead'],
         dietaryLabels: ['vegetarian'],
       }),
@@ -123,6 +127,10 @@ describe('recipe drafts', () => {
       cuisine: 'Mediterranean',
       mealType: 'Dinner',
       householdNotes: 'Use less salt for the kids.',
+      sourceName: 'Neighborhood cookbook',
+      sourceUrl: 'https://example.com/recipe',
+      sourceAuthor: 'Alex Rivera',
+      attribution: 'Adapted with permission.',
       tags: ['weeknight', 'make ahead'],
       dietaryLabels: ['vegetarian'],
     })
@@ -140,6 +148,17 @@ describe('recipe drafts', () => {
       recipeMetadataSchema.safeParse({
         householdNotes: 'x'.repeat(2001),
       }).success,
+    ).toBe(false)
+    expect(
+      recipeMetadataSchema.safeParse({ sourceUrl: 'javascript:alert(1)' })
+        .success,
+    ).toBe(false)
+    expect(
+      recipeMetadataSchema.safeParse({ sourceUrl: 'ftp://example.com/recipe' })
+        .success,
+    ).toBe(false)
+    expect(
+      recipeMetadataSchema.safeParse({ attribution: 'x'.repeat(1001) }).success,
     ).toBe(false)
   })
 })

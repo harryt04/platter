@@ -19,6 +19,10 @@ const recipeMetadataFields = [
   'cuisine',
   'mealType',
   'householdNotes',
+  'sourceName',
+  'sourceUrl',
+  'sourceAuthor',
+  'attribution',
   'tags',
   'dietaryLabels',
 ] as const

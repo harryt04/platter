@@ -31,6 +31,10 @@ describe('DraftEditor', () => {
         initialCuisine="Mediterranean"
         initialMealType="Dinner"
         initialHouseholdNotes="Use less salt for the kids."
+        initialSourceName="Neighborhood cookbook"
+        initialSourceUrl="https://example.com/recipe"
+        initialSourceAuthor="Alex Rivera"
+        initialAttribution="Adapted with permission."
         initialTags={['weeknight', 'make ahead']}
         initialDietaryLabels={['vegetarian']}
         initialIngredients={[
@@ -71,6 +75,18 @@ describe('DraftEditor', () => {
     expect(
       screen.getByRole('textbox', { name: /Household notes/ }),
     ).toHaveValue('Use less salt for the kids.')
+    expect(screen.getByRole('textbox', { name: /Source name/ })).toHaveValue(
+      'Neighborhood cookbook',
+    )
+    expect(screen.getByRole('textbox', { name: /Source URL/ })).toHaveValue(
+      'https://example.com/recipe',
+    )
+    expect(screen.getByRole('textbox', { name: /Source author/ })).toHaveValue(
+      'Alex Rivera',
+    )
+    expect(screen.getByRole('textbox', { name: /Attribution/ })).toHaveValue(
+      'Adapted with permission.',
+    )
     expect(screen.getByRole('textbox', { name: 'Tags' })).toHaveValue(
       'weeknight, make ahead',
     )

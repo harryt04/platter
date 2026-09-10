@@ -35,6 +35,22 @@ const optionalMetadataText = (label: string, max: number) =>
       .nullable(),
   )
 
+const optionalSourceUrl = z.preprocess(
+  (value) => {
+    if (typeof value !== 'string') return value
+    const cleaned = value.trim()
+    return cleaned === '' ? undefined : cleaned
+  },
+  z
+    .url({ error: 'Enter a valid source URL.' })
+    .refine(
+      (value) => value.startsWith('https://') || value.startsWith('http://'),
+      'Source URL must use HTTP or HTTPS.',
+    )
+    .optional()
+    .nullable(),
+)
+
 const recipeTimeSchema = (label: string) =>
   z
     .number({ error: `Enter a valid ${label} in minutes.` })
@@ -98,6 +114,10 @@ export const recipeMetadataSchema = z.object({
   cuisine: optionalMetadataText('cuisine', 100),
   mealType: optionalMetadataText('meal type', 100),
   householdNotes: optionalMetadataText('household notes', 2000),
+  sourceName: optionalMetadataText('source name', 200),
+  sourceUrl: optionalSourceUrl,
+  sourceAuthor: optionalMetadataText('source author', 200),
+  attribution: optionalMetadataText('attribution', 1000),
   tags: recipeLabelsSchema.optional(),
   dietaryLabels: recipeLabelsSchema.optional(),
 })
@@ -136,6 +156,10 @@ export type RecipeDraft = {
   cuisine?: string
   mealType?: string
   householdNotes?: string
+  sourceName?: string
+  sourceUrl?: string
+  sourceAuthor?: string
+  attribution?: string
   tags?: string[]
   dietaryLabels?: string[]
   ingredients: RecipeIngredient[]
@@ -186,6 +210,10 @@ export function createDraftDocument(
     cuisine?: string
     mealType?: string
     householdNotes?: string
+    sourceName?: string
+    sourceUrl?: string
+    sourceAuthor?: string
+    attribution?: string
     tags?: string[]
     dietaryLabels?: string[]
     ingredients?: RecipeIngredient[]
@@ -223,6 +251,18 @@ export function createDraftDocument(
     ...(details.householdNotes === undefined
       ? {}
       : { householdNotes: details.householdNotes }),
+    ...(details.sourceName === undefined
+      ? {}
+      : { sourceName: details.sourceName }),
+    ...(details.sourceUrl === undefined
+      ? {}
+      : { sourceUrl: details.sourceUrl }),
+    ...(details.sourceAuthor === undefined
+      ? {}
+      : { sourceAuthor: details.sourceAuthor }),
+    ...(details.attribution === undefined
+      ? {}
+      : { attribution: details.attribution }),
     ...(details.tags === undefined ? {} : { tags: details.tags }),
     ...(details.dietaryLabels === undefined
       ? {}
@@ -261,6 +301,18 @@ export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
     ...(document.householdNotes === undefined
       ? {}
       : { householdNotes: document.householdNotes }),
+    ...(document.sourceName === undefined
+      ? {}
+      : { sourceName: document.sourceName }),
+    ...(document.sourceUrl === undefined
+      ? {}
+      : { sourceUrl: document.sourceUrl }),
+    ...(document.sourceAuthor === undefined
+      ? {}
+      : { sourceAuthor: document.sourceAuthor }),
+    ...(document.attribution === undefined
+      ? {}
+      : { attribution: document.attribution }),
     ...(document.tags === undefined ? {} : { tags: document.tags }),
     ...(document.dietaryLabels === undefined
       ? {}

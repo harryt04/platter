@@ -189,6 +189,10 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
           cuisine: ' Mediterranean\u0000 ',
           mealType: ' Dinner ',
           householdNotes: ' Use less salt for the kids.\u0000 ',
+          sourceName: ' Neighborhood cookbook\u0000 ',
+          sourceUrl: ' https://example.com/recipe ',
+          sourceAuthor: ' Alex Rivera ',
+          attribution: ' Adapted with permission.\u0000 ',
           tags: ['weeknight', 'make ahead'],
           dietaryLabels: ['vegetarian'],
         }),
@@ -204,6 +208,10 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
       cuisine: 'Mediterranean',
       mealType: 'Dinner',
       householdNotes: 'Use less salt for the kids.',
+      sourceName: 'Neighborhood cookbook',
+      sourceUrl: 'https://example.com/recipe',
+      sourceAuthor: 'Alex Rivera',
+      attribution: 'Adapted with permission.',
       tags: ['weeknight', 'make ahead'],
       dietaryLabels: ['vegetarian'],
     })
@@ -246,6 +254,10 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
           cuisine: '',
           householdNotes: '',
           prepTimeMinutes: null,
+          sourceName: '',
+          sourceUrl: null,
+          sourceAuthor: '',
+          attribution: '',
         }),
       }),
       { params: Promise.resolve({ recipeId: 'recipe-1' }) },
@@ -259,8 +271,41 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
     expect(collection.updateOne).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        $unset: { cuisine: '', householdNotes: '', prepTimeMinutes: '' },
+        $unset: {
+          cuisine: '',
+          householdNotes: '',
+          prepTimeMinutes: '',
+          sourceName: '',
+          sourceUrl: '',
+          sourceAuthor: '',
+          attribution: '',
+        },
       }),
     )
+  })
+
+  it('rejects non-web source URLs without writing the draft', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(draft),
+      updateOne: vi.fn(),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/recipes/recipe-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ sourceUrl: 'javascript:alert(1)' }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(422)
+    expect((await response.json()).fields.sourceUrl).toEqual([
+      'Source URL must use HTTP or HTTPS.',
+    ])
+    expect(collection.updateOne).not.toHaveBeenCalled()
   })
 })

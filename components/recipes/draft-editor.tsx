@@ -58,6 +58,10 @@ export function DraftEditor({
   initialCuisine = '',
   initialMealType = '',
   initialHouseholdNotes = '',
+  initialSourceName = '',
+  initialSourceUrl = '',
+  initialSourceAuthor = '',
+  initialAttribution = '',
   initialTags = [],
   initialDietaryLabels = [],
   initialIngredients = [],
@@ -73,6 +77,10 @@ export function DraftEditor({
   initialCuisine?: string
   initialMealType?: string
   initialHouseholdNotes?: string
+  initialSourceName?: string
+  initialSourceUrl?: string
+  initialSourceAuthor?: string
+  initialAttribution?: string
   initialTags?: string[]
   initialDietaryLabels?: string[]
   initialIngredients?: RecipeIngredient[]
@@ -96,6 +104,10 @@ export function DraftEditor({
   const [cuisine, setCuisine] = useState(initialCuisine)
   const [mealType, setMealType] = useState(initialMealType)
   const [householdNotes, setHouseholdNotes] = useState(initialHouseholdNotes)
+  const [sourceName, setSourceName] = useState(initialSourceName)
+  const [sourceUrl, setSourceUrl] = useState(initialSourceUrl)
+  const [sourceAuthor, setSourceAuthor] = useState(initialSourceAuthor)
+  const [attribution, setAttribution] = useState(initialAttribution)
   const [tags, setTags] = useState(initialTags.join(', '))
   const [dietaryLabels, setDietaryLabels] = useState(
     initialDietaryLabels.join(', '),
@@ -143,6 +155,10 @@ export function DraftEditor({
                   cuisine,
                   mealType,
                   householdNotes,
+                  sourceName,
+                  sourceUrl,
+                  sourceAuthor,
+                  attribution,
                   tags: splitLabels(tags),
                   dietaryLabels: splitLabels(dietaryLabels),
                   ingredients,
@@ -377,6 +393,84 @@ export function DraftEditor({
                     control characters before saving.
                   </p>
                 </div>
+                <fieldset className="border-border space-y-4 rounded-[var(--radius-card)] border p-4">
+                  <legend className="px-1 text-sm font-medium">
+                    Source and attribution
+                  </legend>
+                  <p className="text-muted-foreground text-xs">
+                    If this recipe came from elsewhere, keep its source facts
+                    with the private draft. Source links must use HTTP or HTTPS.
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="recipe-source-name">
+                        Source name{' '}
+                        <span className="text-muted-foreground">
+                          (optional)
+                        </span>
+                      </Label>
+                      <Input
+                        id="recipe-source-name"
+                        name="sourceName"
+                        value={sourceName}
+                        onChange={(event) => setSourceName(event.target.value)}
+                        placeholder="Neighborhood cookbook"
+                        maxLength={200}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="recipe-source-author">
+                        Source author{' '}
+                        <span className="text-muted-foreground">
+                          (optional)
+                        </span>
+                      </Label>
+                      <Input
+                        id="recipe-source-author"
+                        name="sourceAuthor"
+                        value={sourceAuthor}
+                        onChange={(event) =>
+                          setSourceAuthor(event.target.value)
+                        }
+                        placeholder="Alex Rivera"
+                        maxLength={200}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="recipe-source-url">
+                      Source URL{' '}
+                      <span className="text-muted-foreground">(optional)</span>
+                    </Label>
+                    <Input
+                      id="recipe-source-url"
+                      name="sourceUrl"
+                      type="url"
+                      inputMode="url"
+                      value={sourceUrl}
+                      onChange={(event) => setSourceUrl(event.target.value)}
+                      placeholder="https://example.com/recipe"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="recipe-attribution">
+                      Attribution{' '}
+                      <span className="text-muted-foreground">(optional)</span>
+                    </Label>
+                    <Textarea
+                      id="recipe-attribution"
+                      name="attribution"
+                      value={attribution}
+                      onChange={(event) => setAttribution(event.target.value)}
+                      placeholder="Adapted with permission from the original author."
+                      maxLength={1000}
+                    />
+                    <p className="text-muted-foreground text-xs">
+                      Keep attribution factual. It will remain separate from
+                      recipe instructions and editorial prose.
+                    </p>
+                  </div>
+                </fieldset>
               </fieldset>
               <fieldset className="space-y-4">
                 <legend className="text-sm font-medium">Ingredients</legend>

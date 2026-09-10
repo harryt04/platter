@@ -177,6 +177,7 @@ describe('POST /api/v1/imports/[importId]/save', () => {
     )
     expect(versions.insertOne).toHaveBeenCalledOnce()
     expect(collection).not.toHaveBeenCalledWith('shopping_runs')
+    expect(collection).not.toHaveBeenCalledWith('recipe_saves')
   })
 
   it('keeps an incomplete reviewed import private until it is usable', async () => {

@@ -29,10 +29,11 @@ function setup(recipe: typeof publicRecipe | null = publicRecipe) {
     updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
     deleteOne: vi.fn().mockResolvedValue({ deletedCount: 1 }),
   }
+  const databaseCollection = vi.fn().mockReturnValue(collection)
   getConnectedDatabase.mockResolvedValue({
-    collection: vi.fn().mockReturnValue(collection),
+    collection: databaseCollection,
   })
-  return collection
+  return { collection, databaseCollection }
 }
 
 beforeEach(() => vi.clearAllMocks())
@@ -59,7 +60,7 @@ describe('/api/v1/recipes/[recipeId]/save', () => {
   })
 
   it('saves only a public recipe and is idempotent for the same user', async () => {
-    const collection = setup()
+    const { collection, databaseCollection } = setup()
 
     const first = await POST(
       new Request('http://localhost/api/v1/recipes/recipe-1/save', {
@@ -87,10 +88,11 @@ describe('/api/v1/recipes/[recipeId]/save', () => {
       },
       { upsert: true },
     )
+    expect(databaseCollection).not.toHaveBeenCalledWith('shopping_runs')
   })
 
   it('rejects a recipe that is no longer publicly available', async () => {
-    const collection = setup(null)
+    const { collection } = setup(null)
 
     const response = await POST(
       new Request('http://localhost/api/v1/recipes/recipe-1/save', {
@@ -104,7 +106,7 @@ describe('/api/v1/recipes/[recipeId]/save', () => {
   })
 
   it('removes only the current user’s saved reference', async () => {
-    const collection = setup()
+    const { collection } = setup()
 
     const response = await DELETE(
       new Request('http://localhost/api/v1/recipes/recipe-1/save', {

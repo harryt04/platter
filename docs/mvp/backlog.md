@@ -304,7 +304,7 @@ lines; 08: Version recipes and control visibility
       friendly-display rounding; count suggestions never alter source facts.
 - [x] Ingredients with no quantity remain readable contributions without a
       fabricated amount, and optional ingredients remain visibly optional.
-- [ ] Selecting a recipe never happens as a side effect of saving or importing
+- [x] Selecting a recipe never happens as a side effect of saving or importing
       it.
 - [x] Unit and browser tests demonstrate the PRD's four-to-two and four-to-six
       scaling examples.

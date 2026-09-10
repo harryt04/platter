@@ -92,6 +92,8 @@ ownership while preserving the rule that every live list has an owner.
       ownership is transferred or the list is explicitly deleted.
 - [ ] A removed member immediately loses API, page, realtime-room, and future
       mutation authorization for that list.
+- [x] Realtime room joins verify the caller's current active membership before
+      joining a list-scoped room; removed and non-member users are rejected.
 - [x] Role enforcement is centralized through the established list-role helper
       and covered for every role boundary.
 

@@ -3,6 +3,7 @@ import { Server } from 'socket.io'
 import { createAdapter } from '@socket.io/mongo-adapter'
 import { auth } from '@/lib/auth/auth'
 import { getConnectedDatabase, getMongoClient } from '@/lib/db/mongo-client'
+import { joinAuthorizedRealtimeRoom } from '@/lib/realtime/rooms'
 import { serverEnv } from '@/lib/env/server'
 
 const env = serverEnv()
@@ -39,11 +40,8 @@ io.use(async (socket, next) => {
 })
 
 io.on('connection', (socket) => {
-  socket.on('foundation:join', (listId: string) => {
-    if (!['family', 'personal'].includes(listId))
-      return socket.emit('foundation:error', { code: 'LIST_ACCESS_DENIED' })
-    socket.join(`list:${listId}`)
-    socket.emit('foundation:smoke', { revision: Date.now(), listId })
+  socket.on('foundation:join', (listId: unknown) => {
+    void joinAuthorizedRealtimeRoom(socket, listId, socket.data.userId)
   })
 })
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createActiveShoppingRunDocument,
   createListDocument,
@@ -10,6 +10,17 @@ import {
   listOwnerFilter,
   updateListSchema,
 } from '@/lib/lists'
+import { joinAuthorizedRealtimeRoom } from '@/lib/realtime/rooms'
+
+const { findListForMember } = vi.hoisted(() => ({
+  findListForMember: vi.fn(),
+}))
+
+vi.mock('@/lib/lists', async () => {
+  const actual =
+    await vi.importActual<typeof import('@/lib/lists')>('@/lib/lists')
+  return { ...actual, findListForMember }
+})
 
 describe('lists', () => {
   it('validates and trims names while rejecting blank or oversized values', () => {
@@ -151,5 +162,31 @@ describe('foundation contracts', () => {
       status: 'pending',
       expiresAt: '2026-09-11T12:00:00.000Z',
     })
+  })
+
+  it('only joins realtime rooms for a current list member', async () => {
+    const socket = {
+      join: vi.fn(),
+      emit: vi.fn(),
+    }
+    findListForMember.mockResolvedValueOnce(null)
+
+    await expect(
+      joinAuthorizedRealtimeRoom(socket, 'list-1', 'removed-user'),
+    ).resolves.toBe(false)
+    expect(socket.join).not.toHaveBeenCalled()
+    expect(socket.emit).toHaveBeenCalledWith('foundation:error', {
+      code: 'LIST_ACCESS_DENIED',
+    })
+
+    findListForMember.mockResolvedValueOnce({ _id: 'list-1' })
+    await expect(
+      joinAuthorizedRealtimeRoom(socket, 'list-1', 'active-user'),
+    ).resolves.toBe(true)
+    expect(socket.join).toHaveBeenCalledWith('list:list-1')
+    expect(socket.emit).toHaveBeenCalledWith(
+      'foundation:smoke',
+      expect.objectContaining({ listId: 'list-1' }),
+    )
   })
 })

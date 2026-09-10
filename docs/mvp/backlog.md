@@ -70,7 +70,7 @@ let the recipient understand and accept that invitation safely.
       expire after the configured period.
 - [x] A recipient can view an invitation summary, authenticate if needed, and
       accept a valid invitation while connected.
-- [ ] Expired, revoked, already-used, malformed, and cross-account invitations
+- [x] Expired, revoked, already-used, malformed, and cross-account invitations
       return clear, non-leaking outcomes.
 - [x] Invitation creation and acceptance are rate-limited and covered by
       integration and browser tests.

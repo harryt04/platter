@@ -9,7 +9,8 @@ ingredients, ordered instructions, timing/classification metadata, household
 notes, source attribution, and image provenance, plus list management,
 owner-managed active members, owner-only invitation management, and recipient
 invitation acceptance, ownership-safe member leaving, and recipient invitation
-acceptance with bounded invitation attempts are in place. Recipe drafts also accept optional
+acceptance with bounded invitation attempts and clear terminal or account-mismatch
+outcomes are in place. Recipe drafts also accept optional
 informational nutrition values per person. Signed-in users also receive
 in-product notifications for invitations and member role or removal changes,
 with authenticated deep links and independent read state.

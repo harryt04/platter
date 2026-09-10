@@ -123,6 +123,64 @@ describe('invitation recipient route', () => {
     expect((await response.json()).code).toBe('INVITATION_EXPIRED')
   })
 
+  it.each([
+    ['revoked', 'INVITATION_UNAVAILABLE'],
+    ['accepted', 'INVITATION_UNAVAILABLE'],
+  ] as const)(
+    'reports %s invitations without revealing account details',
+    async (status, code) => {
+      const unavailableInvitation = {
+        ...invitation,
+        status,
+      }
+      const invitationCollection = {
+        findOne: vi.fn().mockResolvedValue(unavailableInvitation),
+      }
+      const listCollection = { findOne: vi.fn().mockResolvedValue(list) }
+      getConnectedDatabase.mockResolvedValue(
+        database(invitationCollection, listCollection),
+      )
+
+      const response = await GET(
+        new Request(`http://localhost/api/v1/invitations/${token}`),
+        context(),
+      )
+
+      expect(response.status).toBe(409)
+      expect(await response.json()).toMatchObject({
+        code,
+        detail: 'This invitation has already been used or revoked.',
+      })
+    },
+  )
+
+  it('returns the same unavailable outcome when a terminal invitation is posted', async () => {
+    getSession.mockResolvedValue({
+      user: { id: 'guest-1', email: 'guest@example.com' },
+    })
+    const invitationCollection = {
+      findOne: vi.fn().mockResolvedValue({
+        ...invitation,
+        status: 'accepted' as const,
+      }),
+    }
+    const listCollection = { findOne: vi.fn().mockResolvedValue(list) }
+    getConnectedDatabase.mockResolvedValue(
+      database(invitationCollection, listCollection),
+    )
+
+    const response = await POST(
+      new Request(`http://localhost/api/v1/invitations/${token}`, {
+        method: 'POST',
+      }),
+      context(),
+    )
+
+    expect(response.status).toBe(409)
+    expect((await response.json()).code).toBe('INVITATION_UNAVAILABLE')
+    expect(getMongoClient).not.toHaveBeenCalled()
+  })
+
   it('requires authentication before accepting', async () => {
     getSession.mockResolvedValue(null)
 

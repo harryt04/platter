@@ -6,6 +6,7 @@ import { ContentContainer, PageHeader } from '@/components/shell/page-header'
 import { PublicRecipeAuthPrompt } from '@/components/recipes/public-recipe-auth-prompt'
 import { PublicRecipeIngredients } from '@/components/recipes/public-recipe-ingredients'
 import { PublicRecipeProvenance } from '@/components/recipes/public-recipe-provenance'
+import { SavePublicRecipeButton } from '@/components/recipes/save-public-recipe-button'
 import { getSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { publicRecipeFilter, toRecipeDraft } from '@/lib/recipes/drafts'
@@ -24,6 +25,12 @@ export default async function RecipePage({
     .findOne(publicRecipeFilter(recipeId))
   if (!document) notFound()
   const recipe = toRecipeDraft(document)
+  const saved = session
+    ? await db.collection('recipe_saves').findOne({
+        userId: session.user.id,
+        recipeId,
+      })
+    : null
   const imageIsPermitted =
     recipe.image &&
     ['user-owned', 'licensed', 'permission-granted'].includes(
@@ -38,6 +45,14 @@ export default async function RecipePage({
         title={recipe.title}
         description={recipe.description}
       />
+      {session && (
+        <div className="mb-6">
+          <SavePublicRecipeButton
+            initialSaved={Boolean(saved)}
+            recipeId={recipe.id}
+          />
+        </div>
+      )}
       {imageIsPermitted && recipe.image ? (
         <div className="bg-muted mb-6 overflow-hidden rounded-xl">
           <Image

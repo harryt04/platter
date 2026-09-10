@@ -7,8 +7,9 @@ import {
   type RecipeDraftDocument,
   type RecipeShareDocument,
 } from '@/lib/recipes/drafts'
+import { recipeSaves, type RecipeSaveDocument } from '@/lib/recipes/saves'
 
-export type RecipeLibraryAccess = 'owned' | 'shared'
+export type RecipeLibraryAccess = 'owned' | 'shared' | 'saved'
 
 export type RecipeLibraryEntry = {
   recipe: RecipeDraft
@@ -33,6 +34,13 @@ export async function findRecipeLibrary(
     .project({ _id: 1, name: 1 })
     .toArray()
   const listIds = memberLists.map((list) => list._id)
+  const savedRecipes = await recipeSaves(
+    db.collection<RecipeSaveDocument>('recipe_saves'),
+  )
+    .find({ userId })
+    .project({ recipeId: 1 })
+    .toArray()
+  const savedRecipeIds = savedRecipes.map((save) => save.recipeId)
 
   const shares = listIds.length
     ? await recipeShares(db.collection<RecipeShareDocument>('recipe_shares'))
@@ -66,6 +74,23 @@ export async function findRecipeLibrary(
               },
             ]
           : []),
+        ...(savedRecipeIds.length
+          ? [
+              {
+                _id: { $in: savedRecipeIds },
+                status: 'usable' as const,
+                visibility: 'public' as const,
+                $or: [
+                  { origin: { $exists: false } },
+                  { origin: 'authored' as const },
+                  {
+                    origin: 'imported' as const,
+                    importReviewStatus: 'approved' as const,
+                  },
+                ],
+              },
+            ]
+          : []),
       ],
     })
     .sort({ updatedAt: -1, _id: 1 })
@@ -73,12 +98,15 @@ export async function findRecipeLibrary(
 
   return recipes.map((recipe) => {
     const sharedListNames = sharedListsByRecipe.get(recipe._id) ?? []
+    const isSaved = savedRecipeIds.includes(recipe._id)
     return {
       recipe: toRecipeDraft(recipe),
       access:
         sharedListNames.length > 0 && recipe.ownerId !== userId
           ? 'shared'
-          : 'owned',
+          : isSaved && recipe.ownerId !== userId
+            ? 'saved'
+            : 'owned',
       sharedListNames,
     }
   })

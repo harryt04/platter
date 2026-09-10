@@ -232,9 +232,9 @@ they authored, imported, saved, or received through a list.
       shared through a current list membership.
 - [ ] User imports appear in the library after the import-save workflow
       completes.
-- [ ] Explicitly saved public recipes appear in the library without adding
+- [x] Explicitly saved public recipes appear in the library without adding
       them to a shopping run.
-- [ ] A user can save a public recipe without adding it to a run and later
+- [x] A user can save a public recipe without adding it to a run and later
       remove that saved reference without deleting public or other-user data.
 - [ ] Library search supports title, ingredient, source, and tag with stable
       cursor pagination.

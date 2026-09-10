@@ -6,6 +6,7 @@ import type {
   RecipeDraftDocument,
   RecipeShareDocument,
 } from '@/lib/recipes/drafts'
+import type { RecipeSaveDocument } from '@/lib/recipes/saves'
 
 function query<T>(documents: T[]) {
   const cursor = {
@@ -79,14 +80,25 @@ describe('findRecipeLibrary', () => {
           '2026-09-10T12:00:00.000Z' as RecipeShareDocument['createdAt'],
       },
     ])
+    const saves = query<RecipeSaveDocument>([
+      {
+        _id: 'save-1',
+        userId: 'owner-1',
+        recipeId: 'saved-1',
+        createdAt:
+          '2026-09-10T12:00:00.000Z' as RecipeSaveDocument['createdAt'],
+      },
+    ])
     const recipes = query<RecipeDraftDocument>([
       recipe('owned-1', { visibility: 'private' }),
       recipe('shared-1', { ownerId: 'owner-2' }),
+      recipe('saved-1', { ownerId: 'owner-2', visibility: 'public' }),
     ])
     const db = {
       collection: vi.fn((name: string) => {
         if (name === 'lists') return lists
         if (name === 'recipe_shares') return shares
+        if (name === 'recipe_saves') return saves
         if (name === 'recipes') return recipes
         throw new Error(`Unexpected collection: ${name}`)
       }),
@@ -105,6 +117,11 @@ describe('findRecipeLibrary', () => {
         access: 'shared',
         sharedListNames: ['Family'],
       },
+      {
+        recipe: expect.objectContaining({ id: 'saved-1', title: 'saved-1' }),
+        access: 'saved',
+        sharedListNames: [],
+      },
     ])
     expect(lists.find).toHaveBeenCalledWith({
       status: { $ne: 'deleted' },
@@ -119,13 +136,29 @@ describe('findRecipeLibrary', () => {
           status: 'usable',
           visibility: 'list-shared',
         },
+        {
+          _id: { $in: ['saved-1'] },
+          status: 'usable',
+          visibility: 'public',
+          $or: [
+            { origin: { $exists: false } },
+            { origin: 'authored' },
+            { origin: 'imported', importReviewStatus: 'approved' },
+          ],
+        },
       ],
+    })
+    expect(result).toContainEqual({
+      recipe: expect.objectContaining({ id: 'saved-1', title: 'saved-1' }),
+      access: 'saved',
+      sharedListNames: [],
     })
   })
 
   it('does not query or retain shared recipes after membership access disappears', async () => {
     const lists = query<ListDocument>([])
     const shares = query<RecipeShareDocument>([])
+    const saves = query<RecipeSaveDocument>([])
     const recipes = query<RecipeDraftDocument>([
       recipe('owned-1', { visibility: 'private' }),
     ])
@@ -133,6 +166,7 @@ describe('findRecipeLibrary', () => {
       collection: vi.fn((name: string) => {
         if (name === 'lists') return lists
         if (name === 'recipe_shares') return shares
+        if (name === 'recipe_saves') return saves
         if (name === 'recipes') return recipes
         throw new Error(`Unexpected collection: ${name}`)
       }),

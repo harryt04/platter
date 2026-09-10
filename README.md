@@ -58,6 +58,8 @@ Mongo-backed integration coverage now verifies private, list-shared, and public
 visibility boundaries alongside historical version resolution.
 The signed-in recipe library now combines authored recipes with usable recipes
 shared through the member's current lists, and shared entries remain read-only.
+Signed-in users can also save public recipes to that library without adding
+them to a shopping run, then remove only their own saved reference.
 Mongo-backed list integration coverage now exercises three-list creation,
 membership isolation, owner lifecycle changes, editor restrictions, and the
 one-active-run database invariant; authenticated browser coverage runs when the

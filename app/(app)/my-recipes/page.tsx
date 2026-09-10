@@ -1,5 +1,6 @@
 import { EmptyState } from '@/components/states/empty-state'
 import { DeleteDraftButton } from '@/components/recipes/delete-draft-button'
+import { SavePublicRecipeButton } from '@/components/recipes/save-public-recipe-button'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
@@ -42,13 +43,15 @@ export default async function MyRecipesPage() {
                     <p className="font-data text-muted-foreground text-xs tracking-widest uppercase">
                       {access === 'shared'
                         ? `Shared with ${sharedListNames.join(', ')}`
-                        : recipe.status !== 'usable'
-                          ? 'Private draft'
-                          : recipe.visibility === 'public'
-                            ? 'Published recipe'
-                            : recipe.visibility === 'list-shared'
-                              ? 'Shared recipe'
-                              : 'Ready to use'}
+                        : access === 'saved'
+                          ? 'Saved public recipe'
+                          : recipe.status !== 'usable'
+                            ? 'Private draft'
+                            : recipe.visibility === 'public'
+                              ? 'Published recipe'
+                              : recipe.visibility === 'list-shared'
+                                ? 'Shared recipe'
+                                : 'Ready to use'}
                     </p>
                     <CardTitle className="font-display mt-2 text-2xl">
                       {recipe.title}
@@ -74,6 +77,9 @@ export default async function MyRecipesPage() {
                     recipeId={recipe.id}
                     title={recipe.title}
                   />
+                )}
+                {access === 'saved' && (
+                  <SavePublicRecipeButton initialSaved recipeId={recipe.id} />
                 )}
               </CardContent>
             </Card>

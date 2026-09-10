@@ -340,6 +340,8 @@ The implementation may refine document boundaries, but it must preserve these co
   data rather than health guidance;
 - source and attribution;
 - acquisition method and public-content state;
+- separate user-scoped saved-recipe references that do not modify the public
+  recipe or add it to a shopping run;
 - timestamps and version relationship.
 
 Imported recipes should record:

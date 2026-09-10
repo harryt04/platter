@@ -49,7 +49,9 @@ Discovery filters compose with stable rank-and-ID cursor pagination, and the
 page preserves active filters while loading more results.
 Public discovery selects the built-in MongoDB search provider by default, so
 the core search flow remains self-hostable without a paid or proprietary
-search service.
+search service. Mongo-backed integration fixtures also verify weighted field
+ranking, composed filters, visibility isolation, cursor stability, and a
+synthetic two-second discovery-page target.
 Discovery ranking combines Mongo's weighted title and ingredient relevance with
 deterministic completeness signals and a capped count of public saves, while
 retaining stable ID tie-breaking and visible source attribution.

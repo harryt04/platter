@@ -262,7 +262,7 @@ search while keeping source attribution and visibility rules intact.
       never return private, shared-only, draft, or suppressed recipes.
 - [x] Search remains functional through the base Mongo provider with no paid or
       proprietary service configured.
-- [ ] Integration and performance fixtures verify field weights, filters,
+- [x] Integration and performance fixtures verify field weights, filters,
       visibility, pagination stability, and the two-second load target.
 
 ## 11: View a public recipe

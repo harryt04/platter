@@ -28,6 +28,27 @@ const sharedRecipeId = `${fixtureToken}-shared`
 const pendingRecipeId = `${fixtureToken}-pending`
 const historicalRecipeId = `${fixtureToken}-historical`
 const historicalVersionId = `${fixtureToken}-version-1`
+const rankingToken = `${fixtureToken}ranking`
+const filterToken = `${fixtureToken}filter`
+const paginationToken = `${fixtureToken}pagination`
+const performanceToken = `${fixtureToken}performance`
+const rankingRecipeIds = [
+  `${fixtureToken}-ranking-title`,
+  `${fixtureToken}-ranking-ingredient`,
+  `${fixtureToken}-ranking-source`,
+]
+const filterRecipeIds = [
+  `${fixtureToken}-filter-match`,
+  `${fixtureToken}-filter-mismatch`,
+]
+const paginationRecipeIds = Array.from(
+  { length: 5 },
+  (_, index) => `${fixtureToken}-pagination-${index}`,
+)
+const performanceRecipeIds = Array.from(
+  { length: 100 },
+  (_, index) => `${fixtureToken}-performance-${index}`,
+)
 
 const timestamp = isoDateTime('2026-09-10T12:00:00.000Z')
 
@@ -61,6 +82,65 @@ function recipeDocument(
   }
 }
 
+function publicSearchRecipe(
+  id: string,
+  overrides: Partial<RecipeDraftDocument> = {},
+) {
+  return {
+    ...recipeDocument(id, 'public'),
+    sourceName: 'Synthetic kitchen',
+    ...overrides,
+  }
+}
+
+async function ensureWeightedRecipeSearchIndex(db: Db) {
+  const recipes = db.collection('recipes')
+  const indexes = await recipes.listIndexes().toArray()
+  const existingTextIndex = indexes.find((index) =>
+    Object.values(index.key ?? {}).some((value) => value === 'text'),
+  )
+
+  if (
+    existingTextIndex?.name &&
+    existingTextIndex.name !== 'recipe_public_search_text'
+  ) {
+    await recipes.dropIndex(existingTextIndex.name)
+  }
+
+  const hasWeightedIndex = indexes.some(
+    (index) => index.name === 'recipe_public_search_text',
+  )
+  if (!hasWeightedIndex) {
+    await recipes.createIndex(
+      {
+        title: 'text',
+        'ingredients.originalText': 'text',
+        'ingredients.ingredientName': 'text',
+        sourceName: 'text',
+        sourceAuthor: 'text',
+        sourceUrl: 'text',
+        cuisine: 'text',
+        tags: 'text',
+        dietaryLabels: 'text',
+      },
+      {
+        name: 'recipe_public_search_text',
+        weights: {
+          title: 10,
+          'ingredients.ingredientName': 8,
+          'ingredients.originalText': 5,
+          sourceName: 4,
+          cuisine: 3,
+          tags: 3,
+          dietaryLabels: 3,
+          sourceAuthor: 2,
+          sourceUrl: 1,
+        },
+      },
+    )
+  }
+}
+
 describe('recipe visibility and immutable versions', () => {
   let db: Db
 
@@ -72,9 +152,7 @@ describe('recipe visibility and immutable versions', () => {
     }
 
     db = await getConnectedDatabase()
-    await db
-      .collection('recipes')
-      .createIndex({ title: 'text' }, { name: 'recipe_integration_title_text' })
+    await ensureWeightedRecipeSearchIndex(db)
 
     await db.collection<RecipeDraftDocument>('recipes').insertMany([
       recipeDocument(privateRecipeId, 'private'),
@@ -91,6 +169,54 @@ describe('recipe visibility and immutable versions', () => {
         versionId: `${historicalRecipeId}-version-2`,
         versionNumber: 2,
       },
+      publicSearchRecipe(rankingRecipeIds[0], {
+        title: `${rankingToken} title match`,
+        ingredients: [
+          {
+            originalText: '2 onions',
+            quantity: '2',
+            unit: 'each',
+            ingredientName: 'onions',
+            optional: false,
+          },
+        ],
+      }),
+      publicSearchRecipe(rankingRecipeIds[1], {
+        title: 'Ingredient match',
+        ingredients: [
+          {
+            originalText: `2 ${rankingToken}`,
+            quantity: '2',
+            unit: 'each',
+            ingredientName: rankingToken,
+            optional: false,
+          },
+        ],
+      }),
+      publicSearchRecipe(rankingRecipeIds[2], {
+        title: 'Source match',
+        sourceName: rankingToken,
+      }),
+      publicSearchRecipe(filterRecipeIds[0], {
+        title: `${filterToken} matching recipe`,
+        cuisine: 'Mexican',
+        tags: ['quick', 'weeknight'],
+        dietaryLabels: ['vegetarian'],
+      }),
+      publicSearchRecipe(filterRecipeIds[1], {
+        title: `${filterToken} non-matching recipe`,
+        cuisine: 'Italian',
+        tags: ['quick'],
+        dietaryLabels: ['vegetarian'],
+      }),
+      ...paginationRecipeIds.map((id) =>
+        publicSearchRecipe(id, { title: `${paginationToken} recipe` }),
+      ),
+      ...performanceRecipeIds.map((id, index) =>
+        publicSearchRecipe(id, {
+          title: `${performanceToken} recipe ${index}`,
+        }),
+      ),
     ])
     await db.collection<ListDocument>('lists').insertOne({
       _id: listId,
@@ -126,13 +252,7 @@ describe('recipe visibility and immutable versions', () => {
     if (!db) return
     await db.collection<RecipeDraftDocument>('recipes').deleteMany({
       _id: {
-        $in: [
-          privateRecipeId,
-          sharedRecipeId,
-          publicRecipeId,
-          pendingRecipeId,
-          historicalRecipeId,
-        ],
+        $regex: `^${fixtureToken}`,
       },
     })
     await db.collection<ListDocument>('lists').deleteOne({ _id: listId })
@@ -207,5 +327,61 @@ describe('recipe visibility and immutable versions', () => {
       title: `${fixtureToken} historical title`,
       versionNumber: 1,
     })
+  })
+
+  it('verifies weighted fields, filters, visibility, and stable cursor pagination', async () => {
+    const search = new MongoRecipeSearchProvider(db)
+    const searchIndex = (
+      await db.collection('recipes').listIndexes().toArray()
+    ).find((index) => index.name === 'recipe_public_search_text')
+
+    expect(searchIndex?.weights).toMatchObject({
+      title: 10,
+      'ingredients.ingredientName': 8,
+      sourceName: 4,
+    })
+
+    const rankingResults = await search.searchRecipes({ text: rankingToken })
+    expect(rankingResults.results.map(({ id }) => id)).toEqual(rankingRecipeIds)
+
+    const filteredResults = await search.searchRecipes({
+      text: filterToken,
+      filters: {
+        cuisine: 'Mexican',
+        tags: ['quick', 'weeknight'],
+        dietaryLabels: ['vegetarian'],
+      },
+    })
+    expect(filteredResults.results.map(({ id }) => id)).toEqual([
+      filterRecipeIds[0],
+    ])
+
+    const pagedIds: string[] = []
+    let cursor: string | undefined
+    do {
+      const page = await search.searchRecipes({
+        text: paginationToken,
+        cursor,
+        pageSize: 2,
+      })
+      pagedIds.push(...page.results.map(({ id }) => id))
+      cursor = page.nextCursor
+    } while (cursor)
+
+    expect(pagedIds).toEqual(paginationRecipeIds)
+    expect(new Set(pagedIds).size).toBe(paginationRecipeIds.length)
+  })
+
+  it('keeps a synthetic public discovery page under the two-second target', async () => {
+    const search = new MongoRecipeSearchProvider(db)
+    const startedAt = performance.now()
+    const response = await search.searchRecipes({
+      text: performanceToken,
+      pageSize: 50,
+    })
+
+    expect(response.results).toHaveLength(50)
+    expect(response.nextCursor).toBeTruthy()
+    expect(performance.now() - startedAt).toBeLessThan(2_000)
   })
 })

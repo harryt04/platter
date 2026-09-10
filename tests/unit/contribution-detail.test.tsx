@@ -9,6 +9,7 @@ afterEach(() => cleanup())
 const item: GroceryItem = {
   id: 'grocery:merged:onions:volume:cup',
   ingredientName: 'onions',
+  category: 'produce',
   normalizedIdentity: 'onions',
   dimension: 'volume',
   unit: { name: 'cup', dimension: 'volume' },
@@ -81,6 +82,7 @@ describe('ContributionDetail', () => {
     const first: GroceryItem = {
       id: 'grocery:recipe:first:0',
       ingredientName: 'onions',
+      category: 'other',
       normalizedIdentity: 'onions',
       dimension: 'count',
       unit: { name: 'each', dimension: 'count' },

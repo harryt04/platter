@@ -8,6 +8,7 @@ import type {
   GroceryItem,
   GroceryMergeSuggestion,
 } from '@/lib/recipes/groceries'
+import { groceryCategoryLabel } from '@/lib/recipes/grocery-categories'
 
 function formatQuantity(item: GroceryItem) {
   if (!item.shoppingAmount) return 'As needed'
@@ -124,7 +125,7 @@ export function GroceryRow({
             <span>{itemIngredient}</span>
           </div>
           <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
-            <span>{category}</span>
+            <span>{item ? groceryCategoryLabel(item.category) : category}</span>
             <span aria-hidden="true">·</span>
             <span>
               {state === 'already-have'

@@ -143,8 +143,11 @@ Countable grocery requirements that calculate to a fraction also show optional
 whole-unit guidance. Shoppers can copy that suggestion into the editable
 shopping amount field, while the precise calculated requirement remains visible
 and unchanged until they explicitly save an override.
-The `Review at home` mode now shows calculated and shopping amounts, category,
-and contribution access for each grocery item. Members can mark an item
+Every derived grocery item now receives a conservative documented default
+category such as Produce, Pantry, or Household; uncertain parser output and
+unrecognized ingredients remain in Other. The `Review at home` mode now shows
+calculated and shopping amounts, category, and contribution access for each
+grocery item. Members can mark an item
 `Already have` without creating pantry inventory; it is hidden from the buy
 view and can be restored with its existing override and provenance intact. The
 review and shopping modes remain directly linked after shopping starts, with

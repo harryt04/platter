@@ -442,9 +442,9 @@ order while allowing that list's members to adapt it temporarily.
 
 **Blocked by:** 15: Correct grocery merges; 16: Manage manual grocery items
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] Every grocery item receives a documented default category, with uncertain
+- [x] Every grocery item receives a documented default category, with uncertain
       or uncategorized items placed in `Other`.
 - [ ] Categories use the default store-adjacency order and items use a stable
       deterministic order within each category.

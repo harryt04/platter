@@ -15,6 +15,10 @@ import {
 } from '@/lib/recipes/ingredient-parser'
 import type { RecipeSelectionDocument } from '@/lib/recipes/selections'
 import { scaleIngredientQuantity } from '@/lib/recipes/scaling'
+import {
+  defaultGroceryCategory,
+  type GroceryCategory,
+} from '@/lib/recipes/grocery-categories'
 
 const CalculationDecimal = Decimal.clone({ precision: 40 })
 
@@ -49,7 +53,7 @@ export type GroceryAmountOverride = {
   preservedItem?: Pick<
     GroceryItem,
     'ingredientName' | 'normalizedIdentity' | 'dimension' | 'unit'
-  >
+  > & { category?: GroceryCategory }
 }
 
 export type GroceryContribution = {
@@ -83,6 +87,7 @@ export type GroceryItem = {
   /** Stable for an equivalent generation input; it is not a random document id. */
   id: string
   ingredientName: string
+  category: GroceryCategory
   normalizedIdentity?: string
   dimension: IngredientDimension
   unit: ParsedIngredientUnit
@@ -327,6 +332,12 @@ function itemFromContribution(
   return {
     id: itemId,
     ingredientName: contribution.ingredientName,
+    category: defaultGroceryCategory({
+      ingredientName: contribution.ingredientName,
+      normalizedIdentity: contribution.normalizedIdentity,
+      originalTexts: [contribution.originalText],
+      parserConfidence: contribution.parserConfidence,
+    }),
     ...(contribution.normalizedIdentity
       ? { normalizedIdentity: contribution.normalizedIdentity }
       : {}),
@@ -469,6 +480,12 @@ export function generateGroceryItems({
             {
               id: override.itemId,
               ...override.preservedItem,
+              category:
+                override.preservedItem.category ??
+                defaultGroceryCategory({
+                  ingredientName: override.preservedItem.ingredientName,
+                  normalizedIdentity: override.preservedItem.normalizedIdentity,
+                }),
               calculatedRequirement: null,
               shoppingAmount: override.quantity,
               contributions: [],

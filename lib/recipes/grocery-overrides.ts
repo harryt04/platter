@@ -70,6 +70,7 @@ export function createGroceryAmountOverrideDocument(
       ...(item.normalizedIdentity
         ? { normalizedIdentity: item.normalizedIdentity }
         : {}),
+      category: item.category,
       dimension: item.dimension,
       unit: item.unit,
     },

@@ -61,6 +61,36 @@ const selection = (
 })
 
 describe('grocery generation', () => {
+  it('assigns a documented default category to every generated item', () => {
+    const items = generateGroceryItems({
+      selections: [
+        selection('categorized', 'Dinner', '1', [
+          ingredient({
+            originalText: '2 each onions',
+            quantity: '2',
+            unit: 'each',
+            ingredientName: 'onions',
+          }),
+          ingredient({
+            originalText: 'mystery ingredient',
+            quantity: '',
+            unit: '',
+            ingredientName: 'mystery ingredient',
+            parserConfidence: 'low',
+          }),
+        ]),
+      ],
+    })
+
+    expect(
+      items.find((item) => item.ingredientName === 'mystery ingredient'),
+    ).toMatchObject({ category: 'other' })
+    expect(
+      items.find((item) => item.ingredientName === 'onions'),
+    ).toMatchObject({ category: 'produce' })
+    expect(items.every((item) => item.category)).toBe(true)
+  })
+
   it('offers whole-unit guidance without changing the calculated requirement', () => {
     const [item] = generateGroceryItems({
       selections: [
@@ -527,6 +557,7 @@ describe('grocery generation', () => {
       {
         id: item.id,
         ingredientName: item.ingredientName,
+        category: item.category,
         normalizedIdentity: item.normalizedIdentity,
         dimension: item.dimension,
         unit: item.unit,

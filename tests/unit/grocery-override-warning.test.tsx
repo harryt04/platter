@@ -6,6 +6,7 @@ import type { GroceryItem } from '@/lib/recipes/groceries'
 const item: GroceryItem = {
   id: 'grocery:merged:rice:mass:lb',
   ingredientName: 'rice',
+  category: 'pantry',
   normalizedIdentity: 'rice',
   dimension: 'mass',
   unit: { name: 'lb', dimension: 'mass' },

@@ -13,6 +13,7 @@ const draft = {
   _id: 'recipe-1',
   ownerId: 'user-1',
   title: 'Tomato soup',
+  description: 'A comforting weeknight soup.',
   status: 'draft' as const,
   visibility: 'private' as const,
   ingredients: [],
@@ -36,6 +37,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
         method: 'PATCH',
         body: JSON.stringify({
           title: '  Tomato soup  ',
+          description: '  A bright tomato soup.\u0000 ',
           typicalPeopleFed: 4,
           ingredients: [
             {
@@ -55,6 +57,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
     expect(response.status).toBe(200)
     expect((await response.json()).recipe).toMatchObject({
       title: 'Tomato soup',
+      description: 'A bright tomato soup.',
       status: 'usable',
       typicalPeopleFed: 4,
       ingredients: [{ ingredientName: 'onions' }],
@@ -69,6 +72,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
         $set: expect.objectContaining({
           status: 'usable',
           typicalPeopleFed: 4,
+          description: 'A bright tomato soup.',
         }),
       }),
     )
@@ -95,5 +99,31 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
     expect(response.status).toBe(422)
     expect((await response.json()).code).toBe('VALIDATION_FAILED')
     expect(collection.updateOne).not.toHaveBeenCalled()
+  })
+
+  it('can clear a saved description without leaving an empty field', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(draft),
+      updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/recipes/recipe-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ description: null }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).recipe.description).toBeUndefined()
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ $unset: { description: '' } }),
+    )
   })
 })

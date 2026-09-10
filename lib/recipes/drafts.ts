@@ -16,6 +16,11 @@ const recipeTitleSchema = z
 const cleanText = (value: string) =>
   value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim()
 
+const recipeDescriptionSchema = z
+  .string({ error: 'Enter a recipe description.' })
+  .transform(cleanText)
+  .pipe(z.string().max(2000, 'Descriptions must be 2,000 characters or fewer.'))
+
 const requiredIngredientText = (label: string, max: number) =>
   z
     .string({ error: `Enter an ingredient ${label}.` })
@@ -46,6 +51,7 @@ export const createDraftSchema = z.object({ title: recipeTitleSchema })
 export const updateDraftSchema = z
   .object({
     title: recipeTitleSchema.optional(),
+    description: recipeDescriptionSchema.nullable().optional(),
     typicalPeopleFed: typicalPeopleFedSchema.nullable().optional(),
     ingredients: z.array(recipeIngredientSchema).max(100).optional(),
   })
@@ -57,6 +63,7 @@ export type RecipeDraft = {
   id: EntityId
   ownerId: string
   title: string
+  description?: string
   status: 'draft' | 'usable'
   visibility: 'private'
   typicalPeopleFed?: number
@@ -99,6 +106,7 @@ export function createDraftDocument(
   ownerId: string,
   title: string,
   details: {
+    description?: string
     typicalPeopleFed?: number
     ingredients?: RecipeIngredient[]
   } = {},
@@ -109,6 +117,9 @@ export function createDraftDocument(
     _id: crypto.randomUUID(),
     ownerId,
     title,
+    ...(details.description === undefined
+      ? {}
+      : { description: details.description }),
     status: isUsableRecipe(details.typicalPeopleFed, ingredients)
       ? 'usable'
       : 'draft',
@@ -127,6 +138,9 @@ export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
     id: entityId(document._id),
     ownerId: document.ownerId,
     title: document.title,
+    ...(document.description === undefined
+      ? {}
+      : { description: document.description }),
     status: document.status,
     visibility: document.visibility,
     ...(document.typicalPeopleFed === undefined

@@ -32,16 +32,19 @@ const blankIngredient = (): IngredientForm => ({
 export function DraftEditor({
   recipeId,
   initialTitle = '',
+  initialDescription = '',
   initialTypicalPeopleFed,
   initialIngredients = [],
 }: {
   recipeId?: string
   initialTitle?: string
+  initialDescription?: string
   initialTypicalPeopleFed?: number
   initialIngredients?: RecipeIngredient[]
 }) {
   const router = useRouter()
   const [title, setTitle] = useState(initialTitle)
+  const [description, setDescription] = useState(initialDescription)
   const [typicalPeopleFed, setTypicalPeopleFed] = useState(
     initialTypicalPeopleFed?.toString() ?? '',
   )
@@ -72,6 +75,7 @@ export function DraftEditor({
             recipeId
               ? {
                   title,
+                  description,
                   typicalPeopleFed:
                     typicalPeopleFed === '' ? null : Number(typicalPeopleFed),
                   ingredients,
@@ -130,6 +134,24 @@ export function DraftEditor({
           </div>
           {recipeId && (
             <>
+              <div className="space-y-2">
+                <Label htmlFor="recipe-description">
+                  Description{' '}
+                  <span className="text-muted-foreground">(optional)</span>
+                </Label>
+                <Textarea
+                  id="recipe-description"
+                  name="description"
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="A cozy weeknight soup with a bright finish."
+                  maxLength={2000}
+                />
+                <p className="text-muted-foreground text-xs">
+                  Keep it useful and concise. Platter removes control characters
+                  before saving.
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="typical-people-fed">Typical people fed</Label>
                 <Input

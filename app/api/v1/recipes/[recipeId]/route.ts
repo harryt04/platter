@@ -121,6 +121,17 @@ export async function PATCH(request: Request, context: RouteContext) {
   if ('title' in parsed.data && parsed.data.title !== undefined) {
     setFields.title = parsed.data.title
   }
+  if ('description' in parsed.data) {
+    if (
+      parsed.data.description === null ||
+      parsed.data.description === undefined ||
+      parsed.data.description === ''
+    ) {
+      unsetFields.description = ''
+    } else {
+      setFields.description = parsed.data.description
+    }
+  }
   if ('ingredients' in parsed.data && parsed.data.ingredients !== undefined) {
     setFields.ingredients = parsed.data.ingredients
   }
@@ -144,6 +155,14 @@ export async function PATCH(request: Request, context: RouteContext) {
     parsed.data.typicalPeopleFed === null
   ) {
     delete updatedDraft.typicalPeopleFed
+  }
+  if (
+    'description' in parsed.data &&
+    (parsed.data.description === null ||
+      parsed.data.description === undefined ||
+      parsed.data.description === '')
+  ) {
+    delete updatedDraft.description
   }
   return Response.json({
     recipe: toRecipeDraft(updatedDraft),

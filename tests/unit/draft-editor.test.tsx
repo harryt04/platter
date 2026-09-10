@@ -22,6 +22,7 @@ describe('DraftEditor', () => {
       <DraftEditor
         recipeId="recipe-1"
         initialTitle="Tomato soup"
+        initialDescription="A comforting weeknight soup."
         initialTypicalPeopleFed={4}
         initialIngredients={[
           {
@@ -39,6 +40,9 @@ describe('DraftEditor', () => {
     expect(
       screen.getByRole('spinbutton', { name: 'Typical people fed' }),
     ).toHaveValue(4)
+    expect(screen.getByRole('textbox', { name: /Description/ })).toHaveValue(
+      'A comforting weeknight soup.',
+    )
     expect(
       screen.getByRole('textbox', { name: 'Ingredient name' }),
     ).toHaveValue('Onions')

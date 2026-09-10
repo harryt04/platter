@@ -31,6 +31,7 @@ export default async function EditRecipePage({
       <DraftEditor
         recipeId={recipeId}
         initialTitle={draft.title}
+        initialDescription={draft.description}
         initialTypicalPeopleFed={draft.typicalPeopleFed}
         initialIngredients={draft.ingredients}
       />

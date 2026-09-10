@@ -8,6 +8,7 @@ import {
   recipeIngredientSchema,
   typicalPeopleFedSchema,
   toRecipeDraft,
+  updateDraftSchema,
 } from '@/lib/recipes/drafts'
 
 describe('recipe drafts', () => {
@@ -71,5 +72,18 @@ describe('recipe drafts', () => {
     ).toBe('usable')
     expect(ingredient.originalText).toBe('2 yellow onions, diced')
     expect(typicalPeopleFedSchema.safeParse(2.5).success).toBe(false)
+  })
+
+  it('sanitizes and bounds an optional description', () => {
+    expect(
+      updateDraftSchema.parse({ description: '  A cozy soup.\u0000  ' })
+        .description,
+    ).toBe('A cozy soup.')
+    expect(
+      updateDraftSchema.safeParse({ description: 'x'.repeat(2001) }).success,
+    ).toBe(false)
+    expect(
+      updateDraftSchema.parse({ description: null }).description,
+    ).toBeNull()
   })
 })

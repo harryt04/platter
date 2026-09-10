@@ -281,6 +281,7 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
           sourceAuthor: '',
           attribution: '',
           image: null,
+          nutrition: null,
         }),
       }),
       { params: Promise.resolve({ recipeId: 'recipe-1' }) },
@@ -304,7 +305,52 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
           sourceAuthor: '',
           attribution: '',
           image: '',
+          nutrition: '',
         },
+      }),
+    )
+  })
+
+  it('persists and clears optional nutrition values', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(draft),
+      updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const saved = await PATCH(
+      new Request('http://localhost/api/v1/recipes/recipe-1', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          nutrition: {
+            calories: 420,
+            proteinGrams: 18.5,
+            sodiumMilligrams: 640,
+          },
+        }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(saved.status).toBe(200)
+    expect((await saved.json()).recipe.nutrition).toEqual({
+      calories: 420,
+      proteinGrams: 18.5,
+      sodiumMilligrams: 640,
+    })
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          nutrition: {
+            calories: 420,
+            proteinGrams: 18.5,
+            sodiumMilligrams: 640,
+          },
+        }),
       }),
     )
   })

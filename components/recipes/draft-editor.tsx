@@ -20,6 +20,7 @@ import type {
   RecipeImageProvenance,
   RecipeIngredient,
   RecipeInstruction,
+  RecipeNutrition,
 } from '@/lib/recipes/drafts'
 
 type IngredientForm = RecipeIngredient
@@ -51,6 +52,12 @@ function splitLabels(value: string) {
     .filter(Boolean)
 }
 
+function definedNutritionValues(nutrition: RecipeNutrition) {
+  return Object.fromEntries(
+    Object.entries(nutrition).filter(([, value]) => value !== undefined),
+  ) as RecipeNutrition
+}
+
 export function DraftEditor({
   recipeId,
   initialTitle = '',
@@ -67,6 +74,7 @@ export function DraftEditor({
   initialSourceAuthor = '',
   initialAttribution = '',
   initialImage,
+  initialNutrition,
   initialTags = [],
   initialDietaryLabels = [],
   initialIngredients = [],
@@ -87,6 +95,7 @@ export function DraftEditor({
   initialSourceAuthor?: string
   initialAttribution?: string
   initialImage?: RecipeImageProvenance
+  initialNutrition?: RecipeNutrition
   initialTags?: string[]
   initialDietaryLabels?: string[]
   initialIngredients?: RecipeIngredient[]
@@ -127,6 +136,9 @@ export function DraftEditor({
   const [imageRightsStatus, setImageRightsStatus] = useState<
     RecipeImageProvenance['rightsStatus']
   >(initialImage?.rightsStatus ?? 'unknown')
+  const [nutrition, setNutrition] = useState<RecipeNutrition>(
+    initialNutrition ?? {},
+  )
   const [tags, setTags] = useState(initialTags.join(', '))
   const [dietaryLabels, setDietaryLabels] = useState(
     initialDietaryLabels.join(', '),
@@ -190,6 +202,10 @@ export function DraftEditor({
                           license: imageLicense,
                           rightsStatus: imageRightsStatus,
                         },
+                  nutrition:
+                    Object.keys(definedNutritionValues(nutrition)).length > 0
+                      ? definedNutritionValues(nutrition)
+                      : null,
                   tags: splitLabels(tags),
                   dietaryLabels: splitLabels(dietaryLabels),
                   ingredients,
@@ -424,6 +440,56 @@ export function DraftEditor({
                     control characters before saving.
                   </p>
                 </div>
+                <fieldset className="border-border space-y-4 rounded-[var(--radius-card)] border p-4">
+                  <legend className="px-1 text-sm font-medium">
+                    Nutrition per person{' '}
+                    <span className="text-muted-foreground">(optional)</span>
+                  </legend>
+                  <p className="text-muted-foreground text-xs">
+                    Add values from a trusted source when you have them. These
+                    figures are informational and are not health guidance.
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {(
+                      [
+                        ['calories', 'Calories', 'kcal'],
+                        ['proteinGrams', 'Protein', 'g'],
+                        ['carbohydratesGrams', 'Carbohydrates', 'g'],
+                        ['fatGrams', 'Fat', 'g'],
+                        ['fiberGrams', 'Fiber', 'g'],
+                        ['sodiumMilligrams', 'Sodium', 'mg'],
+                      ] as const
+                    ).map(([field, label, unit]) => (
+                      <div className="space-y-2" key={field}>
+                        <Label htmlFor={`recipe-nutrition-${field}`}>
+                          {label} ({unit})
+                        </Label>
+                        <Input
+                          id={`recipe-nutrition-${field}`}
+                          name={field}
+                          type="number"
+                          min="0"
+                          step="any"
+                          inputMode="decimal"
+                          value={nutrition[field]?.toString() ?? ''}
+                          onChange={(event) => {
+                            const value = event.target.value
+                            setNutrition((current) => {
+                              const next = { ...current }
+                              if (value === '') {
+                                delete next[field]
+                              } else {
+                                next[field] = Number(value)
+                              }
+                              return next
+                            })
+                          }}
+                          placeholder="—"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </fieldset>
                 <fieldset className="border-border space-y-4 rounded-[var(--radius-card)] border p-4">
                   <legend className="px-1 text-sm font-medium">
                     Source and attribution

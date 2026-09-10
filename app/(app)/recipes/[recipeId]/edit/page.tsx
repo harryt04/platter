@@ -44,6 +44,7 @@ export default async function EditRecipePage({
         initialSourceAuthor={draft.sourceAuthor}
         initialAttribution={draft.attribution}
         initialImage={draft.image}
+        initialNutrition={draft.nutrition}
         initialTags={draft.tags}
         initialDietaryLabels={draft.dietaryLabels}
         initialIngredients={draft.ingredients}

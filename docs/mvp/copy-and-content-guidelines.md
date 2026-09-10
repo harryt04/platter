@@ -63,6 +63,7 @@ Avoid vague confirmation such as `Updated`, `Success`, `Conflict detected`, or `
 - Preserve original ingredient wording where normalization confidence is low.
 - Explain public import restrictions without legalistic filler: `This source does not permit an image here. The recipe link is still available.`
 - Keep image source, creator, license or permission, and rights status separate from recipe attribution; unknown rights must remain explicit.
+- Treat nutrition values as optional informational data, label their basis (such as per person), and do not make health or dietary claims from them.
 - Do not present a scraped recipe as authored by Platter.
 - Write concise procedural instructions; do not reproduce editorial storytelling from a source.
 

@@ -9,6 +9,7 @@ import {
   recipeInstructionSchema,
   recipeImageProvenanceSchema,
   recipeMetadataSchema,
+  recipeNutritionSchema,
   typicalPeopleFedSchema,
   toRecipeDraft,
   updateDraftSchema,
@@ -198,6 +199,33 @@ describe('recipe drafts', () => {
         url: 'https://images.example.com/soup.jpg',
         altText: 'x'.repeat(301),
       }).success,
+    ).toBe(false)
+  })
+
+  it('accepts bounded optional nutrition values per person', () => {
+    expect(
+      recipeNutritionSchema.parse({
+        calories: 420,
+        proteinGrams: 18.5,
+        carbohydratesGrams: 52,
+        fatGrams: 12,
+        fiberGrams: 7,
+        sodiumMilligrams: 640,
+      }),
+    ).toEqual({
+      calories: 420,
+      proteinGrams: 18.5,
+      carbohydratesGrams: 52,
+      fatGrams: 12,
+      fiberGrams: 7,
+      sodiumMilligrams: 640,
+    })
+    expect(recipeNutritionSchema.safeParse({}).success).toBe(false)
+    expect(recipeNutritionSchema.safeParse({ proteinGrams: -1 }).success).toBe(
+      false,
+    )
+    expect(
+      recipeNutritionSchema.safeParse({ sodiumMilligrams: 100001 }).success,
     ).toBe(false)
   })
 })

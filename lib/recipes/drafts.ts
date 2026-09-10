@@ -117,6 +117,28 @@ export const typicalPeopleFedSchema = z
   .positive('Typical yield must be greater than zero.')
   .max(1000, 'Typical yield must be 1,000 people or fewer.')
 
+const nutritionValueSchema = (label: string, max: number) =>
+  z
+    .number({ error: `Enter a valid amount of ${label}.` })
+    .finite(`Enter a valid amount of ${label}.`)
+    .nonnegative(`${label} cannot be negative.`)
+    .max(max, `${label} is outside the supported range.`)
+
+export const recipeNutritionSchema = z
+  .object({
+    calories: nutritionValueSchema('calories', 100000).optional(),
+    proteinGrams: nutritionValueSchema('protein', 10000).optional(),
+    carbohydratesGrams: nutritionValueSchema('carbohydrates', 10000).optional(),
+    fatGrams: nutritionValueSchema('fat', 10000).optional(),
+    fiberGrams: nutritionValueSchema('fiber', 10000).optional(),
+    sodiumMilligrams: nutritionValueSchema('sodium', 100000).optional(),
+  })
+  .refine(
+    (nutrition) =>
+      Object.values(nutrition).some((value) => value !== undefined),
+    'Enter at least one nutrition value or leave nutrition blank.',
+  )
+
 export const recipeMetadataSchema = z.object({
   prepTimeMinutes: recipeTimeSchema('Prep time').optional().nullable(),
   cookingTimeMinutes: recipeTimeSchema('Cooking time').optional().nullable(),
@@ -149,6 +171,7 @@ export const recipeImageProvenanceSchema = z.object({
 export type RecipeIngredient = z.infer<typeof recipeIngredientSchema>
 export type RecipeInstruction = z.infer<typeof recipeInstructionSchema>
 export type RecipeImageProvenance = z.infer<typeof recipeImageProvenanceSchema>
+export type RecipeNutrition = z.infer<typeof recipeNutritionSchema>
 
 export const createDraftSchema = z.object({ title: recipeTitleSchema })
 export const updateDraftSchema = z
@@ -158,6 +181,7 @@ export const updateDraftSchema = z
     typicalPeopleFed: typicalPeopleFedSchema.nullable().optional(),
     ...recipeMetadataSchema.shape,
     image: recipeImageProvenanceSchema.nullable().optional(),
+    nutrition: recipeNutritionSchema.nullable().optional(),
     ingredients: z.array(recipeIngredientSchema).max(100).optional(),
     instructions: z
       .array(recipeInstructionSchema)
@@ -189,6 +213,7 @@ export type RecipeDraft = {
   tags?: string[]
   dietaryLabels?: string[]
   image?: RecipeImageProvenance
+  nutrition?: RecipeNutrition
   ingredients: RecipeIngredient[]
   instructions: RecipeInstruction[]
   createdAt: IsoDateTime
@@ -244,6 +269,7 @@ export function createDraftDocument(
     tags?: string[]
     dietaryLabels?: string[]
     image?: RecipeImageProvenance
+    nutrition?: RecipeNutrition
     ingredients?: RecipeIngredient[]
     instructions?: RecipeInstruction[]
   } = {},
@@ -296,6 +322,9 @@ export function createDraftDocument(
       ? {}
       : { dietaryLabels: details.dietaryLabels }),
     ...(details.image === undefined ? {} : { image: details.image }),
+    ...(details.nutrition === undefined
+      ? {}
+      : { nutrition: details.nutrition }),
     ingredients,
     instructions,
     createdAt: now,
@@ -347,6 +376,9 @@ export function toRecipeDraft(document: RecipeDraftDocument): RecipeDraft {
       ? {}
       : { dietaryLabels: document.dietaryLabels }),
     ...(document.image === undefined ? {} : { image: document.image }),
+    ...(document.nutrition === undefined
+      ? {}
+      : { nutrition: document.nutrition }),
     ingredients: document.ingredients ?? [],
     instructions: document.instructions ?? [],
     createdAt: document.createdAt,

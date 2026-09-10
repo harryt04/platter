@@ -44,6 +44,11 @@ describe('DraftEditor', () => {
           license: 'Personal permission',
           rightsStatus: 'permission-granted',
         }}
+        initialNutrition={{
+          calories: 420,
+          proteinGrams: 18.5,
+          sodiumMilligrams: 640,
+        }}
         initialTags={['weeknight', 'make ahead']}
         initialDietaryLabels={['vegetarian']}
         initialIngredients={[
@@ -122,6 +127,15 @@ describe('DraftEditor', () => {
     )
     expect(screen.getByRole('textbox', { name: 'Dietary labels' })).toHaveValue(
       'vegetarian',
+    )
+    expect(
+      screen.getByRole('spinbutton', { name: 'Calories (kcal)' }),
+    ).toHaveValue(420)
+    expect(screen.getByRole('spinbutton', { name: 'Protein (g)' })).toHaveValue(
+      18.5,
+    )
+    expect(screen.getByRole('spinbutton', { name: 'Sodium (mg)' })).toHaveValue(
+      640,
     )
     expect(
       screen.getByRole('textbox', { name: 'Ingredient name' }),

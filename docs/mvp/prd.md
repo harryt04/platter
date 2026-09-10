@@ -336,6 +336,8 @@ The implementation may refine document boundaries, but it must preserve these co
 - stable recipe identity and immutable version identity;
 - owner/creator and visibility;
 - title, metadata, typical yield, ingredients, and instructions;
+- optional nutrition values per person when known, presented as informational
+  data rather than health guidance;
 - source and attribution;
 - acquisition method and public-content state;
 - timestamps and version relationship.

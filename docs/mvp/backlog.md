@@ -525,7 +525,7 @@ and synchronize it honestly and safely when connectivity returns.
       the latest server-accepted operation wins for the same field.
 - [ ] Reconciliation visibly replaces optimistic state with authoritative state
       and explains permission loss or a change made while offline.
-- [ ] Invitations and URL imports explain that connectivity is required instead
+- [x] Invitations and URL imports explain that connectivity is required instead
       of pretending to queue unsupported work.
 - [ ] Sign-out cleanup prevents another account from seeing the previous user's
       private snapshot, operations, or cached content on a shared device.

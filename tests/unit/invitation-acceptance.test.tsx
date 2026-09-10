@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { InvitationAcceptance } from '@/components/lists/invitation-acceptance'
@@ -17,6 +17,10 @@ afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
   vi.clearAllMocks()
+  Object.defineProperty(window.navigator, 'onLine', {
+    configurable: true,
+    value: true,
+  })
 })
 
 describe('InvitationAcceptance', () => {
@@ -85,5 +89,31 @@ describe('InvitationAcceptance', () => {
     expect(
       screen.queryByRole('button', { name: 'Join Family' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('explains that invitation acceptance cannot be queued while offline', async () => {
+    Object.defineProperty(window.navigator, 'onLine', {
+      configurable: true,
+      value: false,
+    })
+
+    render(
+      <InvitationAcceptance
+        token="token"
+        invitationPath="/invitations/token"
+        listName="Family"
+        email="guest@example.com"
+        isAuthenticated
+      />,
+    )
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          /Reconnect before accepting this invitation.*not queued/i,
+        ),
+      ).toBeInTheDocument(),
+    )
+    expect(screen.getByRole('button', { name: 'Join Family' })).toBeDisabled()
   })
 })

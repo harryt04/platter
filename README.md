@@ -196,6 +196,8 @@ The offline view keeps each operation's pending, syncing, failed, or synced
 state visible without exposing its private payload. Reconnection reconciliation
 and server acceptance are still planned, so queued changes are not presented as
 synced until that workflow is implemented.
+Invitation acceptance and URL recipe imports explicitly require a connection;
+unsupported work is not presented as queued offline.
 The active run also shares a temporary within-category item order: members can
 use accessible move-up and move-down controls, while a newly created run begins
 at the documented default order. Members can also drag a category or use its

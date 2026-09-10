@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -26,8 +26,26 @@ export function InvitationAcceptance({
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [offline, setOffline] = useState(false)
+
+  useEffect(() => {
+    const updateConnection = () => setOffline(!navigator.onLine)
+    updateConnection()
+    window.addEventListener('online', updateConnection)
+    window.addEventListener('offline', updateConnection)
+    return () => {
+      window.removeEventListener('online', updateConnection)
+      window.removeEventListener('offline', updateConnection)
+    }
+  }, [])
 
   async function accept() {
+    if (offline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+      setError(
+        'Reconnect before accepting this invitation. Invitations are not queued on this device.',
+      )
+      return
+    }
     setBusy(true)
     setError('')
     try {
@@ -69,7 +87,13 @@ export function InvitationAcceptance({
               Accept this invitation to join “{listName}” as an editor. The
               invitation is for {email}.
             </p>
-            <Button disabled={busy} onClick={accept}>
+            {offline && (
+              <p className="text-muted-foreground text-sm" role="status">
+                You’re offline. Reconnect before accepting this invitation.
+                Invitations are not queued on this device.
+              </p>
+            )}
+            <Button disabled={busy || offline} onClick={accept}>
               {busy ? 'Joining…' : `Join ${listName}`}
             </Button>
           </>
@@ -95,6 +119,12 @@ export function InvitationAcceptance({
               </Button>
             </div>
           </>
+        )}
+        {!isAuthenticated && offline && (
+          <p className="text-muted-foreground text-sm" role="status">
+            You’re offline. Reconnect before signing in or accepting this
+            invitation. Invitations are not queued on this device.
+          </p>
         )}
         {error && (
           <p className="text-destructive text-sm" role="alert">

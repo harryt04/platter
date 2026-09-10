@@ -14,10 +14,10 @@ outcomes are in place. Recipe drafts also accept optional
 informational nutrition values per person. Signed-in users also receive
 in-product notifications for invitations and member role or removal changes,
 with authenticated deep links and independent read state.
-Product behavior such as recipe
-parsing, ingredient normalization, grocery calculations, collaboration, and
-moderation remains intentionally deferred to the feature lanes described in the
-[scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
+The first pure ingredient-line parsing slice now recognizes common quantity
+forms and preserves source text; ingredient normalization, grocery calculations,
+collaboration, and moderation remain intentionally deferred to the feature
+lanes described in the [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
 
 ## Documentation
 

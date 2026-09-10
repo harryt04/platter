@@ -181,9 +181,9 @@ without losing their original wording or pretending uncertain data is exact.
 
 **Blocked by:** 06: Edit complete structured recipes
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] Parsing tolerates common fractions, Unicode fractions, ranges, missing
+- [x] Parsing tolerates common fractions, Unicode fractions, ranges, missing
       quantities, package sizes, preparation notes, and optional ingredients.
 - [ ] Parsed units distinguish count, mass, volume, and unknown dimensions;
       conversions are locale-aware and deterministic.

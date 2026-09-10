@@ -325,7 +325,7 @@ versions the active run represents without surprising collaborators.
       removal remains a separate follow-up action.
 - [x] Removing a selection requires confirmation that names its list-wide
       grocery impact and removes only that selection's contributions.
-- [ ] A recipe update leaves existing selections pinned until a member reviews
+- [x] A recipe update leaves existing selections pinned until a member reviews
       and explicitly accepts the newer version.
 - [ ] Concurrent or repeated selection mutations are idempotent and respect the
       list's active-run revision.

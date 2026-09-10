@@ -33,6 +33,7 @@ describe('SelectionPeopleForm', () => {
         initialScaleFactor="0.5"
         listId="list-1"
         listName="Family"
+        recipeId="recipe-1"
         recipeTitle="Tomato soup"
         selectionId="selection-1"
       />,
@@ -57,6 +58,52 @@ describe('SelectionPeopleForm', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps the pinned version until the member explicitly accepts an update', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          selection: { desiredPeople: 2, scaleFactor: '0.6666666666666667' },
+        }),
+        { status: 200 },
+      ),
+    )
+
+    render(
+      <SelectionPeopleForm
+        initialPeople={2}
+        initialScaleFactor="0.5"
+        listId="list-1"
+        listName="Family"
+        newerVersionNumber={5}
+        recipeId="recipe-1"
+        recipeTitle="Tomato soup"
+        selectionId="selection-1"
+      />,
+    )
+
+    expect(fetch).not.toHaveBeenCalled()
+    expect(
+      screen.getByText(
+        /current version stays pinned until you accept the update/,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Review recipe' })).toHaveAttribute(
+      'href',
+      '/recipes/recipe-1',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Use version 5' }))
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/v1/lists/list-1/selections/selection-1/update',
+      { method: 'POST' },
+    )
+    expect(
+      await screen.findByText(/now uses version 5 for this run/),
+    ).toBeInTheDocument()
+  })
+
   it('duplicates one selection only after the explicit duplicate action', async () => {
     const user = userEvent.setup()
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
@@ -71,6 +118,7 @@ describe('SelectionPeopleForm', () => {
         initialScaleFactor="0.5"
         listId="list-1"
         listName="Family"
+        recipeId="recipe-1"
         recipeTitle="Tomato soup"
         selectionId="selection-1"
       />,
@@ -109,6 +157,7 @@ describe('SelectionPeopleForm', () => {
         initialScaleFactor="0.5"
         listId="list-1"
         listName="Family"
+        recipeId="recipe-1"
         recipeTitle="Tomato soup"
         selectionId="selection-1"
       />,

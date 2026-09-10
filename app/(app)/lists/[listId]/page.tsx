@@ -12,6 +12,11 @@ import { ListLifecycleActions } from '@/components/lists/list-lifecycle-actions'
 import { SelectionPeopleForm } from '@/components/lists/selection-people-form'
 import { resolveRunRecipeVersions } from '@/lib/recipes/versions'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
+import {
+  isPubliclyRenderableRecipe,
+  type RecipeDraftDocument,
+  type RecipeShareDocument,
+} from '@/lib/recipes/drafts'
 
 export default async function ListPage({
   params,
@@ -23,13 +28,34 @@ export default async function ListPage({
   const list = await findListForMember(listId, session.user.id)
   if (!list || list.status === 'deleted') notFound()
   const run = await findActiveShoppingRun(list)
+  const db = await getConnectedDatabase()
   const resolvedSelections = run
-    ? await resolveRunRecipeVersions(
-        await getConnectedDatabase(),
-        run.recipeSelections,
-      )
+    ? await resolveRunRecipeVersions(db, run.recipeSelections)
     : []
   const selections = run?.recipeSelections ?? []
+  const recipeIds = [
+    ...new Set(selections.map((selection) => selection.recipeId)),
+  ]
+  const currentRecipes =
+    recipeIds.length > 0
+      ? await db
+          .collection<RecipeDraftDocument>('recipes')
+          .find({ _id: { $in: recipeIds }, status: 'usable' })
+          .toArray()
+      : []
+  const currentRecipesById = new Map(
+    currentRecipes.map((recipe) => [recipe.recipeId ?? recipe._id, recipe]),
+  )
+  const sharedRecipeIds = new Set(
+    (recipeIds.length > 0
+      ? await db
+          .collection<RecipeShareDocument>('recipe_shares')
+          .find({ listId, recipeId: { $in: recipeIds } })
+          .project({ recipeId: 1 })
+          .toArray()
+      : []
+    ).map((share) => share.recipeId),
+  )
 
   return (
     <ContentContainer>
@@ -106,6 +132,18 @@ export default async function ListPage({
               resolvedSelections.map(({ version }, index) => {
                 const selection = selections[index]
                 if (!selection || !version) return null
+                const currentRecipe = currentRecipesById.get(selection.recipeId)
+                const canViewCurrentRecipe =
+                  currentRecipe &&
+                  (currentRecipe.ownerId === session.user.id ||
+                    isPubliclyRenderableRecipe(currentRecipe) ||
+                    (currentRecipe.visibility === 'list-shared' &&
+                      sharedRecipeIds.has(selection.recipeId)))
+                const newerVersionNumber =
+                  canViewCurrentRecipe &&
+                  (currentRecipe.versionNumber ?? 1) > selection.versionNumber
+                    ? (currentRecipe.versionNumber ?? 1)
+                    : undefined
                 return (
                   <SelectionPeopleForm
                     initialPeople={selection.desiredPeople}
@@ -113,6 +151,8 @@ export default async function ListPage({
                     key={selection._id}
                     listId={listId}
                     listName={list.name}
+                    newerVersionNumber={newerVersionNumber}
+                    recipeId={selection.recipeId}
                     recipeTitle={version.title}
                     selectionId={selection._id}
                     editable={list.status === 'active'}

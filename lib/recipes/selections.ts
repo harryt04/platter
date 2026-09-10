@@ -106,6 +106,39 @@ export function updateRecipeSelectionDocument(
   }
 }
 
+/**
+ * Repin a selection only after a member explicitly accepts a newer usable
+ * version. The desired people count and selection identity stay unchanged.
+ */
+export function acceptNewerRecipeVersion(
+  selection: RecipeSelectionDocument,
+  version: Pick<
+    RecipeDraftDocument,
+    '_id' | 'recipeId' | 'versionNumber' | 'typicalPeopleFed'
+  >,
+  now = new Date(),
+): RecipeSelectionDocument {
+  const versionNumber = version.versionNumber ?? 1
+  if (versionNumber <= selection.versionNumber) {
+    throw new Error('The accepted recipe version must be newer.')
+  }
+  if (!version.typicalPeopleFed) {
+    throw new Error('A recipe selection requires a typical yield.')
+  }
+
+  return {
+    ...selection,
+    recipeId: version.recipeId ?? selection.recipeId,
+    versionId: version._id,
+    versionNumber,
+    scaleFactor: calculateRecipeScaleFactor(
+      selection.desiredPeople,
+      version.typicalPeopleFed,
+    ),
+    updatedAt: isoDateTime(now),
+  }
+}
+
 /** Create an independently editable selection for the same pinned version. */
 export function duplicateRecipeSelectionDocument(
   selection: RecipeSelectionDocument,

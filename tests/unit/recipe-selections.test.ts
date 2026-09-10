@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decimalString } from '@/lib/contracts/ids'
 import {
+  acceptNewerRecipeVersion,
   calculateRecipeScaleFactor,
   createRecipeSelectionDocument,
   createRecipeSelectionSchema,
@@ -90,6 +91,42 @@ describe('recipe selections', () => {
       versionNumber: 4,
       desiredPeople: 6,
       scaleFactor: '1.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:05:00.000Z',
+    })
+  })
+
+  it('accepts a newer version without changing the selection identity or people', () => {
+    const selection = createRecipeSelectionDocument(
+      {
+        _id: 'recipe-1',
+        recipeId: 'recipe-1',
+        versionId: 'version-4',
+        versionNumber: 4,
+        typicalPeopleFed: 4,
+      },
+      6,
+      new Date('2026-09-10T12:00:00.000Z'),
+    )
+
+    expect(
+      acceptNewerRecipeVersion(
+        selection,
+        {
+          _id: 'version-5',
+          recipeId: 'recipe-1',
+          versionNumber: 5,
+          typicalPeopleFed: 3,
+        },
+        new Date('2026-09-10T12:05:00.000Z'),
+      ),
+    ).toMatchObject({
+      _id: selection._id,
+      recipeId: 'recipe-1',
+      versionId: 'version-5',
+      versionNumber: 5,
+      desiredPeople: 6,
+      scaleFactor: '2',
       createdAt: '2026-09-10T12:00:00.000Z',
       updatedAt: '2026-09-10T12:05:00.000Z',
     })

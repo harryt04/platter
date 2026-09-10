@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST as duplicatePOST } from '@/app/api/v1/lists/[listId]/selections/[selectionId]/duplicate/route'
+import { POST as acceptUpdatePOST } from '@/app/api/v1/lists/[listId]/selections/[selectionId]/update/route'
 import {
   DELETE,
   PATCH,
@@ -359,6 +360,134 @@ describe('PATCH /api/v1/lists/[listId]/selections/[selectionId]', () => {
 
     expect(response.status).toBe(404)
     expect((await response.json()).code).toBe('SELECTION_NOT_FOUND')
+    expect(database.versions.findOne).not.toHaveBeenCalled()
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+})
+
+describe('POST /api/v1/lists/[listId]/selections/[selectionId]/update', () => {
+  it('repins one selection only after explicitly accepting a newer version', async () => {
+    const selection = {
+      _id: 'selection-1',
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 6,
+      scaleFactor: '1.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:00:00.000Z',
+    }
+    const otherSelection = { ...selection, _id: 'selection-2' }
+    const database = databaseFor({
+      currentRecipe: {
+        ...recipe,
+        versionId: 'version-5',
+        versionNumber: 5,
+      },
+      currentVersion: {
+        ...recipe,
+        _id: 'version-5',
+        versionId: 'version-5',
+        versionNumber: 5,
+        ingredients: [
+          {
+            originalText: '2 onions',
+            quantity: '2',
+            unit: 'each',
+            ingredientName: 'onions',
+            optional: false,
+          },
+        ],
+      },
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [selection, otherSelection],
+      },
+    })
+    database.runs.findOneAndUpdate.mockResolvedValue({ revision: 5 })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await acceptUpdatePOST(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1/update',
+        { method: 'POST' },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      previousVersionNumber: 4,
+      selection: {
+        _id: 'selection-1',
+        versionId: 'version-5',
+        versionNumber: 5,
+        desiredPeople: 6,
+        scaleFactor: '1.5',
+      },
+      calculatedIngredients: [
+        { calculatedQuantity: { min: '3' }, sourceQuantity: '2' },
+      ],
+      revision: 5,
+    })
+    expect(database.runs.findOneAndUpdate).toHaveBeenCalledWith(
+      {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        'recipeSelections._id': 'selection-1',
+        'recipeSelections.versionId': 'version-4',
+        'recipeSelections.versionNumber': 4,
+      },
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          'recipeSelections.$': expect.objectContaining({
+            _id: 'selection-1',
+            versionId: 'version-5',
+            versionNumber: 5,
+          }),
+        }),
+        $inc: { revision: 1 },
+      }),
+      { returnDocument: 'after' },
+    )
+  })
+
+  it('does not mutate a selection when no newer version is available', async () => {
+    const selection = {
+      _id: 'selection-1',
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 2,
+      scaleFactor: '0.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:00:00.000Z',
+    }
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [selection],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await acceptUpdatePOST(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1/update',
+        { method: 'POST' },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(409)
+    expect((await response.json()).code).toBe('NO_NEWER_RECIPE_VERSION')
     expect(database.versions.findOne).not.toHaveBeenCalled()
     expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
   })

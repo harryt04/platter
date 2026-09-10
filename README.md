@@ -94,7 +94,10 @@ selections. They can also explicitly duplicate a selection, preserving its
 pinned version and scale while creating a separately scalable selection
 identity. Removing a selection requires confirmation that names the affected
 list-wide grocery contributions, then removes only that selection and advances
-the active-run revision.
+the active-run revision. When a selected recipe has a newer accessible version,
+the list keeps the existing selection pinned, links to the recipe for review,
+and requires an explicit acceptance before repinning that selection; the
+desired people count is preserved and the active-run revision advances.
 The library can search titles, ingredients, source metadata, and tags with
 stable cursor pagination while preserving the same ownership, membership, and
 saved-reference boundaries. Deleting a recipe explains current list impact,

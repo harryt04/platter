@@ -594,7 +594,7 @@ make those selections useful again without restoring an old checklist.
       counts to the current run through normal selection rules.
 - [x] Repeating a run generates a fresh checklist with default ordering and no
       old purchased, already-have, override, or pantry state.
-- [ ] Integration and browser tests cover historical version resolution,
+- [x] Integration and browser tests cover historical version resolution,
       authorization, date lookup, and repeat behavior.
 
 ## 26: Submit a URL for secure import

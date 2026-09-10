@@ -42,6 +42,9 @@ counts to the current run again; the action is idempotent and never restores
 the old checklist state. Repetition rebuilds each selection from its
 allowlisted immutable version and people count, so prior ordering, purchased,
 already-have, override, and pantry state cannot cross the run boundary.
+Mongo-backed and authenticated browser coverage now exercises historical
+version resolution, list authorization, local-date lookup, repeat behavior,
+and idempotent retries.
 The ingredient parser now recognizes common quantity forms, preserves source
 text, records qualitative confidence and a stable normalized identity when the
 parse is sufficient, resolves a bounded set of high-confidence ingredient

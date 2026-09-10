@@ -314,6 +314,114 @@ test.describe('authenticated list workflow', () => {
     await expect(page.getByText('Purchased', { exact: true })).toHaveCount(0)
   })
 
+  test('resolves and repeats a completed recipe run without restoring checklist state', async ({
+    page,
+  }) => {
+    await page.goto('/sign-in')
+    await page
+      .getByRole('textbox', { name: 'Email' })
+      .fill(process.env.E2E_USER_EMAIL!)
+    await page.getByLabel('Password').fill(process.env.E2E_USER_PASSWORD!)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await expect(page).toHaveURL(/\/lists$/)
+
+    const listResponse = await page.request.post('/api/v1/lists', {
+      data: { name: `History repeat ${Date.now()}` },
+    })
+    expect(listResponse.status()).toBe(201)
+    const listBody = (await listResponse.json()) as {
+      list: { id: string; activeRunId: string }
+    }
+    const listId = listBody.list.id
+
+    const recipeTitle = `History repeat recipe ${Date.now()}`
+    const recipeResponse = await page.request.post('/api/v1/recipes', {
+      data: { title: recipeTitle },
+    })
+    expect(recipeResponse.status()).toBe(201)
+    const recipeBody = (await recipeResponse.json()) as {
+      recipe: { id: string }
+    }
+    const recipeId = recipeBody.recipe.id
+
+    const recipeUpdate = await page.request.patch(
+      `/api/v1/recipes/${recipeId}`,
+      {
+        data: {
+          typicalPeopleFed: 4,
+          ingredients: [
+            {
+              originalText: '1 lime',
+              quantity: '1',
+              unit: 'each',
+              ingredientName: 'lime',
+              optional: false,
+            },
+          ],
+        },
+      },
+    )
+    expect(recipeUpdate.status()).toBe(200)
+
+    const sharingResponse = await page.request.put(
+      `/api/v1/recipes/${recipeId}/shares`,
+      { data: { listIds: [listId], publishPublic: false } },
+    )
+    expect(sharingResponse.status()).toBe(200)
+
+    const selectionResponse = await page.request.post(
+      `/api/v1/lists/${listId}/selections`,
+      {
+        data: {
+          recipeId,
+          desiredPeople: 6,
+          runId: listBody.list.activeRunId,
+          operationId: `history-repeat-selection-${Date.now()}`,
+          clientId: `history-repeat-client-${Date.now()}`,
+          baseRevision: 0,
+        },
+      },
+    )
+    expect(selectionResponse.status()).toBe(201)
+
+    await page.goto(`/lists/${listId}`)
+    await expect(page.getByText(recipeTitle)).toBeVisible()
+    await page.goto(`/lists/${listId}/shop`)
+    await expect(
+      page.getByRole('heading', { name: 'Grocery items', exact: true }),
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Complete shopping run' }).click()
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Complete shopping run' })
+      .click()
+    await expect(
+      page.getByText('Run completed. A fresh shopping run is ready.', {
+        exact: true,
+      }),
+    ).toBeVisible()
+
+    await page.goto(`/lists/${listId}/history`)
+    await expect(page.locator('time')).toHaveCount(1)
+    await page.locator('time').first().click()
+    await expect(page.getByText(recipeTitle)).toBeVisible()
+    await expect(page.getByText('Version 2 · 6 people')).toBeVisible()
+    await expect(page.getByText('Purchased', { exact: true })).toHaveCount(0)
+
+    await page
+      .getByRole('button', { name: 'Add these recipes to this week' })
+      .click()
+    await expect(
+      page.getByText('1 recipe was added to the current shopping run.', {
+        exact: true,
+      }),
+    ).toBeVisible()
+
+    await page.goto(`/lists/${listId}`)
+    await expect(page.getByText(recipeTitle)).toBeVisible()
+    await expect(page.getByLabel(`People for ${recipeTitle}`)).toHaveValue('6')
+  })
+
   test('checks and unchecks a grocery item independently while shopping', async ({
     page,
   }) => {

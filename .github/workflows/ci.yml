@@ -26,7 +26,7 @@ jobs:
       MONGODB_DATABASE: platter_ci
       ALLOWED_ORIGINS: http://localhost:3000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -49,7 +49,7 @@ jobs:
       MONGODB_DATABASE: platter_ci_browser
       ALLOWED_ORIGINS: http://localhost:3000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 24

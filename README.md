@@ -43,6 +43,8 @@ owner-scoped query.
 Shopping-run recipe references can resolve immutable historical snapshots by
 version identity, preserving selection order and duplicates without falling
 back to a later mutable recipe version.
+Mongo-backed integration coverage now verifies private, list-shared, and public
+visibility boundaries alongside historical version resolution.
 
 ## Documentation
 
@@ -102,7 +104,7 @@ For the ignored local browser account, create `.env.test.local` with
 | `npm run format` / `format:check` | Write or check Prettier formatting. |
 | `npm run lint` / `typecheck` | Run ESLint or TypeScript checks. |
 | `npm run test` / `test:watch` | Run or watch unit/component tests. |
-| `npm run test:integration` | Run integration tests; service-backed tests need Mongo. |
+| `npm run test:integration` | Run integration tests against a test/CI Mongo database. |
 | `npm run test:e2e` / `test:a11y` | Run production Playwright or tagged accessibility tests. |
 | `npm run db:indexes` / `db:migrate` | Reconcile indexes or apply the migration ledger. |
 | `npm run check` | Format check, lint, typecheck, tests, and build. |
@@ -110,3 +112,7 @@ For the ignored local browser account, create `.env.test.local` with
 
 See [deployment notes](docs/mvp/deployment.md) for reverse proxy, MongoDB,
 SMTP, analytics, and future Google OAuth guidance.
+
+Integration tests refuse to write to a development database. For a host-side
+Mongo replica set, use a test database and direct connection, for example:
+`MONGODB_URI='mongodb://127.0.0.1:27017/?directConnection=true' MONGODB_DATABASE=platter_test npm run test:integration`.

@@ -216,7 +216,7 @@ creator to decide who may discover or use each recipe.
       independently enforced on reads, writes, and search results.
 - [x] Active and completed runs can resolve pinned historical versions even
       after later edits or permitted deletion.
-- [ ] Integration tests cover public/private/shared visibility and immutable
+- [x] Integration tests cover public/private/shared visibility and immutable
       version references.
 
 ## 09: Manage the personal recipe library

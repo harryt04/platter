@@ -43,7 +43,9 @@ describe('AlreadyHaveButton', () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce())
     expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ method: 'PATCH' })
-    expect(screen.getByText(/hidden from your buy view/)).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      /hidden from your buy view/,
+    )
     expect(refresh).toHaveBeenCalledOnce()
   })
 

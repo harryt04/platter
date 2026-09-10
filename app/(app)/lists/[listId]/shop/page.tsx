@@ -21,6 +21,7 @@ import {
 import { notFound } from 'next/navigation'
 import { GroceryAmountOverrideForm } from '@/components/lists/grocery-amount-override-form'
 import { ManualGroceryItems } from '@/components/lists/manual-grocery-items'
+import { ShoppingModeNavigation } from '@/components/lists/shopping-mode-navigation'
 
 export default async function ShopPage({
   params,
@@ -64,11 +65,14 @@ export default async function ShopPage({
         title="Shopping run"
         description="Mark each item purchased as you move through the store."
         action={
-          <Button disabled={isReadOnly}>
-            {isReadOnly
-              ? 'Shopping unavailable while archived'
-              : 'Complete shopping run'}
-          </Button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <ShoppingModeNavigation listId={listId} mode="shopping" />
+            <Button disabled={isReadOnly} className="w-full sm:w-auto">
+              {isReadOnly
+                ? 'Shopping unavailable while archived'
+                : 'Complete shopping run'}
+            </Button>
+          </div>
         }
       />
       {isReadOnly && (

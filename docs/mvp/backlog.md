@@ -421,7 +421,7 @@ on hand without creating a pantry inventory system.
 
 **Blocked by:** 17: Override shopping amounts
 
-**Status:** in progress
+**Status:** implemented
 
 - [x] The active run has a clear `Review at home` mode showing shopping amount,
       calculated requirement, category, and contribution access.
@@ -432,7 +432,7 @@ on hand without creating a pantry inventory system.
       rather than a pantry prompt.
 - [x] An all-already-have run keeps its recipe selections and explains why the
       buy view is empty.
-- [ ] The review remains available after shopping starts and works at 320px with
+- [x] The review remains available after shopping starts and works at 320px with
       one-tap controls and accessible announcements.
 
 ## 19: Categorize and reorder the current run

@@ -82,7 +82,11 @@ export function AlreadyHaveButton({
             ? 'Undo already have'
             : 'Mark already have'}
       </Button>
-      <span aria-live="polite" className="text-muted-foreground text-xs">
+      <span
+        aria-live="polite"
+        className="text-muted-foreground text-xs"
+        role="status"
+      >
         {error ?? message}
       </span>
       {!editable && (

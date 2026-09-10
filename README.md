@@ -146,7 +146,9 @@ and unchanged until they explicitly save an override.
 The `Review at home` mode now shows calculated and shopping amounts, category,
 and contribution access for each grocery item. Members can mark an item
 `Already have` without creating pantry inventory; it is hidden from the buy
-view and can be restored with its existing override and provenance intact.
+view and can be restored with its existing override and provenance intact. The
+review and shopping modes remain directly linked after shopping starts, with
+touch-safe narrow layouts and live state feedback for `Already have` changes.
 The library can search titles, ingredients, source metadata, and tags with
 stable cursor pagination while preserving the same ownership, membership, and
 saved-reference boundaries. Deleting a recipe explains current list impact,

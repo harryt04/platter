@@ -20,6 +20,7 @@ import { notFound } from 'next/navigation'
 import { GroceryAmountOverrideForm } from '@/components/lists/grocery-amount-override-form'
 import { ManualGroceryItems } from '@/components/lists/manual-grocery-items'
 import { AlreadyHaveButton } from '@/components/lists/already-have-button'
+import { ShoppingModeNavigation } from '@/components/lists/shopping-mode-navigation'
 
 export default async function ReviewPage({
   params,
@@ -56,6 +57,7 @@ export default async function ReviewPage({
         eyebrow={list.name}
         title="Review at home"
         description="Check what you already have before you start shopping. The source recipes stay unchanged."
+        action={<ShoppingModeNavigation listId={listId} mode="review" />}
       />
       {isReadOnly && (
         <p className="border-warning/40 bg-warning/10 text-warning-foreground mb-6 rounded-[var(--radius-card)] border p-4 text-sm">

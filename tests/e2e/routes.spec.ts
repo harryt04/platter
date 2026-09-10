@@ -119,7 +119,9 @@ test.describe('authenticated list workflow', () => {
     await page.getByRole('button', { name: 'Create list' }).click()
     await expect(page).toHaveURL(/\/lists\/[^/]+$/)
 
-    await page.getByRole('link', { name: 'Review at home' }).click()
+    await page
+      .getByRole('link', { name: 'Review at home', exact: true })
+      .click()
     await page.getByLabel('Add a grocery item').fill('2 bags spinach')
     await page.getByRole('button', { name: 'Add item' }).click()
     await expect(page.getByLabel('Manual grocery item 1')).toHaveValue(
@@ -131,7 +133,9 @@ test.describe('authenticated list workflow', () => {
     await expect(page.getByLabel('Shopping amount for spinach')).toHaveValue(
       '3.5',
     )
-    await expect(page.getByText('Calculated requirement: 2 bag')).toBeVisible()
+    await expect(
+      page.getByText('Calculated requirement: 2 bag').first(),
+    ).toBeVisible()
 
     await page.getByLabel('Manual grocery item 1').fill('3 bags spinach')
     await page.getByRole('button', { name: 'Save' }).click()
@@ -141,6 +145,16 @@ test.describe('authenticated list workflow', () => {
     await page.getByRole('button', { name: 'Remove' }).click()
     await page.getByRole('button', { name: 'Remove item' }).click()
     await expect(page.getByLabel('Manual grocery item 1')).toHaveCount(0)
+
+    await page.getByRole('link', { name: 'Start shopping' }).click()
+    await expect(page).toHaveURL(/\/lists\/[^/]+\/shop$/)
+    await expect(
+      page.getByRole('link', { name: 'Review at home', exact: true }),
+    ).toBeVisible()
+    await page
+      .getByRole('link', { name: 'Review at home', exact: true })
+      .click()
+    await expect(page).toHaveURL(/\/lists\/[^/]+\/review$/)
   })
 
   test('splits a combined grocery contribution and keeps the correction after reload', async ({

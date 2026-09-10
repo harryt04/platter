@@ -17,6 +17,12 @@ function formatQuantity(
   return unit.name ? `${amount} ${unit.name}` : amount
 }
 
+function formatSuggestion(item: GroceryItem) {
+  const suggestion = item.suggestedShoppingAmount
+  if (!suggestion) return null
+  return formatQuantity(suggestion.quantity, item.unit)
+}
+
 export function GroceryAmountOverrideForm({
   item,
   listId,
@@ -36,6 +42,7 @@ export function GroceryAmountOverrideForm({
   const [pending, setPending] = React.useState(false)
   const [message, setMessage] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const suggestion = formatSuggestion(item)
 
   const currentRevision =
     mutationRevision === undefined || baseRevision === undefined
@@ -155,6 +162,30 @@ export function GroceryAmountOverrideForm({
             Calculated requirement:{' '}
             {formatQuantity(item.calculatedRequirement, item.unit)}
           </p>
+          {suggestion && (
+            <div
+              className="border-warning/40 bg-warning/10 text-warning-foreground mt-2 rounded-md border p-2 text-xs"
+              role="note"
+            >
+              <p>
+                Optional guidance: {suggestion} to buy whole units. This is a
+                suggestion, not a guaranteed fact.
+              </p>
+              <Button
+                className="mt-1 min-h-11 px-0"
+                disabled={!editable || pending}
+                onClick={() => {
+                  setAmount(item.suggestedShoppingAmount!.quantity.min)
+                  setMessage(null)
+                  setError(null)
+                }}
+                type="button"
+                variant="ghost"
+              >
+                Use whole-unit suggestion for {item.ingredientName}
+              </Button>
+            </div>
+          )}
         </div>
         <Button disabled={!editable || pending || !amount.trim()} type="submit">
           {pending ? 'Saving…' : 'Set shopping amount'}

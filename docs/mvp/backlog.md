@@ -409,7 +409,7 @@ actually intend to buy without corrupting recipe math.
       override exists.
 - [x] Serving, recipe-version, or contribution changes preserve an explicit
       override and warn with both the old intent and new calculated requirement.
-- [ ] Optional package-size or whole-unit suggestions are editable guidance and
+- [x] Optional package-size or whole-unit suggestions are editable guidance and
       are never represented as guaranteed facts.
 - [ ] Tests cover override persistence, reset, recalculation, decimal precision,
       and removal of unrelated contributions.

@@ -61,6 +61,30 @@ const selection = (
 })
 
 describe('grocery generation', () => {
+  it('offers whole-unit guidance without changing the calculated requirement', () => {
+    const [item] = generateGroceryItems({
+      selections: [
+        selection('eggs', 'Breakfast', '0.5', [
+          ingredient({
+            originalText: '3 eggs',
+            quantity: '3',
+            unit: 'each',
+            ingredientName: 'eggs',
+          }),
+        ]),
+      ],
+    })
+
+    expect(item).toMatchObject({
+      calculatedRequirement: { min: '1.5' },
+      shoppingAmount: { min: '1.5' },
+      suggestedShoppingAmount: {
+        kind: 'whole-unit',
+        quantity: { min: '2' },
+      },
+    })
+  })
+
   it('is deterministic and preserves scaled recipe provenance when merging', () => {
     const input = {
       selections: [

@@ -29,6 +29,17 @@ const overriddenItem: GroceryItem = {
   override: { min: '5.25' },
 }
 
+const suggestedItem: GroceryItem = {
+  ...item,
+  unit: { name: 'each', dimension: 'count' },
+  calculatedRequirement: { min: '1.5' },
+  shoppingAmount: { min: '1.5' },
+  suggestedShoppingAmount: {
+    kind: 'whole-unit',
+    quantity: { min: '2' },
+  },
+}
+
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
@@ -36,6 +47,37 @@ afterEach(() => {
 })
 
 describe('GroceryAmountOverrideForm', () => {
+  it('lets shoppers copy whole-unit guidance into the editable amount', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ detail: 'Shopping amount for rice updated.' }),
+          { status: 200 },
+        ),
+      )
+    render(
+      <GroceryAmountOverrideForm
+        baseRevision={3}
+        item={suggestedItem}
+        listId="list-1"
+      />,
+    )
+
+    expect(
+      screen.getByText(
+        'Optional guidance: 2 each to buy whole units. This is a suggestion, not a guaranteed fact.',
+      ),
+    ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Use whole-unit suggestion for rice',
+      }),
+    )
+    expect(screen.getByLabelText('Shopping amount for rice')).toHaveValue(2)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('submits a precise shopping amount without changing the displayed calculation', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')

@@ -68,9 +68,15 @@ export type GroceryContribution = {
   normalizedIdentity?: string
   parserConfidence: IngredientParserConfidence
   unit: ParsedIngredientUnit
+  packageSize?: NonNullable<ParsedIngredientLine['packageSize']>
   preparationNote?: string
   optional: boolean
   calculatedQuantity: ParsedIngredientQuantity | null
+}
+
+export type GroceryPurchaseSuggestion = {
+  kind: 'whole-unit'
+  quantity: ParsedIngredientQuantity
 }
 
 export type GroceryItem = {
@@ -82,6 +88,8 @@ export type GroceryItem = {
   unit: ParsedIngredientUnit
   calculatedRequirement: ParsedIngredientQuantity | null
   shoppingAmount: ParsedIngredientQuantity | null
+  /** Optional editable guidance; it is never applied without user action. */
+  suggestedShoppingAmount?: GroceryPurchaseSuggestion
   override?: ParsedIngredientQuantity
   overrideWarning?: {
     previousCalculatedRequirement: ParsedIngredientQuantity
@@ -120,12 +128,20 @@ function prepareIngredient(
     .filter((part) => part !== undefined && part.trim() !== '')
     .join(' ')
   const parsed = parseIngredientLine(assembledLine)
+  const sourceParsed = parseIngredientLine(ingredient.originalText)
+  const packageSize =
+    sourceParsed.packageSize &&
+    sourceParsed.ingredientName === parsed.ingredientName &&
+    sourceParsed.unit.name === parsed.unit.name
+      ? sourceParsed.packageSize
+      : undefined
   const normalizedIdentity =
     ingredient.normalizedIdentity ?? parsed.normalizedIdentity
   const parserConfidence =
     ingredient.parserConfidence ?? parsed.parserConfidence
   const normalizedParsed = {
     ...parsed,
+    ...(packageSize ? { packageSize } : {}),
     ...(normalizedIdentity ? { normalizedIdentity } : {}),
     parserConfidence,
   }
@@ -264,12 +280,44 @@ function contributionFromIngredient(
       : {}),
     parserConfidence: prepared.parsed.parserConfidence,
     unit: prepared.parsed.unit,
+    ...(prepared.parsed.packageSize
+      ? { packageSize: prepared.parsed.packageSize }
+      : {}),
     ...(prepared.parsed.preparationNote
       ? { preparationNote: prepared.parsed.preparationNote }
       : {}),
     optional: ingredient.optional,
     calculatedQuantity: prepared.calculatedQuantity,
   }
+}
+
+function ceilQuantity(
+  quantity: ParsedIngredientQuantity,
+): ParsedIngredientQuantity {
+  const ceil = (value: string) =>
+    decimalString(new CalculationDecimal(value).ceil().toString())
+
+  return {
+    min: ceil(quantity.min),
+    ...(quantity.max ? { max: ceil(quantity.max) } : {}),
+  }
+}
+
+function wholeUnitSuggestion(
+  item: GroceryItem,
+): GroceryPurchaseSuggestion | undefined {
+  if (!item.calculatedRequirement || item.dimension !== 'count')
+    return undefined
+
+  const quantity = ceilQuantity(item.calculatedRequirement)
+  if (quantitiesEqual(quantity, item.calculatedRequirement)) return undefined
+
+  return { kind: 'whole-unit', quantity }
+}
+
+function addPurchaseSuggestion(item: GroceryItem): GroceryItem {
+  const suggestion = wholeUnitSuggestion(item)
+  return suggestion ? { ...item, suggestedShoppingAmount: suggestion } : item
 }
 
 function itemFromContribution(
@@ -406,7 +454,7 @@ export function generateGroceryItems({
     overrides.map((override) => [override.itemId, override]),
   )
 
-  return [...items.values()]
+  const generatedItems = [...items.values()]
     .sort((left, right) => left.id.localeCompare(right.id))
     .map((item) => {
       const override = overridesByItemId.get(item.id)
@@ -437,6 +485,8 @@ export function generateGroceryItems({
         left.id.localeCompare(right.id),
       ),
     }))
+
+  return generatedItems.map(addPurchaseSuggestion)
 }
 
 /**

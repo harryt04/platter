@@ -1,6 +1,6 @@
 # Platter Scaffolding Setup Instructions
 
-**Status:** Ready for implementation
+**Status:** Foundation scaffold implemented; feature lanes remain deferred
 
 **Foundation scope:** Repository tooling, shared platform seams, design tokens,
 application shells, working email/password authentication, and route-complete
@@ -12,6 +12,14 @@ This document defines the foundation that must land before feature work begins.
 Complete it as one coordinated change. After the completion gate passes, agents
 may implement the PRD in parallel using the ownership rules in
 [Parallel feature handoff](#parallel-feature-handoff).
+
+The repository now contains the initial implementation of this foundation:
+root-level Next.js application files, executable package commands, environment
+and Docker Compose templates, typed platform seams, shell/theme placeholders,
+route groups, browser/test configuration, and public-repository policy files.
+The final acceptance gate below still governs release of feature agents; in
+particular, service-backed auth, realtime, worker, PWA, and browser checks must
+be run in a clean environment with Node 24 and the documented local services.
 
 ## Read before changing the scaffold
 

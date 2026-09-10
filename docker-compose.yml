@@ -1,0 +1,23 @@
+services:
+  mongo:
+    image: mongo:8
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports: ["27017:27017"]
+    volumes: ["platter-mongo:/data/db"]
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'try { rs.status().ok } catch (e) { 0 }' | grep 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  mongo-init:
+    image: mongo:8
+    depends_on:
+      mongo:
+        condition: service_started
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["until mongosh --host mongo:27017 --quiet --eval 'db.runCommand({ ping: 1 }).ok' | grep 1; do sleep 1; done; mongosh --host mongo:27017 --quiet --eval \"try { rs.status() } catch (e) { rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'mongo:27017'}]}) }\"; until mongosh --host mongo:27017 --quiet --eval 'rs.status().members[0].stateStr' | grep PRIMARY; do sleep 1; done"]
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports: ["1025:1025", "8025:8025"]
+volumes:
+  platter-mongo:

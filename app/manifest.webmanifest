@@ -1,0 +1,17 @@
+{
+  "name": "Platter",
+  "short_name": "Platter",
+  "description": "A trustworthy shared recipe-to-grocery list.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F7F5",
+  "theme_color": "#0057D9",
+  "icons": [
+    {
+      "src": "/icons/platter.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

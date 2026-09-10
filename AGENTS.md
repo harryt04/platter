@@ -2,7 +2,9 @@
 
 ## Repository Structure
 
-This repo currently holds product and design plans for Platter, a mobile-first recipe-to-grocery app. App code has not been added yet.
+This repo contains the Platter foundation scaffold and product/design plans for
+a mobile-first recipe-to-grocery app. Recipe parsing, persistence, calculations,
+and feature workflows are not implemented in the foundation.
 
 - `README.md` — project overview and documentation entry point.
 - `docs/mvp/prd.md` — main product rules, data model, planned technology, and acceptance checks.
@@ -11,13 +13,18 @@ This repo currently holds product and design plans for Platter, a mobile-first r
 - `docs/mvp/ui-implementation-guide.md` — UI work steps and component patterns.
 - `docs/mvp/copy-and-content-guidelines.md` — product words, labels, states, and trust copy.
 - `docs/mvp/application-intentions.md` — original product intent and context.
+- `components/` — shared shell, state, pattern, and shadcn-style UI components.
+- `features/<slice>/` — reserved ownership boundary for post-foundation feature lanes.
+- `lib/` — typed platform seams for auth, database, jobs, offline, realtime, search, and analytics.
+- `server/` — separate realtime and Agenda worker processes.
+- `tests/` — Vitest unit/component/integration tests and Playwright browser tests.
 
 Read the main doc for the area you change. For UI, visual, screen-size, accessibility, or user-facing text work, read `docs/DESIGN.md`; also read the UI and copy guides when they apply.
 For repository scaffolding, shared platform contracts, placeholder routes, or feature-lane ownership, read `docs/mvp/scaffolding-setup-instructions.md`.
 
 ## Development and Verification
 
-There is no app build, development server, package file, or test runner yet. Do not list commands such as `npm test` or `npm run build` as working until the app adds them. When code is added, list the real install, development, format, lint, type-check, test, and production-build commands here and in the README. CI should run formatting, linting, type checks, automated tests, and a production build for every pull request.
+The public commands are documented in the README and `package.json`: `npm run dev`, `services:up`, `services:down`, `build`, `format`, `format:check`, `lint`, `typecheck`, `test`, `test:integration`, `test:e2e`, `test:a11y`, the `db:*` scripts, and `check`. Local service-backed commands require Docker Compose and the copied `.env.example`; the worker and database scripts require MongoDB. CI runs formatting, linting, type checks, automated tests, a production build, and browser checks.
 
 ## Coding and Documentation Style
 

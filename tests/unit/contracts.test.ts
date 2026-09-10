@@ -11,6 +11,7 @@ import {
   updateListSchema,
 } from '@/lib/lists'
 import {
+  authenticateRealtimeSocket,
   joinAuthenticatedUserRoom,
   joinAuthorizedRealtimeRoom,
   realtimeListRoom,
@@ -196,6 +197,41 @@ describe('foundation contracts', () => {
       'foundation:smoke',
       expect.objectContaining({ listId: 'list-1' }),
     )
+  })
+
+  it('requires a current session cookie before a realtime operation', async () => {
+    const socket = { handshake: { headers: {} } }
+    const readSession = vi.fn()
+
+    await expect(
+      authenticateRealtimeSocket(socket, readSession),
+    ).rejects.toThrow('AUTHENTICATION_REQUIRED')
+    expect(readSession).not.toHaveBeenCalled()
+  })
+
+  it('revalidates the session identity from the handshake cookie', async () => {
+    const socket = {
+      handshake: { headers: { cookie: 'better-auth.session_token=token' } },
+    }
+    const readSession = vi.fn().mockResolvedValue({ user: { id: 'member-1' } })
+
+    await expect(authenticateRealtimeSocket(socket, readSession)).resolves.toBe(
+      'member-1',
+    )
+    expect(readSession).toHaveBeenCalledWith(
+      new Headers({ cookie: 'better-auth.session_token=token' }),
+    )
+  })
+
+  it('rejects a cookie whose session is no longer valid', async () => {
+    const socket = {
+      handshake: { headers: { cookie: 'better-auth.session_token=expired' } },
+    }
+    const readSession = vi.fn().mockResolvedValue(null)
+
+    await expect(
+      authenticateRealtimeSocket(socket, readSession),
+    ).rejects.toThrow('AUTHENTICATION_REQUIRED')
   })
 
   it('uses a private user room to support cross-process membership revocation', async () => {

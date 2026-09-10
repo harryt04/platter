@@ -168,7 +168,9 @@ Accepted checklist and shared grocery mutations now advance the active-run
 revision and publish content-free typed events with the list, run, operation,
 actor, and authoritative revision. Event delivery is best effort after the
 database write; the active run remains the source of truth while connected
-client recovery is completed in the realtime collaboration work.
+client recovery is completed in the realtime collaboration work. Realtime
+handshakes and every list-room join revalidate the Better Auth session before
+checking current list membership, so a known list ID cannot grant access.
 The active run also shares a temporary within-category item order: members can
 use accessible move-up and move-down controls, while a newly created run begins
 at the documented default order. Members can also drag a category or use its

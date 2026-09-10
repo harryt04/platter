@@ -7,12 +7,37 @@ export type RealtimeRoomSocket = {
   emit: (event: string, payload: unknown) => unknown
 }
 
+export type RealtimeHandshakeSocket = {
+  handshake: { headers: { cookie?: string } }
+}
+
+export type RealtimeSessionReader = (
+  headers: Headers,
+) => Promise<{ user: { id: string } } | null>
+
 export function realtimeListRoom(listId: string) {
   return `list:${listId}`
 }
 
 export function realtimeUserRoom(userId: string) {
   return `user:${userId}`
+}
+
+/**
+ * Re-read the Better Auth session for a socket operation. A successful
+ * handshake authenticates the connection, but it must not make a stale
+ * session valid for later room joins.
+ */
+export async function authenticateRealtimeSocket(
+  socket: RealtimeHandshakeSocket,
+  readSession: RealtimeSessionReader,
+) {
+  const cookie = socket.handshake.headers.cookie
+  if (!cookie) throw new Error('AUTHENTICATION_REQUIRED')
+
+  const session = await readSession(new Headers({ cookie }))
+  if (!session) throw new Error('AUTHENTICATION_REQUIRED')
+  return session.user.id
 }
 
 export async function joinAuthenticatedUserRoom(

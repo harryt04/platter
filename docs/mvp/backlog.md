@@ -492,7 +492,7 @@ active checklist
 
 - [x] Every accepted check, uncheck, amount edit, addition, removal, and ordering
       mutation advances an authoritative run revision and emits a typed event.
-- [ ] Realtime handshakes and every room join authenticate the session and
+- [x] Realtime handshakes and every room join authenticate the session and
       authorize current membership; knowing a list ID grants no access.
 - [ ] A second connected client reflects accepted changes within two seconds at
       the 95th percentile under the expected test load.

@@ -4,6 +4,7 @@ import { createAdapter } from '@socket.io/mongo-adapter'
 import { auth } from '@/lib/auth/auth'
 import { getConnectedDatabase, getMongoClient } from '@/lib/db/mongo-client'
 import {
+  authenticateRealtimeSocket,
   joinAuthenticatedUserRoom,
   joinAuthorizedRealtimeRoom,
 } from '@/lib/realtime/rooms'
@@ -29,23 +30,46 @@ const io = new Server(httpServer, {
 
 io.use(async (socket, next) => {
   try {
-    const cookie = socket.handshake.headers.cookie
-    if (!cookie) return next(new Error('AUTHENTICATION_REQUIRED'))
-    const session = await auth.api.getSession({
-      headers: new Headers({ cookie }),
-    })
-    if (!session) return next(new Error('AUTHENTICATION_REQUIRED'))
-    socket.data.userId = session.user.id
+    socket.data.userId = await authenticateRealtimeSocket(socket, (headers) =>
+      auth.api.getSession({ headers }),
+    )
     next()
-  } catch {
-    next(new Error('AUTHENTICATION_UNAVAILABLE'))
+  } catch (error) {
+    next(
+      new Error(
+        error instanceof Error && error.message === 'AUTHENTICATION_REQUIRED'
+          ? 'AUTHENTICATION_REQUIRED'
+          : 'AUTHENTICATION_UNAVAILABLE',
+      ),
+    )
   }
 })
 
 io.on('connection', (socket) => {
   void joinAuthenticatedUserRoom(socket, socket.data.userId)
   socket.on('foundation:join', (listId: unknown) => {
-    void joinAuthorizedRealtimeRoom(socket, listId, socket.data.userId)
+    void (async () => {
+      try {
+        const userId = await authenticateRealtimeSocket(socket, (headers) =>
+          auth.api.getSession({ headers }),
+        )
+        if (userId !== socket.data.userId) {
+          socket.emit('foundation:error', {
+            code: 'AUTHENTICATION_REQUIRED',
+          })
+          return
+        }
+        await joinAuthorizedRealtimeRoom(socket, listId, userId)
+      } catch (error) {
+        socket.emit('foundation:error', {
+          code:
+            error instanceof Error &&
+            error.message === 'AUTHENTICATION_REQUIRED'
+              ? 'AUTHENTICATION_REQUIRED'
+              : 'AUTHENTICATION_UNAVAILABLE',
+        })
+      }
+    })()
   })
 })
 

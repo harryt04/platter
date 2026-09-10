@@ -164,6 +164,11 @@ ingredient, state, category, and contribution access as a narrow-screen-safe
 semantic list with touch-safe controls. Checklist reads are scoped to current
 active list membership: owners and editors can open the run, while anonymous
 visitors are sent to sign in and non-members receive a not-found response.
+Accepted checklist and shared grocery mutations now advance the active-run
+revision and publish content-free typed events with the list, run, operation,
+actor, and authoritative revision. Event delivery is best effort after the
+database write; the active run remains the source of truth while connected
+client recovery is completed in the realtime collaboration work.
 The active run also shares a temporary within-category item order: members can
 use accessible move-up and move-down controls, while a newly created run begins
 at the documented default order. Members can also drag a category or use its

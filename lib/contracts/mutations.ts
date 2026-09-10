@@ -41,6 +41,34 @@ export interface RealtimeEvent {
   occurredAt: IsoDateTime
 }
 
+export interface RealtimeRunMutationEvent {
+  type:
+    | 'grocery.purchased.marked'
+    | 'grocery.purchased.undone'
+    | 'grocery.already-have.marked'
+    | 'grocery.already-have.undone'
+    | 'grocery.amount-override.set'
+    | 'grocery.amount-override.reset'
+    | 'grocery.manual-item.added'
+    | 'grocery.manual-item.updated'
+    | 'grocery.manual-item.removed'
+    | 'grocery.category.changed'
+    | 'grocery.item.moved'
+    | 'grocery.category.moved'
+    | 'grocery.merge-split'
+    | 'recipe.selection.added'
+    | 'recipe.selection.people-changed'
+    | 'recipe.selection.removed'
+    | 'recipe.selection.duplicated'
+    | 'recipe.selection.repinned'
+  listId: EntityId
+  runId: EntityId
+  revision: number
+  operationId: string
+  actorId: string
+  occurredAt: IsoDateTime
+}
+
 export interface QueuedOperation {
   operationId: string
   clientId: string

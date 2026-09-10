@@ -7,6 +7,7 @@ import {
   type ShoppingRunDocument,
 } from '@/lib/lists'
 import { problemResponse } from '@/lib/contracts/problem'
+import { publishRunMutationEvent } from '@/lib/realtime/events'
 import { resolveRunRecipeVersions } from '@/lib/recipes/versions'
 import { generateGroceryItems } from '@/lib/recipes/groceries'
 import {
@@ -222,7 +223,17 @@ export async function POST(request: Request, context: RouteContext) {
     },
     { returnDocument: 'after' },
   )
-  if (updatedRun) return Response.json(response)
+  if (updatedRun) {
+    await publishRunMutationEvent(db, {
+      type: 'grocery.merge-split',
+      listId,
+      runId: run._id,
+      revision: response.revision,
+      operationId: parsed.data.operationId,
+      actorId: session.user.id,
+    }).catch(() => undefined)
+    return Response.json(response)
+  }
 
   const retryRun = await runs.findOne({
     _id: list.activeRunId,

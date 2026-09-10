@@ -7,6 +7,7 @@ import {
   type ShoppingRunDocument,
 } from '@/lib/lists'
 import { problemResponse } from '@/lib/contracts/problem'
+import { publishRunMutationEvent } from '@/lib/realtime/events'
 import { type RecipeVersionDocument } from '@/lib/recipes/drafts'
 import {
   duplicateRecipeSelectionDocument,
@@ -234,5 +235,13 @@ export async function POST(request: Request, context: RouteContext) {
     return revisionConflict()
   }
 
+  await publishRunMutationEvent(db, {
+    type: 'recipe.selection.duplicated',
+    listId,
+    runId: currentRun._id,
+    revision: response.revision,
+    operationId: parsed.data.operationId,
+    actorId: session.user.id,
+  }).catch(() => undefined)
   return Response.json(response, { status: 201 })
 }

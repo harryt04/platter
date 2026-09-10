@@ -1,6 +1,7 @@
 import { getSession } from '@/lib/auth/authorization'
 import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
+import { publishRunMutationEvent } from '@/lib/realtime/events'
 import {
   listIdSchema,
   listRoleFilter,
@@ -198,7 +199,17 @@ export async function PATCH(request: Request, context: RouteContext) {
     update,
     { returnDocument: 'after' },
   )
-  if (updated) return Response.json(response)
+  if (updated) {
+    await publishRunMutationEvent(db, {
+      type: 'grocery.category.changed',
+      listId,
+      runId: run._id,
+      revision: response.revision,
+      operationId: parsed.data.operationId,
+      actorId: session.user.id,
+    }).catch(() => undefined)
+    return Response.json(response)
+  }
 
   const retryRun = await runs.findOne({
     _id: list.activeRunId,

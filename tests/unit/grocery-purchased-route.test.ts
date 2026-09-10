@@ -4,13 +4,16 @@ import {
   PATCH,
 } from '@/app/api/v1/lists/[listId]/grocery-items/[itemId]/purchased/route'
 
-const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
-  getSession: vi.fn(),
-  getConnectedDatabase: vi.fn(),
-}))
+const { getSession, getConnectedDatabase, publishRunMutationEvent } =
+  vi.hoisted(() => ({
+    getSession: vi.fn(),
+    getConnectedDatabase: vi.fn(),
+    publishRunMutationEvent: vi.fn().mockResolvedValue(undefined),
+  }))
 
 vi.mock('@/lib/auth/authorization', () => ({ getSession }))
 vi.mock('@/lib/db/mongo-client', () => ({ getConnectedDatabase }))
+vi.mock('@/lib/realtime/events', () => ({ publishRunMutationEvent }))
 
 const list = {
   _id: 'list-1',
@@ -118,6 +121,17 @@ describe('purchased grocery route', () => {
       }),
       { returnDocument: 'after' },
     )
+    expect(publishRunMutationEvent).toHaveBeenCalledWith(
+      database.db,
+      expect.objectContaining({
+        type: 'grocery.purchased.marked',
+        listId: 'list-1',
+        runId: 'run-1',
+        revision: 4,
+        operationId: 'purchased-1',
+        actorId: 'user-1',
+      }),
+    )
   })
 
   it('keeps purchased separate from already-have and makes repeated checks idempotent', async () => {
@@ -213,6 +227,14 @@ describe('purchased grocery route', () => {
         $pull: { purchasedItems: { itemId: 'grocery:merged:rice:mass:lb' } },
       }),
       { returnDocument: 'after' },
+    )
+    expect(publishRunMutationEvent).toHaveBeenCalledWith(
+      undoneDatabase.db,
+      expect.objectContaining({
+        type: 'grocery.purchased.undone',
+        revision: 4,
+        operationId: 'purchased-undo',
+      }),
     )
   })
 })

@@ -7,6 +7,7 @@ import {
   type ShoppingRunDocument,
 } from '@/lib/lists'
 import { problemResponse } from '@/lib/contracts/problem'
+import { publishRunMutationEvent } from '@/lib/realtime/events'
 import {
   manualMutationReceiptFor,
   updateManualGroceryRequestSchema,
@@ -198,6 +199,14 @@ export async function PATCH(request: Request, context: RouteContext) {
       'Reload the shopping run before changing its groceries.',
       409,
     )
+  await publishRunMutationEvent(db, {
+    type: 'grocery.manual-item.updated',
+    listId,
+    runId: run._id,
+    revision: response.revision,
+    operationId: parsed.data.operationId,
+    actorId: session.user.id,
+  }).catch(() => undefined)
   return Response.json(response)
 }
 
@@ -323,5 +332,13 @@ export async function DELETE(request: Request, context: RouteContext) {
       'Reload the shopping run before changing its groceries.',
       409,
     )
+  await publishRunMutationEvent(db, {
+    type: 'grocery.manual-item.removed',
+    listId,
+    runId: run._id,
+    revision: response.revision,
+    operationId: parsed.data.operationId,
+    actorId: session.user.id,
+  }).catch(() => undefined)
   return Response.json(response)
 }

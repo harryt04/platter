@@ -488,9 +488,9 @@ they edit different or identical items from separate connected devices.
 **Blocked by:** 03: Manage list membership and ownership; 20: Shop with the
 active checklist
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] Every accepted check, uncheck, amount edit, addition, removal, and ordering
+- [x] Every accepted check, uncheck, amount edit, addition, removal, and ordering
       mutation advances an authoritative run revision and emits a typed event.
 - [ ] Realtime handshakes and every room join authenticate the session and
       authorize current membership; knowing a list ID grants no access.

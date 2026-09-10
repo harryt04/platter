@@ -7,6 +7,7 @@ import {
   type ShoppingRunDocument,
 } from '@/lib/lists'
 import { problemResponse } from '@/lib/contracts/problem'
+import { publishRunMutationEvent } from '@/lib/realtime/events'
 import { resolveRunRecipeVersions } from '@/lib/recipes/versions'
 import { generateGroceryItems } from '@/lib/recipes/groceries'
 import {
@@ -262,7 +263,20 @@ async function loadContext(
     update,
     { returnDocument: 'after' },
   )
-  if (updatedRun) return { response: Response.json(response) }
+  if (updatedRun) {
+    await publishRunMutationEvent(db, {
+      type:
+        action === 'mark'
+          ? 'grocery.purchased.marked'
+          : 'grocery.purchased.undone',
+      listId,
+      runId: run._id,
+      revision: response.revision,
+      operationId: parsed.data.operationId,
+      actorId: session.user.id,
+    }).catch(() => undefined)
+    return { response: Response.json(response) }
+  }
 
   const retryRun = await runs.findOne({
     _id: list.activeRunId,

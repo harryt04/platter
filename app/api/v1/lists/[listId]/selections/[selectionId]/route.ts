@@ -8,6 +8,7 @@ import {
 } from '@/lib/lists'
 import { problemResponse } from '@/lib/contracts/problem'
 import { isoDateTime } from '@/lib/contracts/ids'
+import { publishRunMutationEvent } from '@/lib/realtime/events'
 import { type RecipeVersionDocument } from '@/lib/recipes/drafts'
 import {
   selectionMutationReceiptFor,
@@ -323,6 +324,14 @@ export async function PATCH(request: Request, context: RouteContext) {
     ),
     revision: currentRun.revision + 1,
   }
+  await publishRunMutationEvent(db, {
+    type: 'recipe.selection.people-changed',
+    listId,
+    runId: currentRun._id,
+    revision: response.revision,
+    operationId: parsed.data.operationId,
+    actorId: session.user.id,
+  }).catch(() => undefined)
   return Response.json(response)
 }
 
@@ -419,10 +428,19 @@ export async function DELETE(request: Request, context: RouteContext) {
   )
   if (!updatedRun) return revisionConflict()
 
-  return Response.json({
+  const response = {
     detail: 'The recipe selection was removed from this shopping run.',
     code: 'SELECTION_REMOVED',
     selectionId,
     revision: currentRun.revision + 1,
-  })
+  }
+  await publishRunMutationEvent(db, {
+    type: 'recipe.selection.removed',
+    listId,
+    runId: currentRun._id,
+    revision: response.revision,
+    operationId: parsed.data.operationId,
+    actorId: session.user.id,
+  }).catch(() => undefined)
+  return Response.json(response)
 }

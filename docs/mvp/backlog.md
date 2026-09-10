@@ -105,11 +105,11 @@ membership changes without turning grocery activity into notification noise.
 **Blocked by:** 02: Invite users to a list; 03: Manage list membership and
 ownership
 
-**Status:** ready-for-agent
+**Status:** in progress
 
 - [x] A signed-in user receives an in-product notification for a new invitation
       and material membership or ownership changes affecting them.
-- [ ] Notifications link to the relevant list or invitation and can be marked
+- [x] Notifications link to the relevant list or invitation and can be marked
       read without changing the underlying membership state.
 - [ ] Email invitations are sent only when email delivery is configured, and a
       delivery failure does not invalidate an in-product invitation.

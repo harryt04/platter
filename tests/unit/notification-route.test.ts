@@ -60,6 +60,7 @@ describe('notification routes', () => {
           listName: 'Family',
           invitationId: notification.invitationId,
           createdAt: notification.createdAt,
+          href: `/invitations/notification/${notification._id}`,
           title: 'Invitation to Family',
           body: 'You’ve been invited to collaborate on Family.',
         },

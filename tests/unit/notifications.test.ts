@@ -3,6 +3,7 @@ import {
   createNotificationDocument,
   notifyExistingUserByEmail,
   notificationCopy,
+  toNotificationSummary,
 } from '@/lib/notifications'
 
 describe('notification contracts', () => {
@@ -24,6 +25,20 @@ describe('notification contracts', () => {
     })
     expect(notification).not.toHaveProperty('recipe')
     expect(notification).not.toHaveProperty('grocery')
+  })
+
+  it('links invitation notifications to their authenticated invitation view', () => {
+    const summary = toNotificationSummary(
+      createNotificationDocument({
+        userId: 'user-1',
+        event: 'invitation',
+        listId: 'list-1',
+        listName: 'Family',
+        invitationId: 'invitation-1',
+      }),
+    )
+
+    expect(summary.href).toBe(`/invitations/notification/${summary.id}`)
   })
 
   it('notifies an existing invited account without storing the email in the event', async () => {

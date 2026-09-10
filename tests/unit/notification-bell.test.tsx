@@ -23,6 +23,7 @@ describe('NotificationBell', () => {
                 listId: 'list-1',
                 listName: 'Family',
                 createdAt: '2026-09-10T12:00:00.000Z',
+                href: '/lists/list-1',
                 title: 'Removed from Family',
                 body: 'You no longer have access to Family.',
               },
@@ -52,7 +53,18 @@ describe('NotificationBell', () => {
       screen.getByRole('button', { name: '1 unread notifications' }),
     )
     expect(screen.getByText('Removed from Family')).toBeInTheDocument()
-    await user.click(screen.getByText('Removed from Family'))
+    expect(
+      screen.getByRole('link', { name: /Removed from Family/ }),
+    ).toHaveAttribute('href', '/lists/list-1')
+    const notificationLink = screen.getByRole('link', {
+      name: /Removed from Family/,
+    })
+    notificationLink.addEventListener(
+      'click',
+      (event) => event.preventDefault(),
+      { once: true },
+    )
+    await user.click(notificationLink)
 
     expect(fetchMock).toHaveBeenLastCalledWith(
       '/api/v1/notifications/550e8400-e29b-41d4-a716-446655440000',

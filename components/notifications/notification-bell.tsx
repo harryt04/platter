@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Bell } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -75,10 +76,13 @@ export function NotificationBell() {
             ) : (
               <div className="space-y-1">
                 {notifications.map((notification) => (
-                  <button
+                  <Link
                     className="hover:bg-muted w-full rounded-md px-3 py-3 text-left"
+                    href={notification.href}
                     key={notification.id}
-                    onClick={() => void markRead(notification.id)}
+                    onClick={() => {
+                      void markRead(notification.id)
+                    }}
                   >
                     <span className="block text-sm font-medium">
                       {notification.title}
@@ -91,7 +95,7 @@ export function NotificationBell() {
                         Unread
                       </span>
                     )}
-                  </button>
+                  </Link>
                 ))}
               </div>
             )}

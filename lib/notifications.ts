@@ -5,6 +5,8 @@ import {
   type EntityId,
   type IsoDateTime,
 } from '@/lib/contracts/ids'
+import type { InvitationDocument } from '@/lib/invitations'
+import type { ListDocument } from '@/lib/lists'
 
 export type NotificationEvent = 'invitation' | 'role-changed' | 'removed'
 
@@ -33,6 +35,7 @@ export type NotificationSummary = {
   role?: 'owner' | 'editor'
   readAt?: IsoDateTime
   createdAt: IsoDateTime
+  href: string
   title: string
   body: string
 }
@@ -88,8 +91,38 @@ export function toNotificationSummary(
     ...(document.role ? { role: document.role } : {}),
     ...(document.readAt ? { readAt: document.readAt } : {}),
     createdAt: document.createdAt,
+    href: document.invitationId
+      ? `/invitations/notification/${document._id}`
+      : `/lists/${document.listId}`,
     ...notificationCopy(document),
   }
+}
+
+export async function findInvitationForNotification(
+  db: Db,
+  notificationId: string,
+  userId: string,
+) {
+  const notification = await db
+    .collection<NotificationDocument>('notifications')
+    .findOne({
+      _id: notificationId,
+      userId,
+      event: 'invitation',
+    })
+  if (!notification?.invitationId) return null
+
+  const invitation = await db
+    .collection<InvitationDocument>('list_invitations')
+    .findOne({ _id: notification.invitationId, listId: notification.listId })
+  if (!invitation) return null
+
+  const list = await db
+    .collection<ListDocument>('lists')
+    .findOne({ _id: notification.listId, status: { $ne: 'deleted' } })
+  if (!list) return null
+
+  return { notification, invitation, list }
 }
 
 export async function createUserNotification(db: Db, input: NotificationInput) {

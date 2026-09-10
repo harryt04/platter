@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 
 export function InvitationAcceptance({
   token,
+  acceptPath,
   invitationPath,
   listName,
   email,
@@ -15,6 +16,7 @@ export function InvitationAcceptance({
   unavailable,
 }: {
   token: string
+  acceptPath?: string
   invitationPath: string
   listName: string
   email: string
@@ -30,7 +32,7 @@ export function InvitationAcceptance({
     setError('')
     try {
       const response = await fetch(
-        `/api/v1/invitations/${encodeURIComponent(token)}`,
+        acceptPath ?? `/api/v1/invitations/${encodeURIComponent(token)}`,
         { method: 'POST' },
       )
       if (!response.ok) {

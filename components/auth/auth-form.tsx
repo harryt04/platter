@@ -39,19 +39,20 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     setError('')
     setMessage('')
     try {
+      const returnTo =
+        params.get('returnTo')?.startsWith('/') &&
+        !params.get('returnTo')?.startsWith('//')
+          ? params.get('returnTo')!
+          : '/lists'
       if (mode === 'sign-in') {
         const result = await authClient.signIn.email({ email, password })
         if (result.error) throw new Error(result.error.message)
-        router.push(
-          params.get('returnTo')?.startsWith('/')
-            ? params.get('returnTo')!
-            : '/lists',
-        )
+        router.push(returnTo)
         router.refresh()
       } else if (mode === 'sign-up') {
         const result = await authClient.signUp.email({ name, email, password })
         if (result.error) throw new Error(result.error.message)
-        router.push('/lists')
+        router.push(returnTo)
         router.refresh()
       } else if (mode === 'forgot-password') {
         const result = await authClient.requestPasswordReset({

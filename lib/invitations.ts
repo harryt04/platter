@@ -6,6 +6,8 @@ import {
   type EntityId,
   type IsoDateTime,
 } from '@/lib/contracts/ids'
+import { getConnectedDatabase } from '@/lib/db/mongo-client'
+import type { ListDocument } from '@/lib/lists'
 
 export const createInvitationSchema = z.object({
   email: z
@@ -19,6 +21,10 @@ export const createInvitationSchema = z.object({
 export const invitationIdSchema = z
   .string()
   .uuid('Enter a valid invitation id.')
+
+export const invitationTokenSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]{43}$/, 'Enter a valid invitation token.')
 
 export type InvitationStatus = 'pending' | 'accepted' | 'revoked'
 
@@ -41,6 +47,14 @@ export type InvitationSummary = {
   status: InvitationStatus
   expiresAt: IsoDateTime
   inviteUrl?: string
+}
+
+export type InvitationRecipientSummary = {
+  listId: EntityId
+  listName: string
+  email: string
+  status: InvitationStatus
+  expiresAt: IsoDateTime
 }
 
 export function invitations(collection: Collection<InvitationDocument>) {
@@ -93,4 +107,41 @@ export function toInvitationSummary(
   }
   if (inviteUrl) summary.inviteUrl = inviteUrl
   return summary
+}
+
+export function toInvitationRecipientSummary(
+  document: InvitationDocument,
+  listName: string,
+): InvitationRecipientSummary {
+  return {
+    listId: document.listId as EntityId,
+    listName,
+    email: document.email,
+    status: document.status,
+    expiresAt: document.expiresAt,
+  }
+}
+
+export function invitationIsExpired(
+  document: Pick<InvitationDocument, 'expiresAt'>,
+  now = new Date(),
+) {
+  return new Date(document.expiresAt).getTime() <= now.getTime()
+}
+
+export async function findInvitationByToken(token: string) {
+  if (!invitationTokenSchema.safeParse(token).success) return null
+
+  const db = await getConnectedDatabase()
+  const invitation = await db
+    .collection<InvitationDocument>('list_invitations')
+    .findOne({ tokenHash: hashInvitationToken(token) })
+  if (!invitation) return null
+
+  const list = await db
+    .collection<ListDocument>('lists')
+    .findOne({ _id: invitation.listId, status: { $ne: 'deleted' } })
+  if (!list) return null
+
+  return { invitation, list }
 }

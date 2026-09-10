@@ -68,7 +68,7 @@ let the recipient understand and accept that invitation safely.
       list; editors and non-members cannot.
 - [x] Invitation tokens are unguessable, stored safely, scoped to one list, and
       expire after the configured period.
-- [ ] A recipient can view an invitation summary, authenticate if needed, and
+- [x] A recipient can view an invitation summary, authenticate if needed, and
       accept a valid invitation while connected.
 - [ ] Expired, revoked, already-used, malformed, and cross-account invitations
       return clear, non-leaking outcomes.

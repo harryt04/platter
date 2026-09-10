@@ -105,3 +105,17 @@ export function updateRecipeSelectionDocument(
     updatedAt: isoDateTime(now),
   }
 }
+
+/** Create an independently editable selection for the same pinned version. */
+export function duplicateRecipeSelectionDocument(
+  selection: RecipeSelectionDocument,
+  now = new Date(),
+): RecipeSelectionDocument {
+  const timestamp = isoDateTime(now)
+  return {
+    ...selection,
+    _id: crypto.randomUUID(),
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }
+}

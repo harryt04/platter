@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DuplicateSelectionButton } from '@/components/lists/duplicate-selection-button'
 
 export function SelectionPeopleForm({
   listId,
@@ -84,13 +85,21 @@ export function SelectionPeopleForm({
         </label>
       </div>
       {editable ? (
-        <Button
-          disabled={pending || desiredPeople < 1}
-          type="submit"
-          variant="outline"
-        >
-          {pending ? 'Updating…' : 'Update people'}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            disabled={pending || desiredPeople < 1}
+            type="submit"
+            variant="outline"
+          >
+            {pending ? 'Updating…' : 'Update people'}
+          </Button>
+          <DuplicateSelectionButton
+            desiredPeople={desiredPeople}
+            listId={listId}
+            recipeTitle={recipeTitle}
+            selectionId={selectionId}
+          />
+        </div>
       ) : (
         <p className="text-muted-foreground text-sm">
           This selection is read-only while the list is archived.

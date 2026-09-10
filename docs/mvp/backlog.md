@@ -320,8 +320,9 @@ versions the active run represents without surprising collaborators.
 
 - [x] Changing desired people recalculates every contribution from only that
       selection.
-- [ ] Adding the same recipe again requires an explicit duplicate action and
-      produces an independently scalable and removable selection.
+- [x] Adding the same recipe again requires an explicit duplicate action and
+      produces a new independently scalable selection identity; selection
+      removal remains a separate follow-up action.
 - [ ] Removing a selection requires confirmation that names its list-wide
       grocery impact and removes only that selection's contributions.
 - [ ] A recipe update leaves existing selections pinned until a member reviews

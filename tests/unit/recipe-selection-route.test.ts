@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { POST as duplicatePOST } from '@/app/api/v1/lists/[listId]/selections/[selectionId]/duplicate/route'
 import { PATCH } from '@/app/api/v1/lists/[listId]/selections/[selectionId]/route'
 import { POST } from '@/app/api/v1/lists/[listId]/selections/route'
 
@@ -44,6 +45,12 @@ function routeContext(listId = 'list-1') {
 }
 
 function updateRouteContext(selectionId = 'selection-1') {
+  return {
+    params: Promise.resolve({ listId: 'list-1', selectionId }),
+  }
+}
+
+function duplicateRouteContext(selectionId = 'selection-1') {
   return {
     params: Promise.resolve({ listId: 'list-1', selectionId }),
   }
@@ -345,6 +352,106 @@ describe('PATCH /api/v1/lists/[listId]/selections/[selectionId]', () => {
         },
       ),
       updateRouteContext(),
+    )
+
+    expect(response.status).toBe(404)
+    expect((await response.json()).code).toBe('SELECTION_NOT_FOUND')
+    expect(database.versions.findOne).not.toHaveBeenCalled()
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+})
+
+describe('POST /api/v1/lists/[listId]/selections/[selectionId]/duplicate', () => {
+  it('creates a separate selection for the same immutable version and people count', async () => {
+    const selection = {
+      _id: 'selection-1',
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 6,
+      scaleFactor: '1.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:00:00.000Z',
+    }
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [selection],
+      },
+    })
+    database.versions.findOne.mockResolvedValue({
+      ...recipe,
+      _id: 'version-4',
+      ingredients: [],
+    })
+    database.runs.findOneAndUpdate.mockImplementation(
+      async (_filter, update) => ({
+        revision: 5,
+        recipeSelections: [selection, update.$push.recipeSelections],
+      }),
+    )
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await duplicatePOST(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1/duplicate',
+        { method: 'POST' },
+      ),
+      duplicateRouteContext(),
+    )
+
+    expect(response.status).toBe(201)
+    const body = await response.json()
+    expect(body).toMatchObject({
+      selection: {
+        recipeId: 'recipe-1',
+        versionId: 'version-4',
+        versionNumber: 4,
+        desiredPeople: 6,
+        scaleFactor: '1.5',
+      },
+      revision: 5,
+      calculatedIngredients: [],
+    })
+    expect(body.selection._id).not.toBe(selection._id)
+    expect(database.runs.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: 'run-1', listId: 'list-1', state: 'active' },
+      expect.objectContaining({
+        $push: {
+          recipeSelections: expect.objectContaining({
+            recipeId: 'recipe-1',
+            versionId: 'version-4',
+            desiredPeople: 6,
+            scaleFactor: '1.5',
+          }),
+        },
+        $inc: { revision: 1 },
+      }),
+      { returnDocument: 'after' },
+    )
+  })
+
+  it('does not duplicate a missing selection', async () => {
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await duplicatePOST(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1/duplicate',
+        { method: 'POST' },
+      ),
+      duplicateRouteContext(),
     )
 
     expect(response.status).toBe(404)

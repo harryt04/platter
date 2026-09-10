@@ -4,6 +4,7 @@ import {
   calculateRecipeScaleFactor,
   createRecipeSelectionDocument,
   createRecipeSelectionSchema,
+  duplicateRecipeSelectionDocument,
   updateRecipeSelectionDocument,
 } from '@/lib/recipes/selections'
 import {
@@ -92,6 +93,36 @@ describe('recipe selections', () => {
       createdAt: '2026-09-10T12:00:00.000Z',
       updatedAt: '2026-09-10T12:05:00.000Z',
     })
+  })
+
+  it('duplicates a selection with a new identity while preserving its pinned version and scale', () => {
+    const selection = createRecipeSelectionDocument(
+      {
+        _id: 'recipe-1',
+        recipeId: 'recipe-1',
+        versionId: 'version-4',
+        versionNumber: 4,
+        typicalPeopleFed: 4,
+      },
+      6,
+      new Date('2026-09-10T12:00:00.000Z'),
+    )
+
+    const duplicate = duplicateRecipeSelectionDocument(
+      selection,
+      new Date('2026-09-10T12:05:00.000Z'),
+    )
+
+    expect(duplicate).toMatchObject({
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 6,
+      scaleFactor: '1.5',
+      createdAt: '2026-09-10T12:05:00.000Z',
+      updatedAt: '2026-09-10T12:05:00.000Z',
+    })
+    expect(duplicate._id).not.toBe(selection._id)
   })
 
   it('scales decimal quantities without applying display rounding', () => {

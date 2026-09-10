@@ -618,7 +618,7 @@ giving the importer access to private networks, credentials, or unbounded data.
       explicit technical blocks.
 - [x] Import submission and status reads are authorized and rate-limited, and a
       failed worker cannot impair saved recipes, discovery, or shopping.
-- [ ] Security tests cover DNS rebinding, redirects to blocked targets, oversized
+- [x] Security tests cover DNS rebinding, redirects to blocked targets, oversized
       responses, timeouts, unsupported content types, and retry exhaustion.
 
 ## 27: Review extracted recipe data

@@ -94,4 +94,80 @@ describe('recipe import worker fetch stage', () => {
       },
     )
   })
+
+  it('marks transient failures for retry and rethrows them for Agenda', async () => {
+    const collection = {
+      findOneAndUpdate: vi.fn().mockResolvedValue(document),
+      updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
+    }
+    const db = { collection: vi.fn().mockReturnValue(collection) }
+    const fetcher = vi
+      .fn()
+      .mockRejectedValue(new RecipeImportFetchError('TIMEOUT'))
+
+    await expect(
+      createRecipeImportJobHandler(
+        db as never,
+        fetcher,
+      )({
+        attrs: {
+          data: {
+            importId: document._id,
+            userId: document.userId,
+            idempotencyKey: document.idempotencyKey,
+          },
+        },
+      }),
+    ).rejects.toMatchObject({ code: 'TIMEOUT' })
+
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      { _id: document._id, userId: document.userId, status: 'processing' },
+      {
+        $set: { status: 'retrying', updatedAt: expect.any(String) },
+        $unset: { failureCode: '' },
+      },
+    )
+  })
+
+  it('fails a transient import after the bounded retry budget is exhausted', async () => {
+    const exhaustedDocument = { ...document, attemptCount: 4 }
+    const collection = {
+      findOneAndUpdate: vi.fn().mockResolvedValue(exhaustedDocument),
+      updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
+    }
+    const db = { collection: vi.fn().mockReturnValue(collection) }
+    const fetcher = vi
+      .fn()
+      .mockRejectedValue(new RecipeImportFetchError('UPSTREAM_FAILURE'))
+
+    await expect(
+      createRecipeImportJobHandler(
+        db as never,
+        fetcher,
+      )({
+        attrs: {
+          data: {
+            importId: exhaustedDocument._id,
+            userId: exhaustedDocument.userId,
+            idempotencyKey: exhaustedDocument.idempotencyKey,
+          },
+        },
+      }),
+    ).resolves.toBeUndefined()
+
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      {
+        _id: exhaustedDocument._id,
+        userId: exhaustedDocument.userId,
+        status: 'processing',
+      },
+      {
+        $set: {
+          status: 'failed',
+          failureCode: 'UPSTREAM_FAILURE',
+          updatedAt: expect.any(String),
+        },
+      },
+    )
+  })
 })

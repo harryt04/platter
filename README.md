@@ -149,9 +149,11 @@ HTTP(S) boundary: every hostname is resolved before connecting and again after
 redirects, resolved private or reserved addresses are rejected, requests are
 pinned to the validated address without user credentials, and HTML responses
 are bounded to 2 MiB, five redirects, and ten seconds. Unsupported content,
-unsafe redirects, oversized responses, and timeouts become isolated import
-failures. Fetched content is held only for the later extraction and review
-stage; it is never treated as approved or public by the fetch stage.
+unsafe redirects, and oversized responses become isolated import failures;
+transient DNS, timeout, and upstream failures retry with bounded exponential
+backoff before becoming terminal. Fetched content is held only for the later
+extraction and review stage; it is never treated as approved or public by the
+fetch stage.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

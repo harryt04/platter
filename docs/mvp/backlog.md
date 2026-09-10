@@ -365,7 +365,7 @@ editing the underlying recipes accidentally.
 
 - [x] Low-confidence candidates remain separate and may appear as clearly
       optional merge suggestions.
-- [ ] A user can inspect the identities, dimensions, original lines, and recipe
+- [x] A user can inspect the identities, dimensions, original lines, and recipe
       contributions involved before accepting a merge.
 - [ ] A user can split an incorrect merge and the corrected structure remains
       stable through deterministic regeneration of the current run.

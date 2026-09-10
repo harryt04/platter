@@ -24,6 +24,58 @@ function suggestionSource(item: GroceryItem) {
     : 'a manual grocery item'
 }
 
+function suggestionIdentity(item: GroceryItem) {
+  return item.normalizedIdentity ?? 'Not normalized'
+}
+
+function suggestionContributionSource(
+  contribution: GroceryItem['contributions'][number],
+) {
+  return contribution.source.kind === 'recipe'
+    ? `Recipe contribution · ${contribution.source.recipeTitle}`
+    : 'Manual contribution'
+}
+
+function SuggestionItemDetails({
+  label,
+  item,
+}: {
+  label: string
+  item: GroceryItem
+}) {
+  return (
+    <section aria-labelledby={`${item.id}-suggestion-heading`}>
+      <h4 className="font-medium" id={`${item.id}-suggestion-heading`}>
+        {label}: {item.ingredientName}
+      </h4>
+      <dl className="mt-2 grid gap-x-4 gap-y-1 sm:grid-cols-2">
+        <div>
+          <dt className="text-muted-foreground">Normalized identity</dt>
+          <dd className="font-data">{suggestionIdentity(item)}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Dimension</dt>
+          <dd>{item.dimension}</dd>
+        </div>
+      </dl>
+      <div className="mt-3">
+        <p className="text-muted-foreground">Original lines and sources</p>
+        <ul className="mt-1 space-y-2">
+          {item.contributions.map((contribution) => (
+            <li className="border-l-2 pl-3" key={contribution.id}>
+              <p>{suggestionContributionSource(contribution)}</p>
+              <p className="text-muted-foreground">
+                {contribution.originalText}
+                {contribution.optional ? ' · Optional' : ''}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
 export function GroceryRow({
   item,
   ingredient,
@@ -98,7 +150,6 @@ export function GroceryRow({
       {mergeSuggestions.map((suggestion) => {
         const otherItem =
           suggestion.left.id === item?.id ? suggestion.right : suggestion.left
-        const otherContribution = otherItem.contributions[0]
         return (
           <div
             className="border-warning/40 bg-warning/10 text-warning-foreground rounded-[var(--radius-card)] border p-3 text-sm"
@@ -120,12 +171,20 @@ export function GroceryRow({
               <summary className="min-h-11 cursor-pointer pt-3 font-medium underline-offset-4 hover:underline">
                 Compare possible match
               </summary>
-              <div className="border-warning/40 mt-2 space-y-1 border-t pt-3 text-xs">
-                <p>
-                  {otherItem.dimension} · {otherItem.unit.name || 'no unit'} ·{' '}
-                  {formatQuantity(otherItem)}
+              <div
+                aria-label="Possible merge comparison"
+                className="border-warning/40 mt-2 space-y-4 border-t pt-3 text-xs"
+                role="group"
+              >
+                <p className="text-muted-foreground">
+                  Review the facts below before choosing whether these items
+                  should ever be combined. The recipes are unchanged.
                 </p>
-                {otherContribution && <p>{otherContribution.originalText}</p>}
+                <SuggestionItemDetails label="This item" item={item!} />
+                <SuggestionItemDetails
+                  label="Possible match"
+                  item={otherItem}
+                />
               </div>
             </details>
           </div>

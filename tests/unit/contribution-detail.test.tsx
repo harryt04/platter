@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ContributionDetail } from '@/components/patterns/contribution-detail'
 import { GroceryRow } from '@/components/patterns/grocery-row'
@@ -143,5 +143,23 @@ describe('ContributionDetail', () => {
     ).toBeInTheDocument()
     expect(screen.getByText(/stays separate/)).toBeInTheDocument()
     expect(screen.getByText('Compare possible match')).toBeInTheDocument()
+    const comparison = screen.getByLabelText('Possible merge comparison')
+    expect(comparison).toBeInTheDocument()
+    expect(
+      within(comparison).getByText('This item: onions'),
+    ).toBeInTheDocument()
+    expect(
+      within(comparison).getByText('Possible match: onion'),
+    ).toBeInTheDocument()
+    expect(within(comparison).getAllByText('onions')).toHaveLength(2)
+    expect(within(comparison).getAllByText('count')).toHaveLength(2)
+    expect(
+      within(comparison).getByText('Recipe contribution · Tacos'),
+    ).toBeInTheDocument()
+    expect(
+      within(comparison).getByText('Recipe contribution · Curry'),
+    ).toBeInTheDocument()
+    expect(within(comparison).getByText('some onions')).toBeInTheDocument()
+    expect(within(comparison).getByText('1 onion')).toBeInTheDocument()
   })
 })

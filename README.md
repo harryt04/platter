@@ -180,7 +180,9 @@ related source update without replacing the existing recipe. Import saves now
 claim the source import and create its public recipe plus immutable version in
 one transaction; a unique public fingerprint index and duplicate-key recovery
 keep concurrent or retried saves from creating duplicate identities or
-versions.
+versions. Mongo-backed integration coverage now verifies this workflow's
+deduplication, source-version coexistence, discovery visibility, private
+boundaries, and complete provenance.
 List members can change the desired people for an active recipe selection from
 the list page; the server recalculates its precise scale from the pinned
 immutable version and advances the active-run revision without touching other

@@ -666,7 +666,7 @@ recipe data
       the importer's library, but never changes an active run automatically.
 - [x] Concurrent or retried saves are idempotent and cannot create duplicate
       public identities or versions.
-- [ ] Integration tests cover deduplication, version coexistence, public search,
+- [x] Integration tests cover deduplication, version coexistence, public search,
       private boundaries, and complete provenance.
 
 ## 29: Add replaceable importer adapters

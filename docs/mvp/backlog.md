@@ -1094,7 +1094,7 @@ privacy-safe product analytics; 37: Harden product security and abuse controls;
 38: Validate performance and reliability targets; 39: Complete accessibility
 and responsive QA
 
-**Status:** ready-for-agent
+**Status:** in progress
 
 - [ ] Browser tests demonstrate the full mobile and desktop journey: register,
       create independently shared lists, find/import/author recipes, select and
@@ -1102,8 +1102,9 @@ and responsive QA
       online, complete a run, and use minimal history.
 - [ ] Multi-client acceptance tests cover same- and different-item edits,
       disconnect and reconnect, membership removal, and completion elsewhere.
-- [ ] Every acceptance criterion in the PRD has a traceable automated test or a
-      documented, repeatable manual verification with captured evidence.
+- [x] Every acceptance criterion in the PRD has a traceable automated test or a
+      documented, repeatable manual verification with captured evidence in
+      [the acceptance traceability matrix](acceptance-traceability.md).
 - [ ] The application remains installable and the entire core workflow works
       with self-hosted MongoDB and no paid recipe, search, analytics, or other
       proprietary API.

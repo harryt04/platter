@@ -539,6 +539,7 @@ documented E2E test account environment variables are configured.
 - [Product requirements](docs/mvp/prd.md) — product rules, data model, permissions, edge cases, and acceptance checks.
 - [Architecture reference](docs/mvp/architecture.md) — current data model, import contract, grocery calculations, synchronization, privacy boundaries, indexes, migrations, and deployment assumptions.
 - [Repository hygiene](docs/mvp/repository-hygiene.md) — tracked-content, asset, fixture-rights, and operator-policy safeguards.
+- [Acceptance traceability](docs/mvp/acceptance-traceability.md) — repeatable evidence mapped to every PRD acceptance criterion.
 - [Scaffolding setup instructions](docs/mvp/scaffolding-setup-instructions.md) — foundation architecture, setup phases, placeholder routes, verification, and parallel-agent ownership.
 - [Design system](docs/DESIGN.md) — visual style, colors, app layout, screen sizes, accessibility, and motion.
 - [UI implementation guide](docs/mvp/ui-implementation-guide.md) — UI work steps, component rules, and states.

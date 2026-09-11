@@ -886,6 +886,9 @@ complaints; 35: Delete an account safely
         problem response without exposing database or stack-trace details.
   - [x] Administrator public-content search responses validate a strict,
         metadata-only schema before any database fields cross the API boundary.
+  - [x] Authenticated import status list and detail reads validate normalized
+        persisted summaries and return a retryable problem when storage or
+        persisted status data is unavailable.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

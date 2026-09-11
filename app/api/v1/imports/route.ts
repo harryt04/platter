@@ -8,6 +8,7 @@ import {
   recipeImportIdempotencyKeySchema,
   recipeImports,
   submitRecipeImportSchema,
+  recipeImportSummarySchema,
   toRecipeImportSummary,
   type RecipeImportDocument,
 } from '@/lib/recipe-imports'
@@ -69,6 +70,16 @@ function idempotencyConflict() {
   })
 }
 
+function importStatusUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/import-status-unavailable',
+    title: 'Import status is temporarily unavailable',
+    status: 503,
+    detail: 'Import status could not be loaded. Try again shortly.',
+    code: 'IMPORT_STATUS_UNAVAILABLE',
+  })
+}
+
 function isDuplicateKeyError(error: unknown) {
   return (
     error !== null &&
@@ -94,18 +105,23 @@ export async function GET() {
     })
   }
 
-  const db = await getConnectedDatabase()
-  const imports = await recipeImports(
-    db.collection<RecipeImportDocument>('recipe_imports'),
-  )
-    .find({ userId: session.user.id })
-    .sort({ submittedAt: -1, _id: -1 })
-    .limit(50)
-    .toArray()
+  try {
+    const db = await getConnectedDatabase()
+    const imports = await recipeImports(
+      db.collection<RecipeImportDocument>('recipe_imports'),
+    )
+      .find({ userId: session.user.id })
+      .sort({ submittedAt: -1, _id: -1 })
+      .limit(50)
+      .toArray()
 
-  return Response.json({
-    imports: imports.map(toRecipeImportSummary),
-  })
+    const summaries = imports.map((document) =>
+      recipeImportSummarySchema.parse(toRecipeImportSummary(document)),
+    )
+    return Response.json({ imports: summaries })
+  } catch {
+    return importStatusUnavailable()
+  }
 }
 
 export async function POST(request: Request) {

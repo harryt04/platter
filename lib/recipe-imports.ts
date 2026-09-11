@@ -3,9 +3,14 @@ import { z } from 'zod'
 import {
   entityId,
   isoDateTime,
+  opaqueIdSchema,
   type EntityId,
   type IsoDateTime,
 } from '@/lib/contracts/ids'
+import {
+  recipeIngredientSchema,
+  recipeInstructionSchema,
+} from '@/lib/recipes/drafts'
 import type { RecipeImportCandidate } from '@/lib/recipe-import-schema-org'
 
 export const recipeImportAcquisitionMethodSchema = z.enum(['server-fetch'])
@@ -115,6 +120,42 @@ export type RecipeImportSummary = {
   preview?: RecipeImportCandidate
   savedRecipeId?: EntityId
 }
+
+const importedTextSchema = z.string().max(2000)
+
+/** Validate normalized importer output before it crosses an API boundary. */
+export const recipeImportCandidateSchema = z.strictObject({
+  title: z.string().max(200).optional(),
+  typicalPeopleFed: z.number().int().positive().max(1000).optional(),
+  ingredients: z.array(recipeIngredientSchema).max(100),
+  instructions: z.array(recipeInstructionSchema).max(100),
+  prepTimeMinutes: z.number().int().nonnegative().max(10080).optional(),
+  cookingTimeMinutes: z.number().int().nonnegative().max(10080).optional(),
+  totalTimeMinutes: z.number().int().nonnegative().max(10080).optional(),
+  cuisine: importedTextSchema.optional(),
+  mealType: importedTextSchema.optional(),
+  tags: z.array(z.string().max(50)).max(20).optional(),
+  dietaryLabels: z.array(z.string().max(50)).max(20).optional(),
+  sourceName: importedTextSchema.optional(),
+  sourceUrl: recipeImportUrlSchema,
+  sourceAuthor: importedTextSchema.optional(),
+  attribution: z.string().max(1000).optional(),
+  warnings: z.array(importedTextSchema).max(50),
+})
+
+export const recipeImportSummarySchema = z.strictObject({
+  id: opaqueIdSchema,
+  sourceUrl: recipeImportUrlSchema,
+  status: recipeImportStatusSchema,
+  attemptCount: z.number().int().nonnegative(),
+  submittedAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  sourceAvailability: recipeImportSourceAvailabilitySchema.optional(),
+  sourceCheckedAt: z.string().datetime().optional(),
+  failureCode: z.string().max(200).optional(),
+  preview: recipeImportCandidateSchema.optional(),
+  savedRecipeId: opaqueIdSchema.optional(),
+})
 
 export function recipeImports(collection: Collection<RecipeImportDocument>) {
   return collection

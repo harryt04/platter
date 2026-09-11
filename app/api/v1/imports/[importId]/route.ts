@@ -4,6 +4,7 @@ import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import {
   recipeImportIdSchema,
   recipeImportOwnerFilter,
+  recipeImportSummarySchema,
   toRecipeImportSummary,
   type RecipeImportDocument,
 } from '@/lib/recipe-imports'
@@ -32,6 +33,16 @@ function notFound() {
   })
 }
 
+function importStatusUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/import-status-unavailable',
+    title: 'Import status is temporarily unavailable',
+    status: 503,
+    detail: 'Import status could not be loaded. Try again shortly.',
+    code: 'IMPORT_STATUS_UNAVAILABLE',
+  })
+}
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ importId: string }> },
@@ -54,11 +65,18 @@ export async function GET(
   const { importId } = await context.params
   if (!recipeImportIdSchema.safeParse(importId).success) return notFound()
 
-  const db = await getConnectedDatabase()
-  const document = await db
-    .collection<RecipeImportDocument>('recipe_imports')
-    .findOne(recipeImportOwnerFilter(importId, session.user.id))
-  if (!document) return notFound()
+  try {
+    const db = await getConnectedDatabase()
+    const document = await db
+      .collection<RecipeImportDocument>('recipe_imports')
+      .findOne(recipeImportOwnerFilter(importId, session.user.id))
+    if (!document) return notFound()
 
-  return Response.json({ import: toRecipeImportSummary(document) })
+    const summary = recipeImportSummarySchema.parse(
+      toRecipeImportSummary(document),
+    )
+    return Response.json({ import: summary })
+  } catch {
+    return importStatusUnavailable()
+  }
 }

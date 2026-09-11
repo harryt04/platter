@@ -256,6 +256,23 @@ describe('/api/v1/imports', () => {
     expect(collection.find).toHaveBeenCalledWith({ userId: 'user-1' })
   })
 
+  it('hides import-list storage failures behind a retryable problem', async () => {
+    getConnectedDatabase.mockRejectedValueOnce(new Error('mongo unavailable'))
+
+    const response = await GET()
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    const body = await response.json()
+    expect(body).toMatchObject({
+      code: 'IMPORT_STATUS_UNAVAILABLE',
+      status: 503,
+    })
+    expect(JSON.stringify(body)).not.toContain('mongo unavailable')
+  })
+
   it('rate-limits import submissions per authenticated user', async () => {
     const collection = setup()
     const responses = await Promise.all(
@@ -350,6 +367,27 @@ describe('GET /api/v1/imports/[importId]', () => {
     )
     expect(malformed.status).toBe(404)
     expect(collection.findOne).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides malformed persisted status data behind a retryable problem', async () => {
+    const malformed = setup({
+      ...importDocument,
+      status: 'unexpected' as never,
+    })
+
+    const response = await getStatus(
+      new Request(
+        'http://localhost/api/v1/imports/b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7',
+      ),
+      { params: Promise.resolve({ importId: importDocument._id }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'IMPORT_STATUS_UNAVAILABLE',
+      status: 503,
+    })
+    expect(malformed.findOne).toHaveBeenCalledOnce()
   })
 
   it('rate-limits detail status reads per authenticated user', async () => {

@@ -55,6 +55,9 @@ provider or credential details.
 Database or search-provider failures on discovery now return a stable retryable
 503 without exposing backend details; saved recipes and shopping remain on
 their independent boundaries.
+Authenticated import status list and detail reads also validate persisted
+summaries before returning them, and hide database or malformed-record failures
+behind the same retryable problem contract.
 MongoDB’s shared index setup covers weighted public discovery, approved public
 canonical-URL deduplication, list membership, one active run per list, and
 history lookup by list and completion date.

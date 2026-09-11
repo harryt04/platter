@@ -18,6 +18,7 @@ cross-device completion explanation.
 
 - `README.md` — project overview and documentation entry point.
 - `docs/mvp/prd.md` — main product rules, data model, planned technology, and acceptance checks.
+- `docs/mvp/architecture.md` — current implementation map for data ownership, import adapters, grocery calculations, synchronization, privacy, indexes, migrations, and deployment.
 - `docs/mvp/scaffolding-setup-instructions.md` — foundation setup, platform contracts, placeholder routes, and parallel-agent ownership.
 - `docs/DESIGN.md` — colors, type, layout, accessibility, screen sizes, and motion.
 - `docs/mvp/ui-implementation-guide.md` — UI work steps and component patterns.

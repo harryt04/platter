@@ -1107,9 +1107,10 @@ and responsive QA
 - [ ] The application remains installable and the entire core workflow works
       with self-hosted MongoDB and no paid recipe, search, analytics, or other
       proprietary API.
-- [ ] Data model, importer adapter contract, grocery calculations,
+- [x] Data model, importer adapter contract, grocery calculations,
       synchronization protocol, privacy boundaries, indexes, migrations, and
-      deployment assumptions are current and linked from contributor docs.
+      deployment assumptions are current and linked from contributor docs in
+      [the architecture reference](architecture.md).
 - [x] Clean-clone setup and every documented non-watch command pass; CI includes
       format, lint, type checks, unit, integration, browser, accessibility,
       security, and production-build checks.

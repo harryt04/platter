@@ -25,6 +25,9 @@ be run in a clean environment with Node 24 and the documented local services.
 
 - [Product requirements](prd.md) defines product behavior, permissions, data
   concepts, edge cases, and final acceptance criteria.
+- [Architecture reference](architecture.md) maps those contracts to the
+  current collections, domain modules, import adapters, synchronization
+  protocol, privacy boundaries, indexes, migrations, and deployment topology.
 - [Design system](../DESIGN.md) defines the visual direction, exact colors,
   typography, spacing, shell, accessibility, and motion.
 - [UI implementation guide](ui-implementation-guide.md) defines component and

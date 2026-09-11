@@ -3,6 +3,7 @@ import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import {
   createComplaintDocument,
   createComplaintSchema,
+  complaintReceiptSchema,
   toComplaintReceipt,
   type ComplaintDocument,
 } from '@/lib/complaints'
@@ -65,6 +66,16 @@ function recipeNotFound() {
   })
 }
 
+function complaintUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/complaint-submission-unavailable',
+    title: 'Report submission temporarily unavailable',
+    status: 503,
+    detail: 'Your report could not be submitted. Try again shortly.',
+    code: 'COMPLAINT_SUBMISSION_UNAVAILABLE',
+  })
+}
+
 export async function POST(request: Request) {
   const limit = checkRateLimit(
     `public-complaint:${clientKey(request)}`,
@@ -92,21 +103,26 @@ export async function POST(request: Request) {
     return validationFailed(fields)
   }
 
-  const db = await getConnectedDatabase()
-  if (parsed.data.recipeId) {
-    const recipe = await db
-      .collection<RecipeDraftDocument>('recipes')
-      .findOne(publicRecipeFilter(parsed.data.recipeId), {
-        projection: { _id: 1 },
-      })
-    if (!recipe) return recipeNotFound()
+  try {
+    const db = await getConnectedDatabase()
+    if (parsed.data.recipeId) {
+      const recipe = await db
+        .collection<RecipeDraftDocument>('recipes')
+        .findOne(publicRecipeFilter(parsed.data.recipeId), {
+          projection: { _id: 1 },
+        })
+      if (!recipe) return recipeNotFound()
+    }
+
+    const document = createComplaintDocument(parsed.data)
+    await db.collection<ComplaintDocument>('complaints').insertOne(document)
+    const receipt = complaintReceiptSchema.safeParse(
+      toComplaintReceipt(document),
+    )
+    if (!receipt.success) return complaintUnavailable()
+
+    return Response.json({ complaint: receipt.data }, { status: 201 })
+  } catch {
+    return complaintUnavailable()
   }
-
-  const document = createComplaintDocument(parsed.data)
-  await db.collection<ComplaintDocument>('complaints').insertOne(document)
-
-  return Response.json(
-    { complaint: toComplaintReceipt(document) },
-    { status: 201 },
-  )
 }

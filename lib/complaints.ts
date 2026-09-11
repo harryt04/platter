@@ -1,6 +1,10 @@
 import { z } from 'zod'
 import type { Db } from 'mongodb'
-import { isoDateTime, type IsoDateTime } from '@/lib/contracts/ids'
+import {
+  isoDateTime,
+  opaqueIdSchema,
+  type IsoDateTime,
+} from '@/lib/contracts/ids'
 import { sanitizePlainText } from '@/lib/contracts/text'
 
 const cleanText = sanitizePlainText
@@ -54,6 +58,13 @@ export const complaintStatusSchema = z.enum([
 ])
 
 export const complaintIdSchema = z.string().uuid('Enter a valid complaint id.')
+
+/** Public callers receive only this minimal, non-sensitive receipt. */
+export const complaintReceiptSchema = z.strictObject({
+  id: opaqueIdSchema,
+  status: complaintStatusSchema,
+  receivedAt: z.string().datetime(),
+})
 
 export const updateComplaintStatusSchema = z.object({
   status: complaintStatusSchema,

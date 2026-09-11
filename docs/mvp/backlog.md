@@ -917,6 +917,9 @@ complaints; 35: Delete an account safely
         envelopes, pass search text through the shared library contract, and
         hide storage or malformed-record failures behind stable retryable
         problems.
+  - [x] Public complaint submission validates its minimal receipt and hides
+        database lookup or persistence failures behind a stable retryable
+        problem without exposing report details.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

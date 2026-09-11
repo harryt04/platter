@@ -123,6 +123,64 @@ describe('POST /api/v1/complaints', () => {
     expect(collection.insertOne).not.toHaveBeenCalled()
   })
 
+  it('hides database failures behind a retryable problem response', async () => {
+    const collection = setup()
+    collection.findOne.mockRejectedValueOnce(new Error('database unavailable'))
+
+    const response = await POST(
+      request({
+        type: 'other',
+        recipeId: 'public-recipe-1',
+        description: 'Please review this recipe.',
+      }),
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    const body = await response.json()
+    expect(body).toMatchObject({
+      code: 'COMPLAINT_SUBMISSION_UNAVAILABLE',
+      status: 503,
+    })
+    expect(JSON.stringify(body)).not.toContain('database unavailable')
+
+    getConnectedDatabase.mockRejectedValueOnce(new Error('mongo unavailable'))
+    const unavailable = await POST(
+      request(
+        {
+          type: 'other',
+          sourceUrl: 'https://example.com/recipe',
+          description: 'Please review this source.',
+        },
+        '198.51.100.11',
+      ),
+    )
+    expect(unavailable.status).toBe(503)
+    expect(JSON.stringify(await unavailable.json())).not.toContain(
+      'mongo unavailable',
+    )
+  })
+
+  it('hides complaint persistence failures without exposing the receipt', async () => {
+    const collection = setup()
+    collection.insertOne.mockRejectedValueOnce(new Error('write unavailable'))
+
+    const response = await POST(
+      request({
+        type: 'source-removal',
+        sourceUrl: 'https://example.com/recipe',
+        description: 'Please review this source.',
+      }),
+    )
+
+    expect(response.status).toBe(503)
+    const body = await response.json()
+    expect(body.complaint).toBeUndefined()
+    expect(JSON.stringify(body)).not.toContain('write unavailable')
+  })
+
   it('rate-limits public submissions by client address', async () => {
     const collection = setup()
     const responses = await Promise.all(

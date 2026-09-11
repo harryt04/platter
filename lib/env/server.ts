@@ -31,6 +31,7 @@ const serverSchema = z.object({
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
   SMTP_FROM: z.string().default('noreply@example.test'),
   INVITATION_TTL_HOURS: z.coerce.number().int().min(1).max(720).default(168),
+  ADMIN_PRIVATE_CONTENT_ACCESS_ENABLED: environmentBoolean(false),
   RECIPE_IMPORTS_ENABLED: environmentBoolean(true),
   RECIPE_IMPORT_DISABLED_ADAPTERS: z.string().default(''),
   PUBLIC_CATALOG_POLICIES_PUBLISHED: environmentBoolean(false),

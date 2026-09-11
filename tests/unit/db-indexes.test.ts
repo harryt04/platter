@@ -53,5 +53,7 @@ describe('shared database indexes', () => {
       localDate: -1,
       completedAt: -1,
     })
+    expect(createIndex).toHaveBeenCalledWith({ occurredAt: -1 })
+    expect(createIndex).toHaveBeenCalledWith({ actorId: 1, occurredAt: -1 })
   })
 })

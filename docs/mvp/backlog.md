@@ -912,8 +912,11 @@ complaints; 35: Delete an account safely
         import extraction uses the same sanitizer.
   - [x] Imported preview descriptions use the authored recipe sanitizer before
         persistence, and public rendering remains gated on approved imports.
-- [ ] Administrative access to private user content is exceptional, policy-bound,
-      and auditable rather than implied by the administrator role.
+- [x] Administrative access to private user content is exceptional, policy-bound,
+      and auditable rather than implied by the administrator role. It is
+      disabled by default; an explicitly enabled policy requires an approved
+      purpose and operator case reference, limits grants to 15 minutes, and
+      stores only metadata plus a target-account fingerprint in the audit log.
 - [x] A security regression suite covers horizontal and vertical authorization,
       enumeration resistance, injection, unsafe return URLs, and sensitive-data
       disclosure.

@@ -24,6 +24,15 @@ Optional integrations and hosted policy publication default to disabled when
 unset; invalid boolean values fail startup rather than being silently treated
 as enabled.
 
+Administrator status does not imply access to private lists or recipes. Keep
+`ADMIN_PRIVATE_CONTENT_ACCESS_ENABLED=false` unless the instance has an
+operator-approved support policy. When enabled, the private-content access
+boundary still requires an approved purpose and operator case reference,
+issues a 15-minute grant, and writes a metadata-only audit record whose target
+is represented by a fingerprint rather than a raw account identifier. No
+existing moderation screen uses this boundary to gain shopping or list
+authority.
+
 Better Auth authentication and password-reset endpoints use in-memory
 endpoint-specific rate limits and return a stable problem response with a
 `Retry-After` header when limited. The default memory storage is process-local;

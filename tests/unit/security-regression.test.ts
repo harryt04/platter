@@ -8,6 +8,7 @@ import {
   listOwnerFilter,
 } from '@/lib/lists'
 import { parseAnalyticsEvent } from '@/lib/analytics'
+import { authorizeAdminPrivateContentAccess } from '@/lib/auth/admin-private-content-access'
 import { sanitizePlainText } from '@/lib/contracts/text'
 import {
   isPubliclyRenderableRecipe,
@@ -79,6 +80,24 @@ describe('security regression boundaries', () => {
       false,
     )
     expect(opaqueCursorSchema.safeParse('../secrets').success).toBe(false)
+  })
+
+  it('does not treat the administrator role as private-content permission', () => {
+    expect(
+      authorizeAdminPrivateContentAccess({
+        actorId: 'admin-1',
+        actorRole: 'admin',
+        request: {
+          targetUserId: 'user-private-1',
+          purpose: 'support-case',
+          caseReference: 'SUP-1234',
+        },
+        policy: { enabled: false, maxDurationMinutes: 15 },
+      }),
+    ).toMatchObject({
+      allowed: false,
+      code: 'PRIVATE_CONTENT_ACCESS_DISABLED',
+    })
   })
 
   it('sanitizes authored content and rejects script-like source URLs', () => {

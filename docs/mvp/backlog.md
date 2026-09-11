@@ -923,6 +923,9 @@ complaints; 35: Delete an account safely
   - [x] Owner-only recipe-sharing reads and updates validate their response
         envelopes and hide authentication, storage, or malformed-record
         failures behind a stable retryable problem response.
+  - [x] Owner-only invitation list, create, resend, and revoke operations
+        validate response envelopes and hide storage or malformed-record
+        failures behind a stable retryable problem response.
   - [x] Public complaint submission validates its minimal receipt and hides
         database lookup or persistence failures behind a stable retryable
         problem without exposing report details.

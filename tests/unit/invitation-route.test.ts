@@ -292,9 +292,75 @@ describe('GET /api/v1/lists/[listId]/invitations', () => {
     expect(response.status).toBe(404)
     expect((await response.json()).code).toBe('LIST_NOT_FOUND')
   })
+
+  it('returns a stable retryable problem when invitation storage is unavailable', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/lists/list-1/invitations'),
+      context('list-1'),
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(await response.json()).toEqual({
+      type: 'https://platter.dev/problems/invitations-unavailable',
+      title: 'Invitations are temporarily unavailable',
+      status: 503,
+      detail: 'Invitations could not be loaded. Please try again shortly.',
+      code: 'INVITATIONS_UNAVAILABLE',
+    })
+  })
+
+  it('does not expose malformed persisted invitation metadata', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    const invitationCollection = {
+      find: vi.fn().mockReturnValue({
+        sort: vi.fn().mockReturnValue({
+          toArray: vi
+            .fn()
+            .mockResolvedValue([{ ...invitation, email: 'not-an-email' }]),
+        }),
+      }),
+    }
+    const listCollection = { findOne: vi.fn().mockResolvedValue(list) }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi
+        .fn()
+        .mockReturnValueOnce(listCollection)
+        .mockReturnValue(invitationCollection),
+    })
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/lists/list-1/invitations'),
+      context('list-1'),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('INVITATIONS_UNAVAILABLE')
+  })
 })
 
 describe('invitation management routes', () => {
+  it('returns a stable retryable problem when creating an invitation cannot reach storage', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/invitations', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'guest@example.com' }),
+      }),
+      context('list-1'),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('INVITATIONS_UNAVAILABLE')
+  })
+
   it('resends a pending invitation with a rotated token and fresh expiry', async () => {
     getSession.mockResolvedValue({ user: { id: 'owner-1' } })
     const invitationCollection = {
@@ -407,5 +473,35 @@ describe('invitation management routes', () => {
 
     expect(response.status).toBe(409)
     expect((await response.json()).code).toBe('INVITATION_NOT_PENDING')
+  })
+
+  it('returns a stable retryable problem when resending cannot reach storage', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await RESEND(
+      new Request('http://localhost/api/v1/lists/list-1/invitations/id', {
+        method: 'POST',
+      }),
+      invitationContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('INVITATIONS_UNAVAILABLE')
+  })
+
+  it('returns a stable retryable problem when revoking cannot reach storage', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await DELETE(
+      new Request('http://localhost/api/v1/lists/list-1/invitations/id', {
+        method: 'DELETE',
+      }),
+      invitationContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('INVITATIONS_UNAVAILABLE')
   })
 })

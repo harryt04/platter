@@ -26,6 +26,28 @@ export const invitationTokenSchema = z
   .string()
   .regex(/^[A-Za-z0-9_-]{43}$/, 'Enter a valid invitation token.')
 
+/** Runtime boundary for invitation summaries exposed to list owners. */
+export const invitationSummarySchema = z
+  .object({
+    id: invitationIdSchema,
+    listId: z.string().min(1).max(100),
+    email: z.string().email().max(320),
+    status: z.enum(['pending', 'accepted', 'revoked']),
+    expiresAt: z.string().datetime(),
+    inviteUrl: z.string().url().optional(),
+  })
+  .strict()
+
+/** Runtime boundary for owner invitation collection responses. */
+export const invitationListResponseSchema = z
+  .object({ invitations: z.array(invitationSummarySchema) })
+  .strict()
+
+/** Runtime boundary for a single owner invitation mutation response. */
+export const invitationResponseSchema = z
+  .object({ invitation: invitationSummarySchema })
+  .strict()
+
 export type InvitationStatus = 'pending' | 'accepted' | 'revoked'
 
 export type InvitationDocument = {

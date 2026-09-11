@@ -7,6 +7,7 @@ import { serverEnv } from '@/lib/env/server'
 import {
   hashInvitationToken,
   invitationIdSchema,
+  invitationResponseSchema,
   invitations,
   toInvitationSummary,
   type InvitationDocument,
@@ -58,6 +59,16 @@ function invitationNotPending() {
   })
 }
 
+function invitationsUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/invitations-unavailable',
+    title: 'Invitations are temporarily unavailable',
+    status: 503,
+    detail: 'The invitation could not be updated. Please try again shortly.',
+    code: 'INVITATIONS_UNAVAILABLE',
+  })
+}
+
 async function findPendingInvitation(
   listId: string,
   invitationId: string,
@@ -91,44 +102,54 @@ export async function POST(_request: Request, context: RouteContext) {
     return invitationNotFound()
   }
 
-  const result = await findPendingInvitation(
-    listId,
-    invitationId,
-    session.user.id,
-  )
-  if (result.kind === 'list-not-found') return listNotFound()
-  if (result.kind === 'invitation-not-found') return invitationNotFound()
-  if (result.kind === 'invitation-not-pending') return invitationNotPending()
-
-  const now = new Date()
-  const token = randomBytes(32).toString('base64url')
-  const updated = await result.db
-    .collection<InvitationDocument>('list_invitations')
-    .findOneAndUpdate(
-      { _id: invitationId, listId, status: 'pending' },
-      {
-        $set: {
-          tokenHash: hashInvitationToken(token),
-          expiresAt: isoDateTime(
-            new Date(
-              now.getTime() + serverEnv().INVITATION_TTL_HOURS * 60 * 60 * 1000,
-            ),
-          ),
-          updatedAt: isoDateTime(now),
-        },
-      },
-      { returnDocument: 'after' },
+  try {
+    const result = await findPendingInvitation(
+      listId,
+      invitationId,
+      session.user.id,
     )
-  if (!updated) return invitationNotPending()
+    if (result.kind === 'list-not-found') return listNotFound()
+    if (result.kind === 'invitation-not-found') return invitationNotFound()
+    if (result.kind === 'invitation-not-pending') return invitationNotPending()
 
-  const inviteUrl = new URL(
-    `/invitations/${token}`,
-    serverEnv().APP_URL,
-  ).toString()
-  await sendInvitationEmail(updated.email, inviteUrl, result.list.name).catch(
-    () => false,
-  )
-  return Response.json({ invitation: toInvitationSummary(updated, inviteUrl) })
+    const now = new Date()
+    const token = randomBytes(32).toString('base64url')
+    const updated = await result.db
+      .collection<InvitationDocument>('list_invitations')
+      .findOneAndUpdate(
+        { _id: invitationId, listId, status: 'pending' },
+        {
+          $set: {
+            tokenHash: hashInvitationToken(token),
+            expiresAt: isoDateTime(
+              new Date(
+                now.getTime() +
+                  serverEnv().INVITATION_TTL_HOURS * 60 * 60 * 1000,
+              ),
+            ),
+            updatedAt: isoDateTime(now),
+          },
+        },
+        { returnDocument: 'after' },
+      )
+    if (!updated) return invitationNotPending()
+
+    const inviteUrl = new URL(
+      `/invitations/${token}`,
+      serverEnv().APP_URL,
+    ).toString()
+    await sendInvitationEmail(updated.email, inviteUrl, result.list.name).catch(
+      () => false,
+    )
+    const response = invitationResponseSchema.safeParse({
+      invitation: toInvitationSummary(updated, inviteUrl),
+    })
+    if (!response.success) return invitationsUnavailable()
+
+    return Response.json(response.data)
+  } catch {
+    return invitationsUnavailable()
+  }
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
@@ -143,23 +164,32 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return invitationNotFound()
   }
 
-  const result = await findPendingInvitation(
-    listId,
-    invitationId,
-    session.user.id,
-  )
-  if (result.kind === 'list-not-found') return listNotFound()
-  if (result.kind === 'invitation-not-found') return invitationNotFound()
-  if (result.kind === 'invitation-not-pending') return invitationNotPending()
-
-  const revoked = await result.db
-    .collection<InvitationDocument>('list_invitations')
-    .findOneAndUpdate(
-      { _id: invitationId, listId, status: 'pending' },
-      { $set: { status: 'revoked', updatedAt: isoDateTime(new Date()) } },
-      { returnDocument: 'after' },
+  try {
+    const result = await findPendingInvitation(
+      listId,
+      invitationId,
+      session.user.id,
     )
-  if (!revoked) return invitationNotPending()
+    if (result.kind === 'list-not-found') return listNotFound()
+    if (result.kind === 'invitation-not-found') return invitationNotFound()
+    if (result.kind === 'invitation-not-pending') return invitationNotPending()
 
-  return Response.json({ invitation: toInvitationSummary(revoked) })
+    const revoked = await result.db
+      .collection<InvitationDocument>('list_invitations')
+      .findOneAndUpdate(
+        { _id: invitationId, listId, status: 'pending' },
+        { $set: { status: 'revoked', updatedAt: isoDateTime(new Date()) } },
+        { returnDocument: 'after' },
+      )
+    if (!revoked) return invitationNotPending()
+
+    const response = invitationResponseSchema.safeParse({
+      invitation: toInvitationSummary(revoked),
+    })
+    if (!response.success) return invitationsUnavailable()
+
+    return Response.json(response.data)
+  } catch {
+    return invitationsUnavailable()
+  }
 }

@@ -88,6 +88,9 @@ behind that same stable retryable problem contract.
 Owner-only recipe-sharing reads and updates now validate their response
 envelopes and hide authentication, storage, or malformed-record failures behind
 the same stable retryable problem contract.
+Owner-only invitation list, create, resend, and revoke operations validate
+their response envelopes and hide storage or malformed-record failures behind
+the same stable retryable problem contract.
 Shopping history reads validate their minimal persisted envelopes and hide
 authentication, storage, or malformed-record failures behind the same stable
 retryable problem contract.

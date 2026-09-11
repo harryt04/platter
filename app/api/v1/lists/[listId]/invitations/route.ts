@@ -7,6 +7,8 @@ import { checkRateLimit } from '@/lib/security/rate-limit'
 import {
   createInvitationDocument,
   createInvitationSchema,
+  invitationListResponseSchema,
+  invitationResponseSchema,
   invitations,
   toInvitationSummary,
   type InvitationDocument,
@@ -33,22 +35,29 @@ export async function GET(_request: Request, context: RouteContext) {
   const { listId } = await context.params
   if (!listIdSchema.safeParse(listId).success) return listNotFound()
 
-  const db = await getConnectedDatabase()
-  const list = await db
-    .collection<ListDocument>('lists')
-    .findOne(listOwnerFilter(listId, session.user.id))
-  if (!list) return listNotFound()
+  try {
+    const db = await getConnectedDatabase()
+    const list = await db
+      .collection<ListDocument>('lists')
+      .findOne(listOwnerFilter(listId, session.user.id))
+    if (!list) return listNotFound()
 
-  const documents = await invitations(
-    db.collection<InvitationDocument>('list_invitations'),
-  )
-    .find({ listId })
-    .sort({ createdAt: -1 })
-    .toArray()
+    const documents = await invitations(
+      db.collection<InvitationDocument>('list_invitations'),
+    )
+      .find({ listId })
+      .sort({ createdAt: -1 })
+      .toArray()
 
-  return Response.json({
-    invitations: documents.map((document) => toInvitationSummary(document)),
-  })
+    const response = invitationListResponseSchema.safeParse({
+      invitations: documents.map((document) => toInvitationSummary(document)),
+    })
+    if (!response.success) return invitationsUnavailable()
+
+    return Response.json(response.data)
+  } catch {
+    return invitationsUnavailable()
+  }
 }
 
 function listNotFound() {
@@ -58,6 +67,16 @@ function listNotFound() {
     status: 404,
     detail: 'That list is not available to you.',
     code: 'LIST_NOT_FOUND',
+  })
+}
+
+function invitationsUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/invitations-unavailable',
+    title: 'Invitations are temporarily unavailable',
+    status: 503,
+    detail: 'Invitations could not be loaded. Please try again shortly.',
+    code: 'INVITATIONS_UNAVAILABLE',
   })
 }
 
@@ -90,12 +109,6 @@ export async function POST(request: Request, context: RouteContext) {
   const { listId } = await context.params
   if (!listIdSchema.safeParse(listId).success) return listNotFound()
 
-  const db = await getConnectedDatabase()
-  const list = await db
-    .collection<ListDocument>('lists')
-    .findOne(listOwnerFilter(listId, session.user.id))
-  if (!list) return listNotFound()
-
   let body: unknown
   try {
     body = await request.json()
@@ -123,30 +136,42 @@ export async function POST(request: Request, context: RouteContext) {
     return invitationRateLimited(rateLimit.retryAfterSeconds)
   }
 
-  const env = serverEnv()
-  const { document, token } = createInvitationDocument(
-    listId,
-    session.user.id,
-    parsed.data.email,
-    new Date(),
-    env.INVITATION_TTL_HOURS,
-  )
-  await invitations(
-    db.collection<InvitationDocument>('list_invitations'),
-  ).insertOne(document)
-  await notifyExistingUserByEmail(db, document.email, {
-    event: 'invitation',
-    listId: list._id,
-    listName: list.name,
-    invitationId: document._id,
-  }).catch(() => false)
+  try {
+    const db = await getConnectedDatabase()
+    const list = await db
+      .collection<ListDocument>('lists')
+      .findOne(listOwnerFilter(listId, session.user.id))
+    if (!list) return listNotFound()
 
-  const inviteUrl = new URL(`/invitations/${token}`, env.APP_URL).toString()
-  await sendInvitationEmail(document.email, inviteUrl, list.name).catch(
-    () => false,
-  )
-  return Response.json(
-    { invitation: toInvitationSummary(document, inviteUrl) },
-    { status: 201 },
-  )
+    const env = serverEnv()
+    const { document, token } = createInvitationDocument(
+      listId,
+      session.user.id,
+      parsed.data.email,
+      new Date(),
+      env.INVITATION_TTL_HOURS,
+    )
+    await invitations(
+      db.collection<InvitationDocument>('list_invitations'),
+    ).insertOne(document)
+    await notifyExistingUserByEmail(db, document.email, {
+      event: 'invitation',
+      listId: list._id,
+      listName: list.name,
+      invitationId: document._id,
+    }).catch(() => false)
+
+    const inviteUrl = new URL(`/invitations/${token}`, env.APP_URL).toString()
+    await sendInvitationEmail(document.email, inviteUrl, list.name).catch(
+      () => false,
+    )
+    const response = invitationResponseSchema.safeParse({
+      invitation: toInvitationSummary(document, inviteUrl),
+    })
+    if (!response.success) return invitationsUnavailable()
+
+    return Response.json(response.data, { status: 201 })
+  } catch {
+    return invitationsUnavailable()
+  }
 }

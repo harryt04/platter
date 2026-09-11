@@ -1,5 +1,7 @@
 import type { Db } from 'mongodb'
+import { z } from 'zod'
 import { entityId, isoDateTime, type IsoDateTime } from '@/lib/contracts/ids'
+import { opaqueIdSchema } from '@/lib/contracts/ids'
 import { listMembershipFilter, type ListDocument } from '@/lib/lists'
 import type { RecipeDraft, RecipeDraftDocument } from '@/lib/recipes/drafts'
 import { toRecipeDraftForViewer } from '@/lib/recipes/drafts'
@@ -8,6 +10,87 @@ import type { RecipeSaveDocument } from '@/lib/recipes/saves'
 import type { ShoppingRunHistoryDocument } from '@/lib/shopping-run-history'
 
 export const accountExportTtlHours = 24
+
+const accountExportTimestampSchema = z.string().datetime()
+const accountExportDataObjectSchema = z.record(z.string(), z.unknown())
+
+/** Runtime boundary for the owner-scoped export document read from MongoDB. */
+export const accountExportDocumentSchema = z
+  .object({
+    _id: z.string().uuid(),
+    userId: opaqueIdSchema,
+    status: z.literal('ready'),
+    payload: z
+      .object({
+        format: z.literal('platter-account-export'),
+        version: z.literal(1),
+        generatedAt: accountExportTimestampSchema,
+        account: z
+          .object({
+            id: opaqueIdSchema,
+            name: z.string().max(2000),
+            email: z.string().email(),
+            locale: z.string().min(1).max(100),
+            createdAt: accountExportTimestampSchema.optional(),
+          })
+          .strict(),
+        memberships: z
+          .array(
+            z
+              .object({
+                listId: opaqueIdSchema,
+                listName: z.string().max(2000),
+                listStatus: z.enum(['active', 'archived', 'deleted']),
+                role: z.enum(['owner', 'editor']),
+                joinedListAt: accountExportTimestampSchema.optional(),
+              })
+              .strict(),
+          )
+          .max(1000),
+        recipes: z.array(accountExportDataObjectSchema).max(1000),
+        savedRecipes: z
+          .array(
+            z
+              .object({
+                _id: opaqueIdSchema,
+                recipeId: opaqueIdSchema,
+                createdAt: accountExportTimestampSchema,
+              })
+              .strict(),
+          )
+          .max(10000),
+        imports: z.array(accountExportDataObjectSchema).max(10000),
+        history: z
+          .array(
+            z
+              .object({
+                _id: opaqueIdSchema,
+                listId: opaqueIdSchema,
+                completedAt: accountExportTimestampSchema,
+                localDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+                recipeSelections: z.array(accountExportDataObjectSchema),
+                completedByCurrentUser: z.boolean(),
+              })
+              .strict(),
+          )
+          .max(10000),
+      })
+      .strict(),
+    createdAt: accountExportTimestampSchema,
+    expiresAt: accountExportTimestampSchema,
+  })
+  .strict()
+
+/** Runtime boundary for the short response returned after export creation. */
+export const accountExportSummarySchema = z
+  .object({
+    id: z.string().uuid(),
+    status: z.literal('ready'),
+    createdAt: accountExportTimestampSchema,
+    expiresAt: accountExportTimestampSchema,
+    downloadUrl: z.string().regex(/^\/api\/v1\/account\/exports\/[0-9a-f-]+$/i),
+  })
+  .strict()
 
 export type AccountExportPayload = {
   format: 'platter-account-export'
@@ -92,7 +175,9 @@ function toSummary(document: AccountExportDocument): AccountExportSummary {
 }
 
 export function toAccountExportSummary(document: AccountExportDocument) {
-  return toSummary(document)
+  return accountExportSummarySchema.parse(
+    toSummary(document),
+  ) as AccountExportSummary
 }
 
 /**

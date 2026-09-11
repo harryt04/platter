@@ -880,6 +880,9 @@ complaints; 35: Delete an account safely
       schema at mutation, realtime, repeat, and history-detail boundaries.
 - [ ] All writes and external reads use shared schemas, stable problem responses,
       opaque IDs and cursors, and never expose stack traces or database errors.
+  - [x] Account export creation and owner-scoped download validate persisted
+        export envelopes and hide storage or malformed-record failures behind a
+        stable retryable problem response.
   - [x] Public discovery pagination uses the shared opaque-cursor schema, and
         provider output is runtime-validated before it crosses the API boundary.
   - [x] Administrator public-content search failures return a stable retryable

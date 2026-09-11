@@ -2,6 +2,7 @@ import { getSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import {
   accountExportIsExpired,
+  accountExportDocumentSchema,
   isAccountExportId,
   type AccountExportDocument,
 } from '@/lib/account-exports'
@@ -27,6 +28,16 @@ function notFound() {
   })
 }
 
+function exportUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/account-export-unavailable',
+    title: 'Export temporarily unavailable',
+    status: 503,
+    detail: 'That export could not be loaded. Try again shortly.',
+    code: 'ACCOUNT_EXPORT_UNAVAILABLE',
+  })
+}
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ exportId: string }> },
@@ -36,24 +47,28 @@ export async function GET(
   const { exportId } = await context.params
   if (!isAccountExportId(exportId)) return notFound()
 
-  const db = await getConnectedDatabase()
-  const document = await db
-    .collection<AccountExportDocument>('account_exports')
-    .findOne({ _id: exportId, userId: session.user.id })
-  if (
-    !document ||
-    document.userId !== session.user.id ||
-    accountExportIsExpired(document)
-  )
-    return notFound()
+  try {
+    const db = await getConnectedDatabase()
+    const document = await db
+      .collection<AccountExportDocument>('account_exports')
+      .findOne({ _id: exportId, userId: session.user.id })
+    if (!document || document.userId !== session.user.id) return notFound()
 
-  return new Response(JSON.stringify(document.payload, null, 2), {
-    headers: {
-      'cache-control': 'no-store, private',
-      'content-disposition':
-        'attachment; filename="platter-account-export.json"',
-      'content-type': 'application/json; charset=utf-8',
-      'x-content-type-options': 'nosniff',
-    },
-  })
+    const validated = accountExportDocumentSchema.parse(
+      document,
+    ) as AccountExportDocument
+    if (accountExportIsExpired(validated)) return notFound()
+
+    return new Response(JSON.stringify(validated.payload, null, 2), {
+      headers: {
+        'cache-control': 'no-store, private',
+        'content-disposition':
+          'attachment; filename="platter-account-export.json"',
+        'content-type': 'application/json; charset=utf-8',
+        'x-content-type-options': 'nosniff',
+      },
+    })
+  } catch {
+    return exportUnavailable()
+  }
 }

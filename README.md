@@ -58,6 +58,9 @@ their independent boundaries.
 Authenticated import status list and detail reads also validate persisted
 summaries before returning them, and hide database or malformed-record failures
 behind the same retryable problem contract.
+Account export creation and owner-scoped downloads validate persisted export
+envelopes and hide storage or malformed-record failures behind a stable
+retryable problem response.
 Administrator complaint queue and status updates also hide database and audit
 failures behind stable retryable problem responses without exposing backend
 details. Notification list and read-state routes validate persisted records and

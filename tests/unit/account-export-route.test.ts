@@ -125,4 +125,37 @@ describe('account export routes', () => {
     })
     expect(missing.status).toBe(404)
   })
+
+  it('hides storage failures and malformed export documents behind a retryable problem', async () => {
+    getSession.mockResolvedValue({ user })
+    const findOne = vi.fn().mockResolvedValue({
+      ...document,
+      payload: { ...document.payload, account: { email: 'not-an-email' } },
+    })
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue({ findOne }),
+    })
+
+    const malformed = await download(new Request('http://localhost'), {
+      params: Promise.resolve({ exportId: document._id }),
+    })
+    expect(malformed.status).toBe(503)
+    expect(malformed.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(await malformed.json()).toEqual({
+      type: 'https://platter.dev/problems/account-export-unavailable',
+      title: 'Export temporarily unavailable',
+      status: 503,
+      detail: 'That export could not be loaded. Try again shortly.',
+      code: 'ACCOUNT_EXPORT_UNAVAILABLE',
+    })
+
+    getConnectedDatabase.mockRejectedValue(new Error('database credentials'))
+    const unavailable = await download(new Request('http://localhost'), {
+      params: Promise.resolve({ exportId: document._id }),
+    })
+    expect(unavailable.status).toBe(503)
+    expect(await unavailable.text()).not.toContain('database credentials')
+  })
 })

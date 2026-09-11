@@ -817,9 +817,9 @@ shared lists, private recipes, public imports, and immutable history.
 **Blocked by:** 03: Manage list membership and ownership; 25: Browse history and
 repeat recipes; 28: Save and deduplicate public imports; 34: Manage account data
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] Before confirmation, the user sees a concrete impact summary for owned
+- [x] Before confirmation, the user sees a concrete impact summary for owned
       lists, memberships, manually authored recipes, public imports, and history.
 - [ ] A last owner must transfer ownership or explicitly delete each affected
       list before account deletion can proceed.

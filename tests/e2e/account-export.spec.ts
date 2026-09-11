@@ -19,6 +19,10 @@ test.describe('account export', () => {
     await expect(
       page.getByRole('heading', { name: 'Account data' }),
     ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Before you delete your account' }),
+    ).toBeVisible()
+    await expect(page.getByText('Owned lists')).toBeVisible()
     await page.getByRole('button', { name: 'Prepare account export' }).click()
 
     const downloadLink = page.getByRole('link', {

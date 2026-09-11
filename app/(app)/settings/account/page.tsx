@@ -3,6 +3,7 @@ import { requireSession } from '@/lib/auth/authorization'
 import { defaultProfileLocale, profileLocaleOptions } from '@/lib/account'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
 import { AccountExportPanel } from '@/components/settings/account-export-panel'
+import { AccountDeletionImpactPanel } from '@/components/settings/account-deletion-impact-panel'
 
 export default async function AccountPage() {
   const session = await requireSession('/settings/account')
@@ -23,6 +24,7 @@ export default async function AccountPage() {
         initialName={session.user.name}
       />
       <AccountExportPanel locale={initialLocale} />
+      <AccountDeletionImpactPanel />
     </ContentContainer>
   )
 }

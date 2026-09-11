@@ -920,6 +920,9 @@ complaints; 35: Delete an account safely
   - [x] Public complaint submission validates its minimal receipt and hides
         database lookup or persistence failures behind a stable retryable
         problem without exposing report details.
+  - [x] Owner-only list-member reads validate the member envelope and hide
+        storage or malformed persisted member failures behind a stable
+        retryable problem response.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

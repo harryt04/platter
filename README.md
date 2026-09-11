@@ -70,6 +70,8 @@ Administrator complaint queue and status updates also hide database and audit
 failures behind stable retryable problem responses without exposing backend
 details. Notification list and read-state routes validate persisted records and
 hide storage or malformed-record failures behind stable retryable problems.
+Owner-only list-member reads validate persisted member envelopes and hide
+storage or malformed-record failures behind a stable retryable problem.
 Authenticated list collection reads and creation writes validate their
 client-facing envelopes and hide storage or malformed-record failures behind
 stable retryable problems.

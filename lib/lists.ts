@@ -63,10 +63,15 @@ export const listIdSchema = z
 
 const listRoleSchema = z.enum(['owner', 'editor'])
 const listStatusSchema = z.enum(['active', 'archived', 'deleted'])
-const listMemberSchema = z.strictObject({
+export const listMemberSchema = z.strictObject({
   userId: opaqueIdSchema,
   role: listRoleSchema,
   invitationState: z.literal('active'),
+})
+
+/** Runtime boundary for the owner-only list members response. */
+export const listMembersResponseSchema = z.strictObject({
+  members: z.array(listMemberSchema),
 })
 
 /** Runtime boundary for the list data exposed to clients. */

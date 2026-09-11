@@ -66,6 +66,44 @@ describe('member management routes', () => {
     expect(findListForRole).toHaveBeenCalledWith('list-1', 'owner-1', ['owner'])
   })
 
+  it('hides member storage failures behind a retryable problem', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    findListForRole.mockRejectedValue(new Error('database unavailable'))
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/lists/list-1/members'),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        type: 'https://platter.dev/problems/list-members-unavailable',
+        code: 'LIST_MEMBERS_UNAVAILABLE',
+        status: 503,
+      }),
+    )
+  })
+
+  it('hides malformed persisted members behind the same retryable problem', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    findListForRole.mockResolvedValue({
+      list: { ...list, members: [{ ...list.members[0], role: 'viewer' }] },
+      member: list.members[0],
+    })
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/lists/list-1/members'),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('LIST_MEMBERS_UNAVAILABLE')
+  })
+
   it('requires authentication before looking up a member', async () => {
     getSession.mockResolvedValue(null)
 

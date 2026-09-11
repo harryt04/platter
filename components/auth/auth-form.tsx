@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { authClient } from '@/lib/auth/auth-client'
+import { safeReturnPath } from '@/lib/auth/return-to'
 import { rememberOfflineUser } from '@/lib/offline/database'
 
 type AuthMode = 'sign-in' | 'sign-up' | 'forgot-password' | 'reset-password'
@@ -40,11 +41,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     setError('')
     setMessage('')
     try {
-      const returnTo =
-        params.get('returnTo')?.startsWith('/') &&
-        !params.get('returnTo')?.startsWith('//')
-          ? params.get('returnTo')!
-          : '/lists'
+      const returnTo = safeReturnPath(params.get('returnTo'))
       if (mode === 'sign-in') {
         const result = await authClient.signIn.email({ email, password })
         if (result.error) throw new Error(result.error.message)

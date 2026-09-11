@@ -890,7 +890,7 @@ complaints; 35: Delete an account safely
       rendered, and secrets or private contacts do not enter logs or analytics.
 - [ ] Administrative access to private user content is exceptional, policy-bound,
       and auditable rather than implied by the administrator role.
-- [ ] A security regression suite covers horizontal and vertical authorization,
+- [x] A security regression suite covers horizontal and vertical authorization,
       enumeration resistance, injection, unsafe return URLs, and sensitive-data
       disclosure.
 

@@ -40,7 +40,7 @@ authenticated flows, and never commit them.
 
 ## Development and Verification
 
-The public commands are documented in the README and `package.json`: `npm run dev`, `services:up`, `services:down`, `build`, `format`, `format:check`, `lint`, `typecheck`, `test`, `test:integration`, `test:e2e`, `test:a11y`, the `db:*` scripts, and `check`. Local service-backed commands require Docker Compose and the copied `.env.example`; the worker and database scripts require MongoDB. CI runs formatting, linting, type checks, automated tests, a production build, and browser checks.
+The public commands are documented in the README and `package.json`: `npm run dev`, `services:up`, `services:down`, `build`, `format`, `format:check`, `lint`, `typecheck`, `test`, `test:security`, `test:integration`, `test:e2e`, `test:a11y`, the `db:*` scripts, and `check`. Local service-backed commands require Docker Compose and the copied `.env.example`; the worker and database scripts require MongoDB. `npm run test:security` runs the focused authorization, injection, redirect, enumeration, and sensitive-data regression suite. CI runs formatting, linting, type checks, automated tests, a production build, and browser checks.
 
 ## Coding and Documentation Style
 

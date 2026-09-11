@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { auth } from './auth'
+import { safeReturnPath } from './return-to'
 import type { EntityId } from '@/lib/contracts/ids'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import {
@@ -22,11 +23,9 @@ export async function getSession() {
 export async function requireSession(returnTo?: string): Promise<Session> {
   const session = await getSession()
   if (!session) {
-    const safeReturn =
-      returnTo?.startsWith('/') && !returnTo.startsWith('//')
-        ? returnTo
-        : '/lists'
-    redirect(`/sign-in?returnTo=${encodeURIComponent(safeReturn)}`)
+    redirect(
+      `/sign-in?returnTo=${encodeURIComponent(safeReturnPath(returnTo))}`,
+    )
   }
   return session as Session
 }

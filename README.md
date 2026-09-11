@@ -503,7 +503,7 @@ missing-optional-metadata states.
 | `npm run start:realtime` / `start:worker` | Start bundled auxiliary processes. |
 | `npm run format` / `format:check` | Write or check Prettier formatting. |
 | `npm run lint` / `typecheck` | Run ESLint or TypeScript checks. |
-| `npm run test` / `test:watch` | Run or watch unit/component tests. |
+| `npm run test` / `test:security` / `test:watch` | Run the unit/component suite, security regression suite, or watch tests. |
 | `npm run test:integration` | Run integration tests against a test/CI Mongo database. |
 | `npm run test:e2e` / `test:a11y` | Run production Playwright or tagged accessibility tests. |
 | `npm run db:indexes` / `db:migrate` | Reconcile indexes or apply the migration ledger. |

@@ -22,6 +22,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --project unit --project component",
+    "test:security": "vitest run tests/unit/security-regression.test.ts",
     "test:watch": "vitest",
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",

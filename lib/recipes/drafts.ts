@@ -65,6 +65,14 @@ const optionalSourceUrl = z.preprocess(
       (value) => value.startsWith('https://') || value.startsWith('http://'),
       'Source URL must use HTTP or HTTPS.',
     )
+    .refine((value) => {
+      try {
+        const url = new URL(value)
+        return !url.username && !url.password
+      } catch {
+        return false
+      }
+    }, 'Source URL cannot contain sign-in credentials.')
     .optional()
     .nullable(),
 )

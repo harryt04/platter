@@ -1014,8 +1014,9 @@ run completion across devices; 29: Add replaceable importer adapters
       provider, or worker does not make saved recipes or shopping unavailable.
   - [x] Public discovery converts database or search-provider failures into a
         stable retryable problem response without exposing backend details.
-- [ ] Cached shell interaction and optimistic checklist feedback are tested on a
-      documented mid-range mobile profile, with budgets recorded for regressions.
+- [x] Cached shell interaction and optimistic checklist feedback are tested on a
+      documented mid-range mobile profile, with budgets recorded for regressions
+      in [the offline performance budget](offline-performance-budget.md).
 
 ## 39: Complete accessibility and responsive QA
 

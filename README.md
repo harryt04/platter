@@ -2,6 +2,9 @@
 
 Platter is a mobile-first recipe-to-grocery app you can install on your device. It turns chosen recipes into one shared shopping list, shows where ingredients came from, supports recipe discovery and personal recipes, and works offline.
 
+Offline mobile performance budgets and the repeatable Chromium profile used to
+check them are documented in [the offline performance budget](docs/mvp/offline-performance-budget.md).
+
 ## Project status
 
 The foundation scaffold, private recipe drafts with structured yield,

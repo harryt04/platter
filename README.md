@@ -256,7 +256,9 @@ descriptions, or source URLs. Mongo-backed integration tests cover public
 submission, validation, rate limits, restricted fields, audit transitions, and
 unauthorized access. The administrator public-recipes screen also finds usable public or
 suppressed records by recipe ID, source URL, domain, importer, or content
-fingerprint while returning metadata only. The hosted policy copy also makes clear that operators must publish
+fingerprint while returning metadata only. Its response is runtime-validated
+against a strict metadata schema so persisted private fields cannot cross the
+administrator API boundary. The hosted policy copy also makes clear that operators must publish
 the contacts and jurisdiction-specific removal or repeat-infringer processes
 required for their deployment; Platter does not provide legal advice or select
 those obligations.

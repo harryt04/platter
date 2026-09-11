@@ -169,4 +169,25 @@ describe('GET /api/v1/admin/public-recipes', () => {
       code: 'ADMIN_PUBLIC_RECIPE_SEARCH_UNAVAILABLE',
     })
   })
+
+  it('hides malformed persisted metadata behind the same retryable problem', async () => {
+    const { cursor } = setup()
+    cursor.toArray.mockResolvedValueOnce([
+      { ...recipe, updatedAt: 'database error details' },
+    ])
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/admin/public-recipes'),
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({
+      type: 'https://platter.dev/problems/admin-public-recipe-search-unavailable',
+      title: 'Public-content search temporarily unavailable',
+      status: 503,
+      detail:
+        'The administrator public-content search is temporarily unavailable. Try again shortly.',
+      code: 'ADMIN_PUBLIC_RECIPE_SEARCH_UNAVAILABLE',
+    })
+  })
 })

@@ -884,6 +884,8 @@ complaints; 35: Delete an account safely
         provider output is runtime-validated before it crosses the API boundary.
   - [x] Administrator public-content search failures return a stable retryable
         problem response without exposing database or stack-trace details.
+  - [x] Administrator public-content search responses validate a strict,
+        metadata-only schema before any database fields cross the API boundary.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

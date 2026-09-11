@@ -5,7 +5,12 @@ import type {
   RecipeImportRightsStatus,
   RecipeImportSourceAvailability,
 } from '@/lib/recipe-imports'
-import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
+import {
+  recipeImportReviewStatusSchema,
+  recipeOriginSchema,
+  recipeVisibilitySchema,
+  type RecipeDraftDocument,
+} from '@/lib/recipes/drafts'
 
 export const adminPublicRecipeSearchFieldSchema = z.enum([
   'all',
@@ -51,6 +56,35 @@ export type AdminPublicRecipeSummary = {
   sourceAvailability?: RecipeImportSourceAvailability
   updatedAt: RecipeDraftDocument['updatedAt']
 }
+
+/**
+ * Keep the administrator finder metadata-only even if a persisted document
+ * gains new private fields. This is a response boundary, not just a
+ * TypeScript type, because database documents are untrusted runtime data.
+ */
+export const adminPublicRecipeSummarySchema = z
+  .object({
+    id: z.string().min(1).max(200),
+    title: z.string().min(1).max(2000),
+    status: z.enum(['draft', 'usable']),
+    visibility: recipeVisibilitySchema,
+    origin: recipeOriginSchema.optional(),
+    importReviewStatus: recipeImportReviewStatusSchema.optional(),
+    sourceName: z.string().max(500).optional(),
+    sourceUrl: z.string().max(2048).optional(),
+    sourceAuthor: z.string().max(500).optional(),
+    sourceDomain: z.string().max(253).optional(),
+    importer: z.string().max(100).optional(),
+    contentFingerprint: z.string().max(200).optional(),
+    rightsStatus: z.string().max(50).optional(),
+    sourceAvailability: z.string().max(50).optional(),
+    updatedAt: z.string().datetime(),
+  })
+  .strict()
+
+export const adminPublicRecipeSearchResponseSchema = z
+  .object({ recipes: z.array(adminPublicRecipeSummarySchema) })
+  .strict()
 
 const publicContentFilter: Filter<RecipeDraftDocument> = {
   status: 'usable',
@@ -200,7 +234,10 @@ export async function findAdminPublicRecipes(
     .limit(params.limit)
     .toArray()
 
-  return documents.map((document) =>
+  const recipes = documents.map((document) =>
     toAdminPublicRecipeSummary(document as RecipeDraftDocument),
   )
+
+  adminPublicRecipeSearchResponseSchema.parse({ recipes })
+  return recipes
 }

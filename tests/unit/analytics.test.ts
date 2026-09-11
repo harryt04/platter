@@ -132,6 +132,26 @@ describe('optional analytics integration', () => {
     expect(() => analytics.capture('list_created', {})).not.toThrow()
   })
 
+  it('swallows asynchronously rejected provider captures', async () => {
+    vi.stubGlobal('window', {})
+    const provider = {
+      init: vi.fn(),
+      capture: vi.fn(() => Promise.reject(new Error('network unavailable'))),
+    }
+    const analytics = getClientAnalytics(
+      {
+        enabled: true,
+        key: 'phc_test',
+        host: 'https://analytics.example.test',
+      },
+      provider,
+    )
+
+    expect(() => analytics.capture('list_created', {})).not.toThrow()
+    await Promise.resolve()
+    expect(provider.capture).toHaveBeenCalledOnce()
+  })
+
   it('defines typed, content-free events for the core product funnel', () => {
     expect(
       parseAnalyticsEvent('shopping_run_completed', {

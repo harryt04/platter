@@ -781,7 +781,7 @@ the required policies and contacts.
       configured and published.
 - [x] Optional DMCA-agent and notice/counter-notice information can be configured
       for operators who choose that U.S. safe-harbor process.
-- [ ] Optional integrations clearly disclose licensing, cost, and data-sharing
+- [x] Optional integrations clearly disclose licensing, cost, and data-sharing
       implications and remain no-ops when unconfigured.
 - [ ] Configuration validation and browser tests cover safe defaults, incomplete
       policy gating, and self-hosted operation without paid services.

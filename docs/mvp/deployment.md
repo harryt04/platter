@@ -19,6 +19,14 @@ PostHog settings are present; the adapter never sends recipe or grocery
 content. Google sign-in is reserved for a later release and requires
 human-created OAuth credentials and approved redirect URIs.
 
+The administrator instance settings disclose the licensing, cost, and data
+sharing implications of each optional integration. SMTP sends invitation and
+password-reset recipients and message content to the configured provider;
+PostHog receives only allowlisted, content-free events after complete opt-in;
+and recipe imports fetch submitted URLs from the Platter instance without a
+paid recipe API. Disabled or incomplete optional integrations remain typed
+no-ops, so manual recipes, saved recipes, and shopping do not depend on them.
+
 ## Recipe import adapters
 
 Set `RECIPE_IMPORTS_ENABLED=false` when the instance operator needs to pause

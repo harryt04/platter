@@ -16,6 +16,11 @@ export type InstanceServiceSummary = {
   status: InstanceServiceStatus
   statusLabel: string
   detail: string
+  optionalIntegration?: {
+    licensing: string
+    cost: string
+    dataSharing: string
+  }
 }
 
 export type InstancePolicySummary = {
@@ -94,6 +99,13 @@ function configuredEmailStatus(env: InstancePolicyEnvironment) {
       status: 'disabled' as const,
       statusLabel: 'Disabled',
       detail: 'Invitation and password-reset email delivery is turned off.',
+      optionalIntegration: {
+        licensing:
+          "The configured SMTP provider's terms and license apply; Platter only supplies the mail adapter.",
+        cost: 'Platter does not charge for email delivery. The configured SMTP provider may charge separately.',
+        dataSharing:
+          'When enabled, recipient addresses and invitation or password-reset message content are sent to the configured SMTP host.',
+      },
     }
   }
 
@@ -102,6 +114,13 @@ function configuredEmailStatus(env: InstancePolicyEnvironment) {
       status: 'incomplete' as const,
       statusLabel: 'Incomplete',
       detail: 'SMTP is enabled but its host or sender address is missing.',
+      optionalIntegration: {
+        licensing:
+          "The configured SMTP provider's terms and license apply; Platter only supplies the mail adapter.",
+        cost: 'Platter does not charge for email delivery. The configured SMTP provider may charge separately.',
+        dataSharing:
+          'Email delivery is a no-op until a complete SMTP host and sender address are configured.',
+      },
     }
   }
 
@@ -109,6 +128,13 @@ function configuredEmailStatus(env: InstancePolicyEnvironment) {
     status: 'enabled' as const,
     statusLabel: 'Enabled',
     detail: `Delivery is enabled through ${env.SMTP_HOST}.`,
+    optionalIntegration: {
+      licensing:
+        "The configured SMTP provider's terms and license apply; Platter only supplies the mail adapter.",
+      cost: 'Platter does not charge for email delivery. The configured SMTP provider may charge separately.',
+      dataSharing:
+        'Recipient addresses and invitation or password-reset message content are sent to the configured SMTP host.',
+    },
   }
 }
 
@@ -118,6 +144,13 @@ function configuredAnalyticsStatus(env: InstancePolicyEnvironment) {
       status: 'disabled' as const,
       statusLabel: 'Disabled',
       detail: 'Analytics remains a typed no-op until an operator opts in.',
+      optionalIntegration: {
+        licensing:
+          "PostHog's license and service terms apply only if an operator chooses to configure it.",
+        cost: 'Platter does not require paid analytics. Hosted PostHog plans or self-hosting have their own costs.',
+        dataSharing:
+          'No analytics data is sent while this integration is disabled.',
+      },
     }
   }
 
@@ -126,6 +159,13 @@ function configuredAnalyticsStatus(env: InstancePolicyEnvironment) {
       status: 'incomplete' as const,
       statusLabel: 'Incomplete',
       detail: 'Analytics is opted in but its provider key or host is missing.',
+      optionalIntegration: {
+        licensing:
+          "PostHog's license and service terms apply only if an operator chooses to configure it.",
+        cost: 'Platter does not require paid analytics. Hosted PostHog plans or self-hosting have their own costs.',
+        dataSharing:
+          'Analytics remains a typed no-op until both the provider key and host are configured.',
+      },
     }
   }
 
@@ -133,6 +173,13 @@ function configuredAnalyticsStatus(env: InstancePolicyEnvironment) {
     status: 'enabled' as const,
     statusLabel: 'Enabled',
     detail: 'Only allowlisted, content-free product events are eligible.',
+    optionalIntegration: {
+      licensing:
+        "PostHog's license and service terms apply; the integration is optional.",
+      cost: 'Platter does not require paid analytics. Hosted PostHog plans or self-hosting have their own costs.',
+      dataSharing:
+        'Only allowlisted, content-free product events are sent; recipe, ingredient, grocery, URL, contact, and secret values are excluded.',
+    },
   }
 }
 
@@ -237,6 +284,13 @@ export function getInstancePolicySummary(
           activeImporters.length > 0
             ? `${activeImporters.length} built-in adapter${activeImporters.length === 1 ? '' : 's'} available for reviewable imports.`
             : 'All built-in adapters are disabled; manual recipes continue to work.',
+        optionalIntegration: {
+          licensing:
+            'Built-in adapters are included with Platter; source and site terms still govern fetched content.',
+          cost: 'No paid recipe API is required. The operator remains responsible for ordinary hosting and network costs.',
+          dataSharing:
+            'Submitted URLs are fetched by this instance; no external importer service is required.',
+        },
       },
       {
         id: 'moderation',

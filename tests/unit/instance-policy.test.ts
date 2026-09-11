@@ -37,6 +37,11 @@ describe('instance policy summary', () => {
           id: 'analytics',
           status: 'disabled',
           statusLabel: 'Disabled',
+          optionalIntegration: expect.objectContaining({
+            licensing: expect.stringContaining('PostHog'),
+            cost: expect.stringContaining('paid analytics'),
+            dataSharing: expect.stringContaining('No analytics data'),
+          }),
         }),
         expect.objectContaining({
           id: 'public-catalog',
@@ -75,6 +80,11 @@ describe('instance policy summary', () => {
           id: 'importer',
           status: 'enabled',
           detail: '1 built-in adapter available for reviewable imports.',
+          optionalIntegration: expect.objectContaining({
+            licensing: expect.stringContaining('source and site terms'),
+            cost: expect.stringContaining('No paid recipe API'),
+            dataSharing: expect.stringContaining('fetched by this instance'),
+          }),
         }),
       ]),
     )

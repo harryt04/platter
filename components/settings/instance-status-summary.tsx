@@ -27,6 +27,28 @@ export function InstanceStatusSummary({
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground text-sm">{service.detail}</p>
+            {service.optionalIntegration && (
+              <dl className="mt-4 grid gap-3 border-t pt-4 text-sm">
+                <div>
+                  <dt className="font-medium">Licensing</dt>
+                  <dd className="text-muted-foreground mt-1">
+                    {service.optionalIntegration.licensing}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-medium">Cost</dt>
+                  <dd className="text-muted-foreground mt-1">
+                    {service.optionalIntegration.cost}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-medium">Data sharing</dt>
+                  <dd className="text-muted-foreground mt-1">
+                    {service.optionalIntegration.dataSharing}
+                  </dd>
+                </div>
+              </dl>
+            )}
           </CardContent>
         </Card>
       ))}

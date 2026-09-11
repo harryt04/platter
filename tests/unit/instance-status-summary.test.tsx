@@ -36,6 +36,17 @@ describe('InstanceStatusSummary', () => {
     expect(screen.getByText('Public catalog')).toBeInTheDocument()
     expect(screen.getByText('Optional DMCA process')).toBeInTheDocument()
     expect(screen.getByText('Policy required')).toBeInTheDocument()
+    expect(screen.getAllByText('Licensing')).toHaveLength(3)
+    expect(screen.getAllByText('Cost')).toHaveLength(3)
+    expect(screen.getAllByText('Data sharing')).toHaveLength(3)
+    expect(
+      screen.getByText(
+        /No analytics data is sent while this integration is disabled/i,
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Submitted URLs are fetched by this instance/i),
+    ).toBeInTheDocument()
     expect(
       screen.queryByText(/Secret values are never shown here/i),
     ).not.toBeInTheDocument()

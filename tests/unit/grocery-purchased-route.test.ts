@@ -206,7 +206,12 @@ describe('purchased grocery route', () => {
           target: 'grocery-item:grocery:merged:rice:mass:lb:purchased',
           kind: 'remove' as const,
           status: 200 as const,
-          response: { purchased: false, revision: 4 },
+          response: {
+            purchased: false,
+            revision: 4,
+            detail: 'Unmarked rice as purchased.',
+            code: 'GROCERY_PURCHASED_UNDONE',
+          },
         },
       ],
       revision: 4,
@@ -218,7 +223,12 @@ describe('purchased grocery route', () => {
       context(),
     )
     expect(replay.status).toBe(200)
-    expect(await replay.json()).toEqual({ purchased: false, revision: 4 })
+    expect(await replay.json()).toEqual({
+      purchased: false,
+      revision: 4,
+      detail: 'Unmarked rice as purchased.',
+      code: 'GROCERY_PURCHASED_UNDONE',
+    })
     expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
 
     const undoneDatabase = databaseFor({
@@ -258,5 +268,54 @@ describe('purchased grocery route', () => {
         operationId: 'purchased-undo',
       }),
     )
+  })
+
+  it('returns a stable retryable problem when storage fails', async () => {
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await PATCH(
+      request('PATCH', metadata('purchased-storage-failure')),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(await response.json()).toEqual({
+      type: 'https://platter.dev/problems/purchased-state-unavailable',
+      title: 'Purchased state temporarily unavailable',
+      status: 503,
+      detail:
+        'The purchased state is temporarily unavailable. Try again shortly.',
+      code: 'PURCHASED_STATE_UNAVAILABLE',
+    })
+  })
+
+  it('does not replay malformed persisted mutation responses', async () => {
+    const database = databaseFor({
+      groceryPurchasedMutationReceipts: [
+        {
+          operationId: 'malformed-replay',
+          clientId: 'client-1',
+          target: 'grocery-item:grocery:merged:rice:mass:lb:purchased',
+          kind: 'set' as const,
+          status: 200 as const,
+          response: { purchased: true, revision: 'not-a-number' },
+        },
+      ],
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await PATCH(
+      request('PATCH', metadata('malformed-replay')),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'PURCHASED_STATE_UNAVAILABLE',
+    })
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
   })
 })

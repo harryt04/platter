@@ -4,6 +4,19 @@ import { selectionMutationMetadataSchema } from '@/lib/recipes/selections'
 
 export const groceryPurchasedRequestSchema = selectionMutationMetadataSchema
 
+export const groceryPurchasedMutationResponseSchema = z
+  .object({
+    purchased: z.boolean(),
+    revision: z.number().int().nonnegative(),
+    detail: z.string().min(1).max(500),
+    code: z.enum(['GROCERY_PURCHASED', 'GROCERY_PURCHASED_UNDONE']),
+  })
+  .strict()
+
+export type GroceryPurchasedMutationResponse = z.infer<
+  typeof groceryPurchasedMutationResponseSchema
+>
+
 export type GroceryPurchasedDocument = {
   itemId: string
   markedByUserId: string
@@ -17,7 +30,7 @@ export type GroceryPurchasedMutationReceipt = {
   target: string
   kind: 'set' | 'remove'
   status: 200
-  response: Record<string, unknown>
+  response: GroceryPurchasedMutationResponse
 }
 
 export function createGroceryPurchasedDocument(

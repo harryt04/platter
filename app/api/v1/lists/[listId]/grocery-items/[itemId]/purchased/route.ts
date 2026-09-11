@@ -14,7 +14,9 @@ import { completedRunProblem } from '@/lib/contracts/run-mutation'
 import {
   createGroceryPurchasedDocument,
   groceryPurchasedMutationReceiptFor,
+  groceryPurchasedMutationResponseSchema,
   groceryPurchasedRequestSchema,
+  type GroceryPurchasedMutationResponse,
   type GroceryPurchasedMutationReceipt,
 } from '@/lib/recipes/grocery-purchased'
 
@@ -39,6 +41,22 @@ function validationFailed() {
     'Include valid retry metadata and try again.',
     422,
   )
+}
+
+function purchasedStateUnavailable() {
+  return problem(
+    'PURCHASED_STATE_UNAVAILABLE',
+    'Purchased state temporarily unavailable',
+    'The purchased state is temporarily unavailable. Try again shortly.',
+    503,
+  )
+}
+
+function responseJson(value: unknown) {
+  const parsed = groceryPurchasedMutationResponseSchema.safeParse(value)
+  return parsed.success
+    ? Response.json(parsed.data)
+    : purchasedStateUnavailable()
 }
 
 async function currentGroceryItems(
@@ -155,7 +173,7 @@ async function loadContext(
       kind,
       target,
     )
-    if (receipt) return { response: Response.json(receipt.response) }
+    if (receipt) return { response: responseJson(receipt.response) }
   } catch {
     return {
       response: problem(
@@ -198,7 +216,7 @@ async function loadContext(
   )
   if ((action === 'mark' && isPurchased) || (action === 'undo' && !isPurchased))
     return {
-      response: Response.json({
+      response: responseJson({
         purchased: action === 'mark',
         revision: run.revision,
         detail:
@@ -217,7 +235,7 @@ async function loadContext(
           createGroceryPurchasedDocument(itemId, session.user.id),
         ]
       : purchasedItems.filter((candidate) => candidate.itemId !== itemId)
-  const response = {
+  const response: GroceryPurchasedMutationResponse = {
     purchased: action === 'mark',
     revision: run.revision + 1,
     detail:
@@ -279,7 +297,7 @@ async function loadContext(
       operationId: parsed.data.operationId,
       actorId: session.user.id,
     }).catch(() => undefined)
-    return { response: Response.json(response) }
+    return { response: responseJson(response) }
   }
 
   const retryRun = await runs.findOne({
@@ -294,7 +312,7 @@ async function loadContext(
       kind,
       target,
     )
-    if (receipt) return { response: Response.json(receipt.response) }
+    if (receipt) return { response: responseJson(receipt.response) }
   } catch {
     return {
       response: problem(
@@ -316,11 +334,19 @@ async function loadContext(
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const result = await loadContext(request, context, 'mark')
-  return result.response
+  try {
+    const result = await loadContext(request, context, 'mark')
+    return result.response
+  } catch {
+    return purchasedStateUnavailable()
+  }
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
-  const result = await loadContext(request, context, 'undo')
-  return result.response
+  try {
+    const result = await loadContext(request, context, 'undo')
+    return result.response
+  } catch {
+    return purchasedStateUnavailable()
+  }
 }

@@ -72,6 +72,9 @@ details. Notification list and read-state routes validate persisted records and
 hide storage or malformed-record failures behind stable retryable problems.
 Owner-only list-member reads validate persisted member envelopes and hide
 storage or malformed-record failures behind a stable retryable problem.
+Purchased checklist mutations validate replayed and newly-created response
+envelopes and hide storage or malformed-record failures behind the same stable
+retryable problem contract.
 Authenticated list collection reads and creation writes validate their
 client-facing envelopes and hide storage or malformed-record failures behind
 stable retryable problems.

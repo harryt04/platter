@@ -2,6 +2,8 @@ import { getSession } from '@/lib/auth/authorization'
 import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import {
+  adminComplaintQueueResponseSchema,
+  complaintDocumentSchema,
   recordComplaintAudit,
   toAdminComplaintSummary,
   type ComplaintDocument,
@@ -52,15 +54,29 @@ export async function GET() {
       .limit(100)
       .toArray()
 
+    const validatedDocuments = documents.map((document) =>
+      complaintDocumentSchema.safeParse(document),
+    )
+    if (validatedDocuments.some((result) => !result.success)) {
+      return complaintQueueUnavailable()
+    }
+
+    const parsedDocuments = validatedDocuments.map(
+      (result) => result.data as ComplaintDocument,
+    )
+
+    const response = adminComplaintQueueResponseSchema.safeParse({
+      complaints: parsedDocuments.map(toAdminComplaintSummary),
+    })
+    if (!response.success) return complaintQueueUnavailable()
+
     await recordComplaintAudit(db, {
       action: 'queue-viewed',
       actorId: session.user.id,
-      complaintIds: documents.map((document) => document._id),
+      complaintIds: parsedDocuments.map((document) => document._id),
     })
 
-    return Response.json({
-      complaints: documents.map(toAdminComplaintSummary),
-    })
+    return Response.json(response.data)
   } catch {
     return complaintQueueUnavailable()
   }

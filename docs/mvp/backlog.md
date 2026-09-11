@@ -904,6 +904,9 @@ complaints; 35: Delete an account safely
   - [x] Administrator complaint queue and status-update storage or audit
         failures return stable retryable problems without exposing backend
         details.
+  - [x] Administrator complaint queue and status-update responses validate
+        persisted complaint records and returned summaries, hiding malformed
+        records behind the same stable retryable problem.
   - [x] Notification collection reads and read-state writes validate persisted
         documents and response summaries, returning stable retryable problems
         for storage or malformed-record failures.

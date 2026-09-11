@@ -59,11 +59,67 @@ export const complaintStatusSchema = z.enum([
 
 export const complaintIdSchema = z.string().uuid('Enter a valid complaint id.')
 
+const complaintTimestampSchema = z.string().datetime()
+
+const complaintContactSchema = z
+  .strictObject({
+    name: z.string().min(1).max(200).optional(),
+    email: z.email().max(320).optional(),
+  })
+  .refine(
+    (contact) => contact.name !== undefined || contact.email !== undefined,
+  )
+
+const complaintStatusEventSchema = z.strictObject({
+  status: complaintStatusSchema,
+  changedAt: complaintTimestampSchema,
+  actorType: z.enum(['public-submission', 'administrator']),
+  actorId: opaqueIdSchema.optional(),
+})
+
+/** Runtime boundary for complaint records read from MongoDB. */
+export const complaintDocumentSchema = z.strictObject({
+  _id: complaintIdSchema,
+  recipeId: opaqueIdSchema.optional(),
+  sourceUrl: sourceUrlSchema,
+  type: complaintTypeSchema,
+  status: complaintStatusSchema,
+  description: z.string().min(1).max(4000),
+  contact: complaintContactSchema.optional(),
+  receivedAt: complaintTimestampSchema,
+  createdAt: complaintTimestampSchema,
+  updatedAt: complaintTimestampSchema,
+  statusHistory: z.array(complaintStatusEventSchema).max(100),
+})
+
+const adminComplaintSummarySchema = z.strictObject({
+  id: complaintIdSchema,
+  recipeId: opaqueIdSchema.optional(),
+  sourceUrl: sourceUrlSchema,
+  type: complaintTypeSchema,
+  status: complaintStatusSchema,
+  description: z.string().min(1).max(4000),
+  contact: complaintContactSchema.optional(),
+  receivedAt: complaintTimestampSchema,
+  createdAt: complaintTimestampSchema,
+  updatedAt: complaintTimestampSchema,
+  statusHistory: z.array(complaintStatusEventSchema).max(100),
+})
+
+/** Runtime boundary for administrator complaint responses. */
+export const adminComplaintQueueResponseSchema = z.strictObject({
+  complaints: z.array(adminComplaintSummarySchema).max(100),
+})
+
+export const adminComplaintResponseSchema = z.strictObject({
+  complaint: adminComplaintSummarySchema,
+})
+
 /** Public callers receive only this minimal, non-sensitive receipt. */
 export const complaintReceiptSchema = z.strictObject({
   id: opaqueIdSchema,
   status: complaintStatusSchema,
-  receivedAt: z.string().datetime(),
+  receivedAt: complaintTimestampSchema,
 })
 
 export const updateComplaintStatusSchema = z.object({

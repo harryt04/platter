@@ -3,8 +3,10 @@ import { isoDateTime } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import {
+  adminComplaintResponseSchema,
   canTransitionComplaint,
   complaintIdSchema,
+  complaintDocumentSchema,
   recordComplaintAudit,
   toAdminComplaintSummary,
   updateComplaintStatusSchema,
@@ -109,16 +111,23 @@ export async function PATCH(request: Request, context: RouteContext) {
     const complaints = db.collection<ComplaintDocument>('complaints')
     const current = await complaints.findOne({ _id: complaintId })
     if (!current) return complaintNotFound()
-    if (!canTransitionComplaint(current.status, parsed.data.status)) {
+    const parsedCurrent = complaintDocumentSchema.safeParse(current)
+    if (!parsedCurrent.success) return complaintStorageUnavailable()
+    const currentDocument = parsedCurrent.data as ComplaintDocument
+    if (!canTransitionComplaint(currentDocument.status, parsed.data.status)) {
       return transitionNotAllowed()
     }
-    if (current.status === parsed.data.status) {
-      return Response.json({ complaint: toAdminComplaintSummary(current) })
+    if (currentDocument.status === parsed.data.status) {
+      const response = adminComplaintResponseSchema.safeParse({
+        complaint: toAdminComplaintSummary(currentDocument),
+      })
+      if (!response.success) return complaintStorageUnavailable()
+      return Response.json(response.data)
     }
 
     const changedAt = isoDateTime(new Date())
     const updated = await complaints.findOneAndUpdate(
-      { _id: complaintId, status: current.status },
+      { _id: complaintId, status: currentDocument.status },
       {
         $set: {
           status: parsed.data.status,
@@ -137,15 +146,25 @@ export async function PATCH(request: Request, context: RouteContext) {
     )
     if (!updated) return transitionNotAllowed()
 
+    const parsedUpdated = complaintDocumentSchema.safeParse(updated)
+    if (!parsedUpdated.success) return complaintStorageUnavailable()
+
     await recordComplaintAudit(db, {
       action: 'status-changed',
       actorId: session.user.id,
       complaintIds: [complaintId],
-      fromStatus: current.status,
+      fromStatus: currentDocument.status,
       toStatus: parsed.data.status,
     })
 
-    return Response.json({ complaint: toAdminComplaintSummary(updated) })
+    const response = adminComplaintResponseSchema.safeParse({
+      complaint: toAdminComplaintSummary(
+        parsedUpdated.data as ComplaintDocument,
+      ),
+    })
+    if (!response.success) return complaintStorageUnavailable()
+
+    return Response.json(response.data)
   } catch {
     return complaintStorageUnavailable()
   }

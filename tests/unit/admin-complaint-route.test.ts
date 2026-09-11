@@ -141,6 +141,27 @@ describe('admin complaint routes', () => {
     )
   })
 
+  it('hides malformed persisted complaint records behind a retryable problem', async () => {
+    const { collection } = setup()
+    collection.find.mockReturnValueOnce({
+      sort: vi.fn(() => ({
+        limit: vi.fn(() => ({
+          toArray: vi
+            .fn()
+            .mockResolvedValue([{ ...complaint, status: 'not-a-status' }]),
+        })),
+      })),
+    })
+
+    const queueResponse = await GET()
+
+    expect(queueResponse.status).toBe(503)
+    expect(JSON.stringify(await queueResponse.json())).not.toContain(
+      'not-a-status',
+    )
+    expect(collection.insertOne).not.toHaveBeenCalled()
+  })
+
   it('records an administrator status transition with actor and history', async () => {
     const { collection, updated } = setup()
     const response = await PATCH(request({ status: 'actioned' }), {
@@ -189,6 +210,22 @@ describe('admin complaint routes', () => {
       type: 'https://platter.dev/problems/admin-complaint-storage-unavailable',
       code: 'ADMIN_COMPLAINT_STORAGE_UNAVAILABLE',
     })
+  })
+
+  it('hides malformed persisted complaint updates behind a retryable problem', async () => {
+    const { collection } = setup()
+    collection.findOne.mockResolvedValueOnce({
+      ...complaint,
+      status: 'not-a-status',
+    })
+
+    const response = await PATCH(request({ status: 'actioned' }), {
+      params: Promise.resolve({ complaintId }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(collection.findOneAndUpdate).not.toHaveBeenCalled()
+    expect(JSON.stringify(await response.json())).not.toContain('not-a-status')
   })
 
   it('validates IDs, statuses, and the complaint state machine', async () => {

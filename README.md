@@ -69,7 +69,8 @@ The exceptional private-content access boundary is disabled by default; when a
 self-hosted operator explicitly enables it, each short-lived grant requires an
 approved purpose and case reference and records a metadata-only audit entry
 with a target-account fingerprint.
-Administrator complaint queue and status updates also hide database and audit
+Administrator complaint queue and status updates validate persisted complaint
+records and returned summaries, and hide database, audit, or malformed-record
 failures behind stable retryable problem responses without exposing backend
 details. Notification list and read-state routes validate persisted records and
 hide storage or malformed-record failures behind stable retryable problems.

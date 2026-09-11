@@ -1042,6 +1042,9 @@ recipes; 31: Process public-content complaints; 35: Delete an account safely
 - [ ] Navigation, dialogs, recipe fields, lists, merge correction, reordering,
       theme controls, review, and shopping are fully keyboard operable with
       visible focus and correct focus restoration.
+  - [x] Shared confirmation dialogs move focus into the dialog, keep Tab and
+        Shift+Tab within its controls, and restore focus to the invoking control
+        when dismissed.
 - [ ] Automated checks report no serious or critical issues, and documented
       keyboard and screen-reader reviews cover the shopping journey.
 - [ ] Remote changes, optimistic state, offline queues, reconciliation, and

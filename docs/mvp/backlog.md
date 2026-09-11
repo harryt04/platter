@@ -1061,6 +1061,9 @@ recipes; 31: Process public-content complaints; 35: Delete an account safely
   - [x] Mobile navigation exposes its expanded state, moves focus into the open
         menu, traps Tab navigation, closes on Escape or route selection, and
         restores focus to the trigger when dismissed.
+  - [x] Current-run grocery item and category reorder controls provide an
+        equivalent keyboard path and restore focus to the moved item after a
+        successful move.
 - [x] Automated checks report no serious or critical issues, and documented
       keyboard and screen-reader reviews cover the shopping journey. See
       [the shopping accessibility review](accessibility-review.md).

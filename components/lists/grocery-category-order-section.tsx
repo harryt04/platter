@@ -27,14 +27,29 @@ export function GroceryCategoryOrderSection({
   editable?: boolean
 }>) {
   const router = useRouter()
+  const upButtonRef = React.useRef<HTMLButtonElement>(null)
+  const downButtonRef = React.useRef<HTMLButtonElement>(null)
   const [pending, setPending] = React.useState(false)
   const [message, setMessage] = React.useState<string | null>(null)
+  const [focusTarget, setFocusTarget] = React.useState<'up' | 'down' | null>(
+    null,
+  )
   const position = categories.indexOf(category)
   const previousCategory = position > 0 ? categories[position - 1] : undefined
   const nextCategory =
     position >= 0 && position < categories.length - 1
       ? categories[position + 1]
       : undefined
+
+  React.useEffect(() => {
+    if (pending || !focusTarget) return
+
+    const target =
+      focusTarget === 'up' ? upButtonRef.current : downButtonRef.current
+    if (!target || target.disabled) return
+    target?.focus()
+    setFocusTarget(null)
+  }, [focusTarget, nextCategory, pending, previousCategory, position])
 
   async function move(
     sourceCategory: GroceryCategory,
@@ -62,6 +77,7 @@ export function GroceryCategoryOrderSection({
       if (!response.ok)
         throw new Error(body.detail ?? 'The grocery category could not move.')
       setMessage(body.detail ?? 'Grocery category order changed.')
+      setFocusTarget(placement === 'before' ? 'down' : 'up')
       router.refresh()
     } catch (caught) {
       setMessage(
@@ -114,6 +130,7 @@ export function GroceryCategoryOrderSection({
           onClick={() =>
             previousCategory && void move(category, previousCategory, 'before')
           }
+          ref={upButtonRef}
           size="icon"
           type="button"
           variant="outline"
@@ -126,6 +143,7 @@ export function GroceryCategoryOrderSection({
           onClick={() =>
             nextCategory && void move(category, nextCategory, 'after')
           }
+          ref={downButtonRef}
           size="icon"
           type="button"
           variant="outline"

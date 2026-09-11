@@ -26,8 +26,23 @@ export function GroceryItemOrderControls({
   editable?: boolean
 }) {
   const router = useRouter()
+  const upButtonRef = React.useRef<HTMLButtonElement>(null)
+  const downButtonRef = React.useRef<HTMLButtonElement>(null)
   const [pending, setPending] = React.useState(false)
   const [message, setMessage] = React.useState<string | null>(null)
+  const [focusTarget, setFocusTarget] = React.useState<'up' | 'down' | null>(
+    null,
+  )
+
+  React.useEffect(() => {
+    if (pending || !focusTarget) return
+
+    const target =
+      focusTarget === 'up' ? upButtonRef.current : downButtonRef.current
+    if (!target || target.disabled) return
+    target?.focus()
+    setFocusTarget(null)
+  }, [canMoveDown, canMoveUp, focusTarget, pending])
 
   async function move(direction: 'up' | 'down') {
     setPending(true)
@@ -48,6 +63,7 @@ export function GroceryItemOrderControls({
       if (!response.ok)
         throw new Error(body.detail ?? 'The item could not move.')
       setMessage(body.detail ?? 'Item order changed.')
+      setFocusTarget(direction === 'up' ? 'down' : 'up')
       router.refresh()
     } catch (caught) {
       setMessage(
@@ -67,6 +83,7 @@ export function GroceryItemOrderControls({
         aria-label={`Move ${ingredientName} up`}
         disabled={!editable || pending || !canMoveUp}
         onClick={() => void move('up')}
+        ref={upButtonRef}
         size="icon"
         type="button"
         variant="outline"
@@ -77,6 +94,7 @@ export function GroceryItemOrderControls({
         aria-label={`Move ${ingredientName} down`}
         disabled={!editable || pending || !canMoveDown}
         onClick={() => void move('down')}
+        ref={downButtonRef}
         size="icon"
         type="button"
         variant="outline"

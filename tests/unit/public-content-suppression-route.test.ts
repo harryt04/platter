@@ -17,6 +17,7 @@ function setup({ recipe = true, activeSuppression = false } = {}) {
   const insertedSuppressions: unknown[] = []
   const insertedAudits: unknown[] = []
   const updateOne = vi.fn().mockResolvedValue({ matchedCount: 1 })
+  const updateMany = vi.fn().mockResolvedValue({ matchedCount: 1 })
   const suppressionCollection = {
     findOne: vi.fn().mockResolvedValue(activeSuppression ? {} : null),
     insertOne: vi.fn((document: unknown) => {
@@ -33,6 +34,7 @@ function setup({ recipe = true, activeSuppression = false } = {}) {
   const recipeCollection = {
     findOne: vi.fn().mockResolvedValue(recipe ? { _id: 'recipe-1' } : null),
     updateOne,
+    updateMany,
   }
   const collections = new Map<string, unknown>([
     ['public_content_suppressions', suppressionCollection],
@@ -60,6 +62,7 @@ function setup({ recipe = true, activeSuppression = false } = {}) {
     recipeCollection,
     suppressionCollection,
     updateOne,
+    updateMany,
   }
 }
 
@@ -125,6 +128,19 @@ describe('POST /api/v1/admin/public-content-suppressions', () => {
       target: 'https://example.com/recipe',
       createdBy: 'admin-1',
     })
+    expect(urlSetup.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'usable',
+        visibility: 'public',
+        $or: expect.arrayContaining([
+          expect.objectContaining({ sourceUrl: expect.anything() }),
+        ]),
+      }),
+      expect.objectContaining({
+        $set: expect.objectContaining({ visibility: 'suppressed' }),
+      }),
+      expect.objectContaining({ session: expect.anything() }),
+    )
 
     vi.clearAllMocks()
     getSession.mockResolvedValue({ user: { id: 'admin-1', role: 'admin' } })
@@ -144,6 +160,21 @@ describe('POST /api/v1/admin/public-content-suppressions', () => {
       targetType: 'domain',
       target: 'example.com',
     })
+    expect(domainSetup.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'usable',
+        visibility: 'public',
+        $or: expect.arrayContaining([
+          expect.objectContaining({
+            'importProvenance.sourceDomain': 'example.com',
+          }),
+        ]),
+      }),
+      expect.objectContaining({
+        $set: expect.objectContaining({ visibility: 'suppressed' }),
+      }),
+      expect.objectContaining({ session: expect.anything() }),
+    )
   })
 
   it('rejects unauthenticated, non-admin, invalid, missing, and duplicate requests', async () => {

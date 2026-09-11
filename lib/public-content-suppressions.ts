@@ -1,6 +1,7 @@
-import type { Db } from 'mongodb'
+import type { Db, Filter } from 'mongodb'
 import { z } from 'zod'
 import { isoDateTime, type IsoDateTime } from '@/lib/contracts/ids'
+import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
 
 const cleanText = (value: string) =>
   value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim()
@@ -104,6 +105,58 @@ export function normalizePublicContentSuppressionTarget(
     throw new Error('Domain targets must contain only a hostname.')
   }
   return url.hostname.replace(/^www\./i, '').toLowerCase()
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * Build the recipe-side match for an active suppression. Keeping this
+ * alongside target normalization makes URL and domain takedowns apply to all
+ * retained provenance fields without exposing those fields publicly.
+ */
+export function publicContentSuppressionRecipeFilter(
+  suppression: Pick<PublicContentSuppressionDocument, 'targetType' | 'target'>,
+): Filter<RecipeDraftDocument> {
+  if (suppression.targetType === 'recipe') {
+    return { _id: suppression.target }
+  }
+
+  if (suppression.targetType === 'source-url') {
+    const exactOrFragmentUrl = {
+      $regex: `^${escapeRegex(suppression.target)}(?:#.*)?$`,
+    }
+    return {
+      $or: [
+        { sourceUrl: exactOrFragmentUrl },
+        { 'importProvenance.submittedUrl': exactOrFragmentUrl },
+        { 'importProvenance.canonicalUrl': exactOrFragmentUrl },
+      ],
+    }
+  }
+
+  const domainPattern = `^https?://(?:www\\.)?${escapeRegex(
+    suppression.target,
+  )}(?::\\d+)?(?:/|$)`
+  return {
+    $or: [
+      { 'importProvenance.sourceDomain': suppression.target },
+      { sourceUrl: { $regex: domainPattern, $options: 'i' } },
+      {
+        'importProvenance.submittedUrl': {
+          $regex: domainPattern,
+          $options: 'i',
+        },
+      },
+      {
+        'importProvenance.canonicalUrl': {
+          $regex: domainPattern,
+          $options: 'i',
+        },
+      },
+    ],
+  }
 }
 
 export function validatePublicContentSuppressionInput(

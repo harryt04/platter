@@ -7,6 +7,7 @@ import {
   createPublicContentSuppressionSchema,
   findActivePublicContentSuppression,
   normalizePublicContentSuppressionTarget,
+  publicContentSuppressionRecipeFilter,
   toPublicContentSuppressionSummary,
   validatePublicContentSuppressionInput,
   type PublicContentSuppressionDocument,
@@ -136,6 +137,21 @@ export async function POST(request: Request) {
       if (suppression.targetType === 'recipe') {
         await db.collection<RecipeDraftDocument>('recipes').updateOne(
           { _id: suppression.target },
+          {
+            $set: {
+              visibility: 'suppressed',
+              updatedAt: suppression.createdAt,
+            },
+          },
+          { session: transactionSession },
+        )
+      } else {
+        await db.collection<RecipeDraftDocument>('recipes').updateMany(
+          {
+            status: 'usable',
+            visibility: 'public',
+            ...publicContentSuppressionRecipeFilter(suppression),
+          },
           {
             $set: {
               visibility: 'suppressed',

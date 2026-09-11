@@ -752,7 +752,7 @@ complaints
       or content fingerprint.
 - [x] An administrator can suppress a recipe, source URL, or domain with a
       reason, actor, timestamp, and audit linkage.
-- [ ] Suppression removes a recipe from public search and its public page while
+- [x] Suppression removes a recipe from public search and its public page while
       retaining the minimum private data needed for complaints and completed-run
       recipe references.
 - [ ] New imports and reprocessing honor recipe, URL, fingerprint, source, and

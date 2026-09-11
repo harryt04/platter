@@ -898,6 +898,9 @@ complaints; 35: Delete an account safely
   - [x] Notification collection reads and read-state writes validate persisted
         documents and response summaries, returning stable retryable problems
         for storage or malformed-record failures.
+  - [x] Account-deletion impact and readiness reads validate computed,
+        account-scoped summaries and return stable retryable problems for
+        storage or malformed-result failures.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

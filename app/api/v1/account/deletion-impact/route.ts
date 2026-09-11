@@ -1,6 +1,9 @@
 import { getSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
-import { getAccountDeletionImpact } from '@/lib/account-deletion'
+import {
+  accountDeletionImpactResponseSchema,
+  getAccountDeletionImpact,
+} from '@/lib/account-deletion'
 import { problemResponse } from '@/lib/contracts/problem'
 
 function authenticationRequired() {
@@ -20,13 +23,16 @@ export async function GET() {
   try {
     const db = await getConnectedDatabase()
     const impact = await getAccountDeletionImpact(db, session.user.id)
-    return Response.json({ impact })
+    const response = accountDeletionImpactResponseSchema.safeParse({ impact })
+    if (!response.success) throw new Error('Invalid deletion impact response.')
+    return Response.json(response.data)
   } catch {
     return problemResponse({
       type: 'https://platter.dev/problems/account-deletion-impact-failed',
-      title: 'Deletion details unavailable',
-      status: 500,
-      detail: 'We couldn’t load the account deletion details. Try again.',
+      title: 'Deletion details temporarily unavailable',
+      status: 503,
+      detail:
+        'We couldn’t load the account deletion details. Try again shortly.',
       code: 'ACCOUNT_DELETION_IMPACT_FAILED',
     })
   }

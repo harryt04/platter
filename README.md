@@ -292,6 +292,9 @@ from Account settings. Profile updates are validated on the server, sanitize
 control characters, and keep the authentication email read-only. History dates
 and supported grocery quantities use that locale for display while canonical
 stored quantities and deterministic grocery calculations remain unchanged.
+Account-deletion impact and readiness responses also validate their computed
+account-scoped summaries at the API boundary and return retryable problem
+responses when storage or summary data is unavailable or malformed.
 New imports and historical reprocessing check all of those source identities
 before exposing a preview, while preview saves repeat the check inside their
 transaction so a suppression cannot race with public publication.

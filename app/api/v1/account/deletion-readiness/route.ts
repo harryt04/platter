@@ -1,8 +1,8 @@
 import { getSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import {
+  accountDeletionReadinessResponseSchema,
   getAccountDeletionOwnershipBlockers,
-  type AccountDeletionOwnershipBlocker,
 } from '@/lib/account-deletion'
 import { problemResponse } from '@/lib/contracts/problem'
 
@@ -26,18 +26,23 @@ export async function GET() {
       db,
       session.user.id,
     )
-    return Response.json({
+    const response = accountDeletionReadinessResponseSchema.safeParse({
       readiness: {
         canDelete: blockers.length === 0,
-        ownershipBlockers: blockers satisfies AccountDeletionOwnershipBlocker[],
+        ownershipBlockers: blockers,
       },
     })
+    if (!response.success) {
+      throw new Error('Invalid deletion readiness response.')
+    }
+    return Response.json(response.data)
   } catch {
     return problemResponse({
       type: 'https://platter.dev/problems/account-deletion-readiness-failed',
-      title: 'Deletion readiness unavailable',
-      status: 500,
-      detail: 'We couldn’t check the account deletion requirements. Try again.',
+      title: 'Deletion readiness temporarily unavailable',
+      status: 503,
+      detail:
+        'We couldn’t check the account deletion requirements. Try again shortly.',
       code: 'ACCOUNT_DELETION_READINESS_FAILED',
     })
   }

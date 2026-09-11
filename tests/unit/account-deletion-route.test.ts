@@ -10,7 +10,12 @@ const { getSession, getConnectedDatabase, getAccountDeletionImpact } =
 
 vi.mock('@/lib/auth/authorization', () => ({ getSession }))
 vi.mock('@/lib/db/mongo-client', () => ({ getConnectedDatabase }))
-vi.mock('@/lib/account-deletion', () => ({ getAccountDeletionImpact }))
+vi.mock('@/lib/account-deletion', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/account-deletion')>(
+    '@/lib/account-deletion',
+  )
+  return { ...actual, getAccountDeletionImpact }
+})
 
 afterEach(() => vi.clearAllMocks())
 
@@ -64,10 +69,32 @@ describe('account deletion impact route', () => {
 
     const response = await GET()
 
-    expect(response.status).toBe(500)
+    expect(response.status).toBe(503)
     expect(await response.json()).toMatchObject({
       code: 'ACCOUNT_DELETION_IMPACT_FAILED',
-      detail: 'We couldn’t load the account deletion details. Try again.',
+      detail:
+        'We couldn’t load the account deletion details. Try again shortly.',
+    })
+  })
+
+  it('hides malformed computed summaries behind the same retryable problem', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    getConnectedDatabase.mockResolvedValue('db')
+    getAccountDeletionImpact.mockResolvedValue({
+      ownedLists: -1,
+      soleOwnerLists: [],
+      soleOwnerListDetails: [],
+      memberships: 0,
+      manuallyAuthoredRecipes: 0,
+      publicImportedRecipes: 0,
+      completedShoppingRuns: 0,
+    })
+
+    const response = await GET()
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'ACCOUNT_DELETION_IMPACT_FAILED',
     })
   })
 })

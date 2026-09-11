@@ -1,7 +1,12 @@
 import { createHash } from 'node:crypto'
 import type { Db, Filter } from 'mongodb'
+import { z } from 'zod'
 import { entityId, isoDateTime, type EntityId } from '@/lib/contracts/ids'
-import { listMembershipFilter, type ListDocument } from '@/lib/lists'
+import {
+  listIdSchema,
+  listMembershipFilter,
+  type ListDocument,
+} from '@/lib/lists'
 import type {
   RecipeDraftDocument,
   RecipeVersionDocument,
@@ -49,6 +54,33 @@ export type AccountDeletionOwnershipBlocker = {
   listName: string
   activeMemberCount: number
 }
+
+const deletionCountSchema = z.number().int().nonnegative()
+
+export const accountDeletionOwnershipBlockerSchema = z.strictObject({
+  listId: listIdSchema,
+  listName: z.string().max(100),
+  activeMemberCount: deletionCountSchema,
+})
+
+export const accountDeletionImpactResponseSchema = z.strictObject({
+  impact: z.strictObject({
+    ownedLists: deletionCountSchema,
+    soleOwnerLists: z.array(z.string().max(100)),
+    soleOwnerListDetails: z.array(accountDeletionOwnershipBlockerSchema),
+    memberships: deletionCountSchema,
+    manuallyAuthoredRecipes: deletionCountSchema,
+    publicImportedRecipes: deletionCountSchema,
+    completedShoppingRuns: deletionCountSchema,
+  }),
+})
+
+export const accountDeletionReadinessResponseSchema = z.strictObject({
+  readiness: z.strictObject({
+    canDelete: z.boolean(),
+    ownershipBlockers: z.array(accountDeletionOwnershipBlockerSchema),
+  }),
+})
 
 export type AccountDeletionImpact = {
   ownedLists: number

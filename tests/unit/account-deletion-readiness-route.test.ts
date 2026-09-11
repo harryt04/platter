@@ -13,9 +13,12 @@ const {
 
 vi.mock('@/lib/auth/authorization', () => ({ getSession }))
 vi.mock('@/lib/db/mongo-client', () => ({ getConnectedDatabase }))
-vi.mock('@/lib/account-deletion', () => ({
-  getAccountDeletionOwnershipBlockers,
-}))
+vi.mock('@/lib/account-deletion', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/account-deletion')>(
+    '@/lib/account-deletion',
+  )
+  return { ...actual, getAccountDeletionOwnershipBlockers }
+})
 
 afterEach(() => vi.clearAllMocks())
 
@@ -72,7 +75,22 @@ describe('account deletion readiness route', () => {
 
     const response = await GET()
 
-    expect(response.status).toBe(500)
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'ACCOUNT_DELETION_READINESS_FAILED',
+    })
+  })
+
+  it('hides malformed ownership blockers behind the same retryable problem', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    getConnectedDatabase.mockResolvedValue('db')
+    getAccountDeletionOwnershipBlockers.mockResolvedValue([
+      { listId: 'list-1', listName: 'Family', activeMemberCount: -1 },
+    ])
+
+    const response = await GET()
+
+    expect(response.status).toBe(503)
     expect(await response.json()).toMatchObject({
       code: 'ACCOUNT_DELETION_READINESS_FAILED',
     })

@@ -965,6 +965,10 @@ complaints; 35: Delete an account safely
   - [x] Editor leave-list mutations validate the returned list envelope and
         hide authentication, storage, or malformed-record failures behind a
         stable retryable problem response.
+  - [x] Recipe selection creation, people changes, version repinning,
+        duplication, and removal validate new and replayed response envelopes
+        and hide storage or malformed-replay failures behind a stable retryable
+        problem response.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

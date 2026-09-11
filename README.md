@@ -94,6 +94,9 @@ persisted list records or database details.
 Editor leave-list mutations now validate their returned list envelope and hide
 authentication, storage, or malformed-record failures behind the same stable
 retryable problem contract.
+Recipe selection creation, people changes, version repinning, duplication, and
+removal now validate new and replayed response envelopes and hide storage or
+malformed-replay failures behind that same stable retryable problem contract.
 The personal recipe-library API now validates recipe envelopes and pagination
 results, passes the user's search text into the library query, and hides
 storage or malformed-record failures behind the same stable retryable problem

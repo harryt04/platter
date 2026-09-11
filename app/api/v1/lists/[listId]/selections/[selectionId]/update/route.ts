@@ -18,6 +18,7 @@ import {
 } from '@/lib/recipes/drafts'
 import {
   acceptNewerRecipeVersion,
+  recipeSelectionMutationResponseSchema,
   selectionMutationMetadataSchema,
   selectionMutationReceiptFor,
 } from '@/lib/recipes/selections'
@@ -53,6 +54,24 @@ function operationIdConflict() {
   )
 }
 
+function selectionMutationUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/selection-state-unavailable',
+    title: 'Recipe selection temporarily unavailable',
+    status: 503,
+    detail:
+      'The recipe selection is temporarily unavailable. Try again shortly.',
+    code: 'SELECTION_STATE_UNAVAILABLE',
+  })
+}
+
+function responseJson(value: unknown, status: 200 | 201 = 200) {
+  const parsed = recipeSelectionMutationResponseSchema.safeParse(value)
+  return parsed.success
+    ? Response.json(parsed.data, { status })
+    : selectionMutationUnavailable()
+}
+
 async function findAccessibleCurrentRecipe(
   db: Awaited<ReturnType<typeof getConnectedDatabase>>,
   recipeId: string,
@@ -81,7 +100,7 @@ async function findAccessibleCurrentRecipe(
   })
 }
 
-export async function POST(request: Request, context: RouteContext) {
+async function repinSelection(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session) {
     return problem(
@@ -160,8 +179,7 @@ export async function POST(request: Request, context: RouteContext) {
   } catch {
     return operationIdConflict()
   }
-  if (receipt)
-    return Response.json(receipt.response, { status: receipt.status })
+  if (receipt) return responseJson(receipt.response, receipt.status)
   if (
     currentRun &&
     parsed.data.baseRevision !== undefined &&
@@ -241,6 +259,9 @@ export async function POST(request: Request, context: RouteContext) {
     ),
     revision: currentRun.revision + 1,
   }
+  const validatedResponse =
+    recipeSelectionMutationResponseSchema.safeParse(response)
+  if (!validatedResponse.success) return selectionMutationUnavailable()
   const updatedRun = await runs.findOneAndUpdate(
     {
       _id: currentRun._id,
@@ -263,7 +284,7 @@ export async function POST(request: Request, context: RouteContext) {
           target: `selection:${selectionId}`,
           kind: 'repin',
           status: 200,
-          response,
+          response: validatedResponse.data,
         },
       },
       $inc: { revision: 1 },
@@ -284,9 +305,7 @@ export async function POST(request: Request, context: RouteContext) {
         `selection:${selectionId}`,
       )
       if (retryReceipt) {
-        return Response.json(retryReceipt.response, {
-          status: retryReceipt.status,
-        })
+        return responseJson(retryReceipt.response, retryReceipt.status)
       }
     } catch {
       return operationIdConflict()
@@ -307,5 +326,13 @@ export async function POST(request: Request, context: RouteContext) {
     operationId: parsed.data.operationId,
     actorId: session.user.id,
   }).catch(() => undefined)
-  return Response.json(response)
+  return responseJson(validatedResponse.data)
+}
+
+export async function POST(request: Request, context: RouteContext) {
+  try {
+    return await repinSelection(request, context)
+  } catch {
+    return selectionMutationUnavailable()
+  }
 }

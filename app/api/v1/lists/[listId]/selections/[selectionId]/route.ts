@@ -12,6 +12,7 @@ import { publishRunMutationEvent } from '@/lib/realtime/events'
 import { completedRunProblem } from '@/lib/contracts/run-mutation'
 import { type RecipeVersionDocument } from '@/lib/recipes/drafts'
 import {
+  recipeSelectionMutationResponseSchema,
   selectionMutationReceiptFor,
   selectionMutationMetadataSchema,
   updateRecipeSelectionDocument,
@@ -127,7 +128,25 @@ function invalidMutationMetadata() {
   })
 }
 
-export async function PATCH(request: Request, context: RouteContext) {
+function selectionMutationUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/selection-state-unavailable',
+    title: 'Recipe selection temporarily unavailable',
+    status: 503,
+    detail:
+      'The recipe selection is temporarily unavailable. Try again shortly.',
+    code: 'SELECTION_STATE_UNAVAILABLE',
+  })
+}
+
+function responseJson(value: unknown, status: 200 | 201 = 200) {
+  const parsed = recipeSelectionMutationResponseSchema.safeParse(value)
+  return parsed.success
+    ? Response.json(parsed.data, { status })
+    : selectionMutationUnavailable()
+}
+
+async function patchSelection(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session) return authenticationRequired()
 
@@ -175,8 +194,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch {
     return operationIdConflict()
   }
-  if (receipt)
-    return Response.json(receipt.response, { status: receipt.status })
+  if (receipt) return responseJson(receipt.response, receipt.status)
   if (
     parsed.data.baseRevision !== undefined &&
     parsed.data.baseRevision !== currentRun.revision
@@ -208,6 +226,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       ),
       revision: currentRun.revision,
     }
+    const validatedResponse =
+      recipeSelectionMutationResponseSchema.safeParse(response)
+    if (!validatedResponse.success) return selectionMutationUnavailable()
     const recordedRun = await runs.findOneAndUpdate(
       {
         _id: currentRun._id,
@@ -223,7 +244,7 @@ export async function PATCH(request: Request, context: RouteContext) {
             target: `selection:${selectionId}`,
             kind: 'update-people',
             status: 200,
-            response,
+            response: validatedResponse.data,
           },
         },
       },
@@ -243,16 +264,14 @@ export async function PATCH(request: Request, context: RouteContext) {
           `selection:${selectionId}`,
         )
         if (retryReceipt) {
-          return Response.json(retryReceipt.response, {
-            status: retryReceipt.status,
-          })
+          return responseJson(retryReceipt.response, retryReceipt.status)
         }
       } catch {
         return operationIdConflict()
       }
       return revisionConflict()
     }
-    return Response.json(response)
+    return responseJson(validatedResponse.data)
   }
 
   const updatedSelection = updateRecipeSelectionDocument(
@@ -260,6 +279,17 @@ export async function PATCH(request: Request, context: RouteContext) {
     parsed.data.desiredPeople,
     version.typicalPeopleFed,
   )
+  const response = {
+    selection: updatedSelection,
+    calculatedIngredients: calculateScaledIngredients(
+      version.ingredients ?? [],
+      updatedSelection.scaleFactor,
+    ),
+    revision: currentRun.revision + 1,
+  }
+  const validatedResponse =
+    recipeSelectionMutationResponseSchema.safeParse(response)
+  if (!validatedResponse.success) return selectionMutationUnavailable()
   const updatedRun = await runs.findOneAndUpdate(
     {
       _id: currentRun._id,
@@ -280,14 +310,7 @@ export async function PATCH(request: Request, context: RouteContext) {
           target: `selection:${selectionId}`,
           kind: 'update-people',
           status: 200,
-          response: {
-            selection: updatedSelection,
-            calculatedIngredients: calculateScaledIngredients(
-              version.ingredients ?? [],
-              updatedSelection.scaleFactor,
-            ),
-            revision: currentRun.revision + 1,
-          },
+          response: validatedResponse.data,
         },
       },
       $inc: { revision: 1 },
@@ -308,9 +331,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         `selection:${selectionId}`,
       )
       if (retryReceipt) {
-        return Response.json(retryReceipt.response, {
-          status: retryReceipt.status,
-        })
+        return responseJson(retryReceipt.response, retryReceipt.status)
       }
     } catch {
       return operationIdConflict()
@@ -318,14 +339,6 @@ export async function PATCH(request: Request, context: RouteContext) {
     return revisionConflict()
   }
 
-  const response = {
-    selection: updatedSelection,
-    calculatedIngredients: calculateScaledIngredients(
-      version.ingredients ?? [],
-      updatedSelection.scaleFactor,
-    ),
-    revision: currentRun.revision + 1,
-  }
   await publishRunMutationEvent(db, {
     type: 'recipe.selection.people-changed',
     listId,
@@ -334,10 +347,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     operationId: parsed.data.operationId,
     actorId: session.user.id,
   }).catch(() => undefined)
-  return Response.json(response)
+  return responseJson(validatedResponse.data)
 }
 
-export async function DELETE(request: Request, context: RouteContext) {
+async function removeSelection(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session) return authenticationRequired()
 
@@ -384,8 +397,7 @@ export async function DELETE(request: Request, context: RouteContext) {
   } catch {
     return operationIdConflict()
   }
-  if (receipt)
-    return Response.json(receipt.response, { status: receipt.status })
+  if (receipt) return responseJson(receipt.response, receipt.status)
   if (
     parsed.data.baseRevision !== undefined &&
     parsed.data.baseRevision !== currentRun.revision
@@ -397,6 +409,16 @@ export async function DELETE(request: Request, context: RouteContext) {
     (candidate) => candidate._id === selectionId,
   )
   if (!selection) return selectionNotFound()
+
+  const response = {
+    detail: 'The recipe selection was removed from this shopping run.',
+    code: 'SELECTION_REMOVED' as const,
+    selectionId,
+    revision: currentRun.revision + 1,
+  }
+  const validatedResponse =
+    recipeSelectionMutationResponseSchema.safeParse(response)
+  if (!validatedResponse.success) return selectionMutationUnavailable()
 
   const updatedRun = await runs.findOneAndUpdate(
     {
@@ -415,12 +437,7 @@ export async function DELETE(request: Request, context: RouteContext) {
           target: `selection:${selectionId}`,
           kind: 'remove',
           status: 200,
-          response: {
-            detail: 'The recipe selection was removed from this shopping run.',
-            code: 'SELECTION_REMOVED',
-            selectionId,
-            revision: currentRun.revision + 1,
-          },
+          response: validatedResponse.data,
         },
       },
       $inc: { revision: 1 },
@@ -430,12 +447,6 @@ export async function DELETE(request: Request, context: RouteContext) {
   )
   if (!updatedRun) return revisionConflict()
 
-  const response = {
-    detail: 'The recipe selection was removed from this shopping run.',
-    code: 'SELECTION_REMOVED',
-    selectionId,
-    revision: currentRun.revision + 1,
-  }
   await publishRunMutationEvent(db, {
     type: 'recipe.selection.removed',
     listId,
@@ -444,5 +455,21 @@ export async function DELETE(request: Request, context: RouteContext) {
     operationId: parsed.data.operationId,
     actorId: session.user.id,
   }).catch(() => undefined)
-  return Response.json(response)
+  return responseJson(validatedResponse.data)
+}
+
+export async function PATCH(request: Request, context: RouteContext) {
+  try {
+    return await patchSelection(request, context)
+  } catch {
+    return selectionMutationUnavailable()
+  }
+}
+
+export async function DELETE(request: Request, context: RouteContext) {
+  try {
+    return await removeSelection(request, context)
+  } catch {
+    return selectionMutationUnavailable()
+  }
 }

@@ -260,7 +260,24 @@ describe('POST /api/v1/lists/[listId]/selections', () => {
 
   it('replays a completed create operation without adding a duplicate selection', async () => {
     const replay = {
-      selection: { _id: 'selection-1', recipeId: 'recipe-1' },
+      selection: {
+        _id: 'selection-1',
+        recipeId: 'recipe-1',
+        versionId: 'version-4',
+        versionNumber: 4,
+        desiredPeople: 6,
+        scaleFactor: '1.5',
+        createdAt: '2026-09-10T12:00:00.000Z',
+        updatedAt: '2026-09-10T12:00:00.000Z',
+      },
+      recipe: {
+        id: 'recipe-1',
+        title: 'Tomato soup',
+        typicalPeopleFed: 4,
+        versionId: 'version-4',
+        versionNumber: 4,
+      },
+      calculatedIngredients: [],
       revision: 2,
     }
     const database = databaseFor({
@@ -303,7 +320,24 @@ describe('POST /api/v1/lists/[listId]/selections', () => {
 
   it('replays a concurrent create after the first writer wins the revision race', async () => {
     const replay = {
-      selection: { _id: 'selection-1', recipeId: 'recipe-1' },
+      selection: {
+        _id: 'selection-1',
+        recipeId: 'recipe-1',
+        versionId: 'version-4',
+        versionNumber: 4,
+        desiredPeople: 6,
+        scaleFactor: '1.5',
+        createdAt: '2026-09-10T12:00:00.000Z',
+        updatedAt: '2026-09-10T12:00:00.000Z',
+      },
+      recipe: {
+        id: 'recipe-1',
+        title: 'Tomato soup',
+        typicalPeopleFed: 4,
+        versionId: 'version-4',
+        versionNumber: 4,
+      },
+      calculatedIngredients: [],
       revision: 2,
     }
     const currentRun = {
@@ -347,6 +381,45 @@ describe('POST /api/v1/lists/[listId]/selections', () => {
 
     expect(response.status).toBe(201)
     expect(await response.json()).toEqual(replay)
+  })
+
+  it('does not replay a malformed persisted response', async () => {
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 2,
+        recipeSelections: [],
+        selectionMutationReceipts: [
+          {
+            operationId: 'operation-malformed',
+            clientId: 'client-1',
+            target: 'recipe:recipe-1',
+            kind: 'create',
+            status: 201,
+            response: { revision: 'not-a-number' },
+          },
+        ],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/selections', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 6,
+          ...mutationMetadata('operation-malformed', 2),
+        }),
+      }),
+      routeContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('SELECTION_STATE_UNAVAILABLE')
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
   })
 })
 
@@ -534,6 +607,27 @@ describe('PATCH /api/v1/lists/[listId]/selections/[selectionId]', () => {
     expect(database.versions.findOne).not.toHaveBeenCalled()
     expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
   })
+
+  it('returns a stable retryable problem when storage fails', async () => {
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await PATCH(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            desiredPeople: 4,
+            ...mutationMetadata('operation-patch-storage'),
+          }),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('SELECTION_STATE_UNAVAILABLE')
+  })
 })
 
 describe('POST /api/v1/lists/[listId]/selections/[selectionId]/update', () => {
@@ -669,6 +763,24 @@ describe('POST /api/v1/lists/[listId]/selections/[selectionId]/update', () => {
     expect(database.versions.findOne).not.toHaveBeenCalled()
     expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
   })
+
+  it('returns a stable retryable problem when storage fails', async () => {
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await acceptUpdatePOST(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1/update',
+        {
+          method: 'POST',
+          body: JSON.stringify(mutationMetadata('operation-repin-storage')),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('SELECTION_STATE_UNAVAILABLE')
+  })
 })
 
 describe('DELETE /api/v1/lists/[listId]/selections/[selectionId]', () => {
@@ -759,6 +871,24 @@ describe('DELETE /api/v1/lists/[listId]/selections/[selectionId]', () => {
     expect(response.status).toBe(404)
     expect((await response.json()).code).toBe('SELECTION_NOT_FOUND')
     expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('returns a stable retryable problem when storage fails', async () => {
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await DELETE(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'DELETE',
+          body: JSON.stringify(mutationMetadata('operation-delete-storage')),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('SELECTION_STATE_UNAVAILABLE')
   })
 })
 
@@ -868,5 +998,23 @@ describe('POST /api/v1/lists/[listId]/selections/[selectionId]/duplicate', () =>
     expect((await response.json()).code).toBe('SELECTION_NOT_FOUND')
     expect(database.versions.findOne).not.toHaveBeenCalled()
     expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('returns a stable retryable problem when storage fails', async () => {
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await duplicatePOST(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1/duplicate',
+        {
+          method: 'POST',
+          body: JSON.stringify(mutationMetadata('operation-duplicate-storage')),
+        },
+      ),
+      duplicateRouteContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('SELECTION_STATE_UNAVAILABLE')
   })
 })

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import {
   decimalString,
   isoDateTime,
+  opaqueIdSchema,
   shoppingRunIdSchema,
   type DecimalString,
   type IsoDateTime,
@@ -42,6 +43,79 @@ export const selectionMutationMetadataSchema = z.object({
 export type SelectionMutationMetadata = z.infer<
   typeof selectionMutationMetadataSchema
 >
+
+const parsedIngredientQuantityResponseSchema = z.strictObject({
+  min: z.string().min(1),
+  max: z.string().min(1).optional(),
+})
+
+const scaledIngredientResponseSchema = z.strictObject({
+  originalText: z.string().min(1).max(500),
+  ingredientName: z.string().min(1).max(200),
+  unit: z.string().min(1).max(50).optional(),
+  preparationNote: z.string().min(1).max(200).optional(),
+  optional: z.boolean(),
+  sourceQuantity: z.string().max(50).nullable(),
+  calculatedQuantity: parsedIngredientQuantityResponseSchema.nullable(),
+  suggestedShoppingQuantity: parsedIngredientQuantityResponseSchema.nullable(),
+})
+
+const recipeSelectionResponseSchema = z.strictObject({
+  _id: opaqueIdSchema,
+  recipeId: opaqueIdSchema,
+  versionId: opaqueIdSchema,
+  versionNumber: z.number().int().positive(),
+  desiredPeople: z.number().int().positive(),
+  scaleFactor: z.string().min(1),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+})
+
+const selectedRecipeResponseSchema = z.strictObject({
+  id: opaqueIdSchema,
+  title: z.string().min(1).max(200),
+  typicalPeopleFed: z.number().int().positive(),
+  versionId: opaqueIdSchema,
+  versionNumber: z.number().int().positive(),
+})
+
+const pinnedRecipeResponseSchema = z.strictObject({
+  id: opaqueIdSchema,
+  title: z.string().min(1).max(200),
+  versionId: opaqueIdSchema,
+  versionNumber: z.number().int().positive(),
+})
+
+const selectionCalculationResponseSchema = z.strictObject({
+  selection: recipeSelectionResponseSchema,
+  calculatedIngredients: z.array(scaledIngredientResponseSchema).max(100),
+  revision: z.number().int().nonnegative(),
+})
+
+const selectionCreationResponseSchema =
+  selectionCalculationResponseSchema.extend({
+    recipe: selectedRecipeResponseSchema,
+  })
+
+const selectionRepinResponseSchema = selectionCalculationResponseSchema.extend({
+  previousVersionNumber: z.number().int().positive(),
+  recipe: pinnedRecipeResponseSchema,
+})
+
+const selectionRemovalResponseSchema = z.strictObject({
+  detail: z.string().min(1).max(500),
+  code: z.literal('SELECTION_REMOVED'),
+  selectionId: opaqueIdSchema,
+  revision: z.number().int().nonnegative(),
+})
+
+/** Runtime boundary for selection mutation responses and persisted replays. */
+export const recipeSelectionMutationResponseSchema = z.union([
+  selectionCreationResponseSchema,
+  selectionRepinResponseSchema,
+  selectionCalculationResponseSchema,
+  selectionRemovalResponseSchema,
+])
 
 export type SelectionMutationReceipt = {
   operationId: string

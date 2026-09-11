@@ -915,7 +915,7 @@ run completion across devices; 29: Add replaceable importer adapters
       documented expected load.
 - [ ] Multi-client tests measure connected shopping updates within two seconds
       at the 95th percentile and record synchronization failure rates.
-- [ ] Grocery generation produces byte-equivalent domain results for equivalent
+- [x] Grocery generation produces byte-equivalent domain results for equivalent
       inputs across retry, process, and ordering variations.
 - [x] Required indexes support public search, canonical URL deduplication, list
       membership, active-run lookup, and history by list and date.

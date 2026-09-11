@@ -98,6 +98,9 @@ pinned selections, while remaining grocery correction, collaboration, and
 moderation remain intentionally deferred
 to the feature lanes described in the
 [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
+Generation canonicalizes selection and manual-addition source order before
+accumulation, so equivalent retries and reordered inputs retain byte-equivalent
+units, totals, and provenance.
 Review and shopping rows now render those generated items from the active run,
 including an expandable calculation breakdown for every recipe or manual
 contribution and the aggregate calculated requirement. Grocery derivation also

@@ -204,7 +204,7 @@ describe('grocery generation', () => {
     expect(first).toHaveLength(1)
     expect(first[0]).toMatchObject({
       id: 'grocery:merged:green onions:volume:cup',
-      ingredientName: 'green onions',
+      ingredientName: 'scallions',
       calculatedRequirement: { min: '4' },
       shoppingAmount: { min: '4' },
       contributions: [
@@ -220,6 +220,54 @@ describe('grocery generation', () => {
         },
       ],
     })
+  })
+
+  it('is byte-equivalent when selections and manual additions arrive in a different order', () => {
+    const firstSelection = selection('b', 'Curry', '1', [
+      ingredient({
+        originalText: '2 cups onions',
+        quantity: '2',
+        unit: 'cup',
+        ingredientName: 'onions',
+      }),
+    ])
+    const secondSelection = selection('a', 'Tacos', '1', [
+      ingredient({
+        originalText: '500 ml onions',
+        quantity: '500',
+        unit: 'ml',
+        ingredientName: 'onions',
+      }),
+    ])
+    const firstAddition = {
+      id: 'manual-b',
+      ingredient: ingredient({
+        originalText: '1 cup onions',
+        quantity: '1',
+        unit: 'cup',
+        ingredientName: 'onions',
+      }),
+    }
+    const secondAddition = {
+      id: 'manual-a',
+      ingredient: ingredient({
+        originalText: '250 ml onions',
+        quantity: '250',
+        unit: 'ml',
+        ingredientName: 'onions',
+      }),
+    }
+
+    const canonical = generateGroceryItems({
+      selections: [firstSelection, secondSelection],
+      manualAdditions: [firstAddition, secondAddition],
+    })
+    const reordered = generateGroceryItems({
+      selections: [secondSelection, firstSelection],
+      manualAdditions: [secondAddition, firstAddition],
+    })
+
+    expect(JSON.stringify(reordered)).toBe(JSON.stringify(canonical))
   })
 
   it('keeps a corrected contribution separate through deterministic regeneration', () => {

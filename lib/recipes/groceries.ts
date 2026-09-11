@@ -221,6 +221,11 @@ function suggestionIdentity(value: string) {
   return normalized || null
 }
 
+function compareStableIds(left: string, right: string) {
+  if (left === right) return 0
+  return left < right ? -1 : 1
+}
+
 function convertForUnit(
   quantity: ParsedIngredientQuantity | null,
   fromUnit: ParsedIngredientUnit,
@@ -373,6 +378,15 @@ export function generateGroceryItems({
 }): GroceryItem[] {
   const items = new Map<string, GroceryItem>()
   const splitIds = new Set(splitContributionIds)
+  // The first compatible contribution establishes the item's display unit.
+  // Canonicalize source order before accumulation so retries and callers that
+  // receive the same data in a different order produce byte-equivalent items.
+  const orderedSelections = [...selections].sort((left, right) =>
+    compareStableIds(left.selection._id, right.selection._id),
+  )
+  const orderedManualAdditions = [...manualAdditions].sort((left, right) =>
+    compareStableIds(left.id, right.id),
+  )
 
   const addContribution = (
     contribution: GroceryContribution,
@@ -427,7 +441,7 @@ export function generateGroceryItems({
     }
   }
 
-  for (const { selection, version } of selections) {
+  for (const { selection, version } of orderedSelections) {
     version.ingredients.forEach((ingredient, ingredientIndex) => {
       const prepared = prepareIngredient(ingredient, selection.scaleFactor)
       const fallbackKey = `recipe:${selection._id}:${ingredientIndex}`
@@ -450,7 +464,7 @@ export function generateGroceryItems({
     })
   }
 
-  for (const addition of manualAdditions) {
+  for (const addition of orderedManualAdditions) {
     const prepared = prepareIngredient(addition.ingredient)
     const fallbackKey = `manual:${addition.id}`
     addContribution(

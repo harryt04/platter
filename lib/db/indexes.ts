@@ -96,6 +96,12 @@ export async function ensureSharedIndexes(db: Db) {
     .collection('public_content_suppression_audit')
     .createIndex({ actorId: 1, occurredAt: -1 })
   await db
+    .collection('account_deletion_audit')
+    .createIndex({ accountFingerprint: 1 }, { unique: true })
+  await db
+    .collection('account_deletion_audit')
+    .createIndex({ status: 1, lastAttemptAt: -1 })
+  await db
     .collection('recipe_imports')
     .createIndex({ userId: 1, submittedAt: -1, _id: -1 })
   await db.collection('recipe_imports').createIndex(

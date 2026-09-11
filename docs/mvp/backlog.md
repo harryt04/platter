@@ -817,7 +817,7 @@ shared lists, private recipes, public imports, and immutable history.
 **Blocked by:** 03: Manage list membership and ownership; 25: Browse history and
 repeat recipes; 28: Save and deduplicate public imports; 34: Manage account data
 
-**Status:** in progress
+**Status:** implemented
 
 - [x] Before confirmation, the user sees a concrete impact summary for owned
       lists, memberships, manually authored recipes, public imports, and history.
@@ -830,7 +830,7 @@ repeat recipes; 28: Save and deduplicate public imports; 34: Manage account data
       rather than disappearing or changing ownership silently.
 - [x] Authentication sessions, private caches, queued operations, and user-scoped
       offline storage are revoked or removed after successful deletion.
-- [ ] The destructive operation is idempotent, auditable without retaining excess
+- [x] The destructive operation is idempotent, auditable without retaining excess
       personal data, and covered across shared ownership and referenced recipes.
 
 ## 36: Instrument privacy-safe product analytics

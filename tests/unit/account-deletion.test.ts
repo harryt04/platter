@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  completeAccountDeletionAudit,
   getAccountDeletionImpact,
   getAccountDeletionOwnershipBlockers,
+  recordAccountDeletionPreparedAudit,
 } from '@/lib/account-deletion'
 
 describe('getAccountDeletionImpact', () => {
@@ -118,5 +120,90 @@ describe('getAccountDeletionImpact', () => {
     ).resolves.toEqual([
       { listId: 'list-1', listName: 'Family', activeMemberCount: 2 },
     ])
+  })
+})
+
+describe('account deletion audit', () => {
+  it('uses one pseudonymous upsert for shared ownership and referenced recipe cleanup', async () => {
+    const updateOne = vi.fn().mockResolvedValue({ acknowledged: true })
+    const db = {
+      collection: vi.fn(() => ({ updateOne })),
+    } as never
+    const input = {
+      ownedLists: 2,
+      coOwnedLists: 1,
+      memberships: 3,
+      manuallyAuthoredRecipes: 2,
+      publicImportedRecipes: 1,
+      completedShoppingRuns: 4,
+      deletedPrivateRecipes: 2,
+      anonymizedHistoricalVersions: 1,
+      deletedUnreferencedVersions: 1,
+      anonymizedPublicRecipes: 1,
+      anonymizedPublicVersions: 2,
+    }
+
+    const firstFingerprint = await recordAccountDeletionPreparedAudit(
+      db,
+      'user-1',
+      input,
+      new Date('2026-09-10T12:00:00.000Z'),
+    )
+    const secondFingerprint = await recordAccountDeletionPreparedAudit(
+      db,
+      'user-1',
+      input,
+      new Date('2026-09-10T12:01:00.000Z'),
+    )
+
+    expect(secondFingerprint).toBe(firstFingerprint)
+    expect(firstFingerprint).toMatch(/^[a-f0-9]{64}$/)
+    expect(JSON.stringify(updateOne.mock.calls)).not.toContain('user-1')
+    expect(updateOne).toHaveBeenNthCalledWith(
+      1,
+      { _id: firstFingerprint },
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          lastAttemptAt: '2026-09-10T12:00:00.000Z',
+        }),
+        $setOnInsert: expect.objectContaining({
+          coOwnedLists: 1,
+          anonymizedHistoricalVersions: 1,
+          status: 'prepared',
+          requestedAt: '2026-09-10T12:00:00.000Z',
+        }),
+      }),
+      { upsert: true },
+    )
+    expect(updateOne).toHaveBeenNthCalledWith(
+      2,
+      { _id: firstFingerprint },
+      expect.objectContaining({
+        $set: { lastAttemptAt: '2026-09-10T12:01:00.000Z' },
+        $setOnInsert: expect.objectContaining({
+          status: 'prepared',
+          requestedAt: '2026-09-10T12:01:00.000Z',
+          ...input,
+        }),
+      }),
+      { upsert: true },
+    )
+
+    await completeAccountDeletionAudit(
+      db,
+      'user-1',
+      new Date('2026-09-10T12:02:00.000Z'),
+    )
+    expect(updateOne).toHaveBeenNthCalledWith(
+      3,
+      { _id: firstFingerprint },
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          status: 'completed',
+          completedAt: '2026-09-10T12:02:00.000Z',
+        }),
+      }),
+      { upsert: true },
+    )
   })
 })

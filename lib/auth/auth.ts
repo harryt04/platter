@@ -6,8 +6,11 @@ import { serverEnv } from '@/lib/env/server'
 import { sendPasswordResetEmail } from '@/lib/auth/mailer'
 import {
   anonymizePublicImportedAccountContent,
+  completeAccountDeletionAudit,
   deletePrivateAccountContent,
   getAccountDeletionOwnershipBlockers,
+  getAccountDeletionImpact,
+  recordAccountDeletionPreparedAudit,
   removeAccountMembershipAndPrivateArtifacts,
 } from '@/lib/account-deletion'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
@@ -39,12 +42,27 @@ export const auth = betterAuth({
         if (blockers.length > 0) {
           throw new Error('ACCOUNT_DELETION_OWNERSHIP_BLOCKED')
         }
-        await deletePrivateAccountContent(db, user.id)
-        await anonymizePublicImportedAccountContent(db, user.id)
+        const impact = await getAccountDeletionImpact(db, user.id)
+        const privateCleanup = await deletePrivateAccountContent(db, user.id)
+        const publicCleanup = await anonymizePublicImportedAccountContent(
+          db,
+          user.id,
+        )
+        await recordAccountDeletionPreparedAudit(db, user.id, {
+          ownedLists: impact.ownedLists,
+          coOwnedLists: impact.ownedLists - impact.soleOwnerLists.length,
+          memberships: impact.memberships,
+          manuallyAuthoredRecipes: impact.manuallyAuthoredRecipes,
+          publicImportedRecipes: impact.publicImportedRecipes,
+          completedShoppingRuns: impact.completedShoppingRuns,
+          ...privateCleanup,
+          ...publicCleanup,
+        })
       },
       afterDelete: async (user) => {
         const db = await getConnectedDatabase()
         await removeAccountMembershipAndPrivateArtifacts(db, user.id)
+        await completeAccountDeletionAudit(db, user.id)
       },
     },
   },

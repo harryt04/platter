@@ -38,7 +38,10 @@ provenance, while catalog ownership is anonymized and the deleted account’s
 import jobs and saved references are removed. Better Auth revokes the deleted
 account’s sessions, and the client removes that account’s queued operations,
 offline snapshots, remembered identity, and any reserved private Cache Storage
-entries before navigating to sign-in.
+entries before navigating to sign-in. The destructive path records one
+retry-stable, metadata-only audit entry with aggregate impact and cleanup
+counts, using a pseudonymous account fingerprint rather than retaining account
+identity or recipe content.
 Archived lists preserve read access to their shopping run while disabling
 shopping changes such as completion and amount resets. Owners and editors can
 now confirm an active run through an atomic transition that retains only

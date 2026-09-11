@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type { Db, Filter } from 'mongodb'
 import { entityId, isoDateTime, type EntityId } from '@/lib/contracts/ids'
 import { listMembershipFilter, type ListDocument } from '@/lib/lists'
@@ -70,10 +71,117 @@ export type PublicImportDeletionResult = {
   anonymizedPublicVersions: number
 }
 
+export type AccountDeletionAuditStatus = 'prepared' | 'completed'
+
+/**
+ * Metadata-only deletion audit. The account fingerprint is deterministic so
+ * retries update one record, but the deleted account's email, name, and raw
+ * identifier never remain in the audit collection.
+ */
+export type AccountDeletionAuditDocument = {
+  _id: string
+  accountFingerprint: string
+  status: AccountDeletionAuditStatus
+  requestedAt: string
+  lastAttemptAt: string
+  completedAt?: string
+  ownedLists: number
+  coOwnedLists: number
+  memberships: number
+  manuallyAuthoredRecipes: number
+  publicImportedRecipes: number
+  completedShoppingRuns: number
+  deletedPrivateRecipes: number
+  anonymizedHistoricalVersions: number
+  deletedUnreferencedVersions: number
+  anonymizedPublicRecipes: number
+  anonymizedPublicVersions: number
+}
+
 type RecipeReference = Pick<
   RecipeVersionDocument,
   '_id' | 'recipeId' | 'versionNumber'
 >
+
+function accountDeletionFingerprint(userId: string) {
+  return createHash('sha256')
+    .update(`platter-account-deletion:${userId}`)
+    .digest('hex')
+}
+
+export type AccountDeletionAuditInput = Pick<
+  AccountDeletionAuditDocument,
+  | 'ownedLists'
+  | 'coOwnedLists'
+  | 'memberships'
+  | 'manuallyAuthoredRecipes'
+  | 'publicImportedRecipes'
+  | 'completedShoppingRuns'
+  | 'deletedPrivateRecipes'
+  | 'anonymizedHistoricalVersions'
+  | 'deletedUnreferencedVersions'
+  | 'anonymizedPublicRecipes'
+  | 'anonymizedPublicVersions'
+>
+
+/**
+ * Record application-side deletion work with one retry-stable record.
+ * `$setOnInsert` intentionally leaves a completed status intact if a caller
+ * retries the pre-delete hook after the account has already been removed.
+ */
+export async function recordAccountDeletionPreparedAudit(
+  db: Db,
+  userId: string,
+  input: AccountDeletionAuditInput,
+  now = new Date(),
+) {
+  const fingerprint = accountDeletionFingerprint(userId)
+  const timestamp = isoDateTime(now)
+  await db
+    .collection<AccountDeletionAuditDocument>('account_deletion_audit')
+    .updateOne(
+      { _id: fingerprint },
+      {
+        $set: {
+          lastAttemptAt: timestamp,
+        },
+        $setOnInsert: {
+          accountFingerprint: fingerprint,
+          status: 'prepared',
+          requestedAt: timestamp,
+          ...input,
+        },
+      },
+      { upsert: true },
+    )
+  return fingerprint
+}
+
+/** Mark the retry-stable audit record complete after auth and cleanup finish. */
+export async function completeAccountDeletionAudit(
+  db: Db,
+  userId: string,
+  now = new Date(),
+) {
+  const fingerprint = accountDeletionFingerprint(userId)
+  const timestamp = isoDateTime(now)
+  await db
+    .collection<AccountDeletionAuditDocument>('account_deletion_audit')
+    .updateOne(
+      { _id: fingerprint },
+      {
+        $set: {
+          accountFingerprint: fingerprint,
+          status: 'completed',
+          completedAt: timestamp,
+          lastAttemptAt: timestamp,
+        },
+        $setOnInsert: { requestedAt: timestamp },
+      },
+      { upsert: true },
+    )
+  return fingerprint
+}
 
 function collectVersionReferences(
   records: Array<{ recipeSelections?: Array<RecipeReference> }>,

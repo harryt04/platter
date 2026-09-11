@@ -7,6 +7,31 @@ test('public discovery is reachable', async ({ page }) => {
   ).toBeVisible()
 })
 
+test('serves browser and installable PWA icon assets', async ({ request }) => {
+  const icon = await request.get('/icon.svg')
+  expect(icon.ok()).toBe(true)
+  expect(icon.headers()['content-type']).toContain('image/svg+xml')
+
+  const appleIcon = await request.get('/apple-icon.png')
+  expect(appleIcon.ok()).toBe(true)
+  expect(appleIcon.headers()['content-type']).toContain('image/png')
+
+  const manifest = await request.get('/manifest.webmanifest')
+  expect(manifest.ok()).toBe(true)
+  expect(await manifest.json()).toMatchObject({
+    icons: expect.arrayContaining([
+      expect.objectContaining({
+        src: '/icons/platter-192.png',
+        purpose: 'any',
+      }),
+      expect.objectContaining({
+        src: '/icons/platter-maskable-512.png',
+        purpose: 'maskable',
+      }),
+    ]),
+  })
+})
+
 test('@a11y discovery has one page heading', async ({ page }) => {
   await page.goto('/discover')
   await expect(page.locator('h1')).toHaveCount(1)

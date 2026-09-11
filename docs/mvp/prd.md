@@ -124,6 +124,10 @@ No calendar assignment is required at any point.
   their source and rights provenance remain truthful. Their catalog and
   immutable-version ownership is replaced with an anonymous system owner, and
   the deleted user’s import jobs and saved references are removed.
+- Account deletion writes one retry-stable, metadata-only audit record with a
+  pseudonymous account fingerprint and aggregate impact/cleanup counts. It
+  never retains the deleted account's email, name, raw identifier, recipe
+  content, grocery content, or password.
 - Public recipe discovery may be browsed without authentication; saving, importing, editing, or using a list requires authentication.
 
 ### 9.2 Lists and sharing

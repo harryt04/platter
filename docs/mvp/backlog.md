@@ -915,8 +915,11 @@ run completion across devices; 29: Add replaceable importer adapters
       documented expected load: the integration foundation suite seeds 100
       public recipes and 20 lists, then measures 20 requests per surface in
       batches of five concurrent requests.
-- [ ] Multi-client tests measure connected shopping updates within two seconds
-      at the 95th percentile and record synchronization failure rates.
+- [x] Multi-client tests measure connected shopping updates within two seconds
+      at the 95th percentile and record synchronization failure rates: the
+      Socket.IO integration boundary sends 20 authenticated two-client
+      shopping updates, verifies operation identity and revision delivery,
+      records failures, and asserts a zero-failure p95 below two seconds.
 - [x] Grocery generation produces byte-equivalent domain results for equivalent
       inputs across retry, process, and ordering variations.
 - [x] Required indexes support public search, canonical URL deduplication, list

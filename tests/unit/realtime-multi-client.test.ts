@@ -46,6 +46,34 @@ function waitForEvent<T>(socket: Socket, event: string): Promise<T> {
   })
 }
 
+function waitForTimedEvent<T>(socket: Socket, event: string) {
+  return new Promise<{ payload: T; durationMs: number }>((resolve, reject) => {
+    const startedAt = performance.now()
+    const timeout = setTimeout(() => {
+      socket.off(event, onEvent)
+      socket.off('connect_error', onError)
+      reject(new Error(`Timed out waiting for ${event}`))
+    }, 2_000)
+    const onError = (error: Error) => {
+      clearTimeout(timeout)
+      socket.off(event, onEvent)
+      reject(error)
+    }
+    const onEvent = (payload: T) => {
+      clearTimeout(timeout)
+      socket.off('connect_error', onError)
+      resolve({ payload, durationMs: performance.now() - startedAt })
+    }
+    socket.once('connect_error', onError)
+    socket.once(event, onEvent)
+  })
+}
+
+function p95(values: number[]) {
+  const sorted = [...values].sort((left, right) => left - right)
+  return sorted[Math.ceil(sorted.length * 0.95) - 1] ?? Number.POSITIVE_INFINITY
+}
+
 async function listen(server: HttpServer) {
   await new Promise<void>((resolve) => server.listen(0, resolve))
   const address = server.address()
@@ -139,6 +167,54 @@ describe('realtime multi-client boundary', () => {
     await new Promise((resolve) => setTimeout(resolve, 20))
     expect(ownerEvents).toEqual([differentItemChange, sameItemChange])
     expect(editorEvents).toEqual([differentItemChange, sameItemChange])
+  })
+
+  it('keeps connected shopping updates under the two-second p95 target', async () => {
+    const owner = await joinList('owner-1')
+    const editor = await joinList('editor-1')
+    const durations: number[] = []
+    let failureCount = 0
+    const sampleCount = 20
+
+    for (let index = 0; index < sampleCount; index += 1) {
+      const expected = mutation({
+        revision: index + 1,
+        operationId: `performance-operation-${index}`,
+      })
+      const received = waitForTimedEvent<RealtimeRunMutationEvent>(
+        editor,
+        'run:mutation',
+      )
+      realtime?.to(`list:${listId}`).emit('run:mutation', expected)
+
+      try {
+        const result = await received
+        durations.push(result.durationMs)
+        if (
+          result.payload.operationId !== expected.operationId ||
+          result.payload.revision !== expected.revision
+        ) {
+          failureCount += 1
+        }
+      } catch {
+        failureCount += 1
+      }
+    }
+
+    const performanceReport = {
+      sampleCount,
+      failureCount,
+      failureRate: failureCount / sampleCount,
+      p95Ms: p95(durations),
+    }
+
+    expect(performanceReport).toMatchObject({
+      sampleCount: 20,
+      failureCount: 0,
+      failureRate: 0,
+    })
+    expect(performanceReport.p95Ms).toBeLessThan(2_000)
+    expect(owner.connected).toBe(true)
   })
 
   it('fans out run completion with the replacement run and completing member', async () => {

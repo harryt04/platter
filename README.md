@@ -295,6 +295,10 @@ rejected before an enabled provider can receive them; disabled or incomplete
 analytics remain a typed no-op. The server and explicitly configured browser
 adapters also swallow provider setup, delivery, and shutdown failures so
 analytics cannot make core product actions unavailable.
+The connected shopping boundary also has a real two-client performance check:
+20 authenticated Socket.IO updates are timed, operation and revision delivery
+is verified, failures are counted, and the 95th-percentile latency must remain
+under two seconds.
 Operators can pause new public URL imports and source refreshes with
 `RECIPE_IMPORTS_ENABLED=false`; import history remains readable and manual
 recipes, existing saved recipes, and shopping continue to work. Individual

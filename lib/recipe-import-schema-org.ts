@@ -4,6 +4,7 @@ import {
   importedEditorialProseWarning,
   keepConciseProceduralSteps,
 } from '@/lib/recipe-import-content'
+import { sanitizePlainText } from '@/lib/contracts/text'
 
 export type RecipeImportCandidate = {
   title?: string
@@ -34,18 +35,7 @@ const textLimits = {
   attribution: 1000,
 } as const
 
-function cleanText(value: string) {
-  return value
-    .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(
-      /<\s*(script|style|iframe|object|embed|template|svg|math)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi,
-      ' ',
-    )
-    .replace(/<\/?[a-z][^>]*>/gi, ' ')
-    .replace(/[\u0000-\u001F\u007F]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
+const cleanText = sanitizePlainText
 
 function boundedText(value: unknown, maxLength: number) {
   if (typeof value !== 'string' && typeof value !== 'number') return undefined

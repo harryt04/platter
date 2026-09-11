@@ -114,6 +114,10 @@ immutable recipe version, and leave existing selections pinned until a member
 accepts that version.
 Public recipe reads also have a shared visibility guard: imported content must
 be approved after review, usable, and explicitly public before it can render.
+User-authored and imported recipe text, list names, profile names, manual
+grocery lines, complaint descriptions, and moderation reasons pass through a
+shared plain-text sanitizer at their write boundaries; source HTML is never
+rendered as active content.
 Recipes now have stable identities and incrementing immutable version IDs;
 editing or deleting a recipe snapshots the prior version for future run and
 history references. Authored usable recipes remain private until the owner

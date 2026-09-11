@@ -1,9 +1,9 @@
 import { z } from 'zod'
 import type { Db } from 'mongodb'
 import { isoDateTime, type IsoDateTime } from '@/lib/contracts/ids'
+import { sanitizePlainText } from '@/lib/contracts/text'
 
-const cleanText = (value: string) =>
-  value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim()
+const cleanText = sanitizePlainText
 
 const optionalText = (label: string, max: number) =>
   z.preprocess(

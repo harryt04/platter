@@ -10,9 +10,9 @@ import type {
   RecipeImportImporter,
   RecipeImportSourceAvailability,
 } from '@/lib/recipe-imports'
+import { sanitizePlainText } from '@/lib/contracts/text'
 
-const cleanText = (value: string) =>
-  value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim()
+const cleanText = sanitizePlainText
 
 /** Route and persistence boundary for opaque recipe identifiers. */
 export const recipeIdSchema = z
@@ -34,7 +34,7 @@ const recipeTitleSchema = z
       .max(200, 'Recipe titles must be 200 characters or fewer.'),
   )
 
-const recipeDescriptionSchema = z
+export const recipeDescriptionSchema = z
   .string({ error: 'Enter a recipe description.' })
   .transform(cleanText)
   .pipe(z.string().max(2000, 'Descriptions must be 2,000 characters or fewer.'))

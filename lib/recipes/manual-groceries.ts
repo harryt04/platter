@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { isoDateTime, type IsoDateTime } from '@/lib/contracts/ids'
 import { selectionMutationMetadataSchema } from '@/lib/recipes/selections'
 import { parseIngredientLine } from '@/lib/recipes/ingredient-parser'
+import { sanitizePlainText } from '@/lib/contracts/text'
 import {
   recipeIngredientSchema,
   type RecipeIngredient,
@@ -9,12 +10,7 @@ import {
 
 const manualLineSchema = z
   .string({ error: 'Enter a grocery item.' })
-  .transform((value) =>
-    value
-      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim(),
-  )
+  .transform(sanitizePlainText)
   .pipe(
     z
       .string()

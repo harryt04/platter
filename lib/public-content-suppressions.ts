@@ -1,10 +1,10 @@
 import type { ClientSession, Db, Filter } from 'mongodb'
 import { z } from 'zod'
 import { isoDateTime, type IsoDateTime } from '@/lib/contracts/ids'
+import { sanitizePlainText } from '@/lib/contracts/text'
 import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
 
-const cleanText = (value: string) =>
-  value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim()
+const cleanText = sanitizePlainText
 
 const targetTextSchema = z
   .string({ error: 'Enter a suppression target.' })

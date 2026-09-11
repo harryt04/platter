@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { sanitizePlainText } from '@/lib/contracts/text'
 
 export const defaultProfileLocale = 'en-US' as const
 
@@ -18,12 +19,7 @@ export const profileLocaleSchema = z.enum(profileLocaleValues)
 
 const displayNameSchema = z
   .string()
-  .transform((value) =>
-    value
-      .replace(/[\u0000-\u001F\u007F]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim(),
-  )
+  .transform(sanitizePlainText)
   .pipe(
     z
       .string()

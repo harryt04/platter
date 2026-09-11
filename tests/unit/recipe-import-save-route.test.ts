@@ -117,6 +117,7 @@ describe('POST /api/v1/imports/[importId]/save', () => {
     const response = await POST(
       request({
         title: 'Corrected soup',
+        description: '<p> A cozy soup. </p><script>alert(1)</script>',
         typicalPeopleFed: 6,
         sourceName: 'Correct source',
         sourceUrl: source.sourceUrl,
@@ -137,6 +138,7 @@ describe('POST /api/v1/imports/[importId]/save', () => {
     expect(response.status).toBe(201)
     expect((await response.json()).recipe).toMatchObject({
       title: 'Corrected soup',
+      description: 'A cozy soup.',
       typicalPeopleFed: 6,
       origin: 'imported',
       importReviewStatus: 'approved',
@@ -173,6 +175,7 @@ describe('POST /api/v1/imports/[importId]/save', () => {
     expect(recipes.insertOne).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Corrected soup',
+        description: 'A cozy soup.',
         origin: 'imported',
         importReviewStatus: 'approved',
         visibility: 'public',

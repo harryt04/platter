@@ -1,4 +1,5 @@
 import Decimal from 'decimal.js'
+import { sanitizePlainText } from '@/lib/contracts/text'
 
 const CalculationDecimal = Decimal.clone({ precision: 40 })
 
@@ -138,12 +139,7 @@ const unknownUnit: ParsedIngredientUnit = {
   dimension: 'unknown',
 }
 
-function cleanText(value: string) {
-  return value
-    .replace(/[\u0000-\u001F\u007F]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
+const cleanText = sanitizePlainText
 
 function normalizeIngredientIdentity(value: string) {
   const normalized = value

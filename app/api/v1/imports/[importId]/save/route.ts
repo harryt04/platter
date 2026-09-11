@@ -7,6 +7,7 @@ import {
   createDraftDocument,
   createDraftSchema,
   createRecipeVersionDocument,
+  recipeDescriptionSchema,
   recipeIngredientSchema,
   recipeInstructionSchema,
   recipeMetadataSchema,
@@ -34,7 +35,7 @@ import { z } from 'zod'
 
 const importPreviewSaveSchema = z.object({
   title: createDraftSchema.shape.title,
-  description: z.string().max(2000).optional().nullable(),
+  description: recipeDescriptionSchema.nullable().optional(),
   typicalPeopleFed: typicalPeopleFedSchema.optional().nullable(),
   ...recipeMetadataSchema.shape,
   image: recipeImageProvenanceSchema.optional().nullable(),
@@ -305,6 +306,7 @@ export async function POST(
     origin: 'imported',
     importReviewStatus: approvedForPublicCatalog ? 'approved' : 'pending',
     visibility: approvedForPublicCatalog ? 'public' : 'private',
+    description: parsed.data.description ?? undefined,
     typicalPeopleFed: parsed.data.typicalPeopleFed ?? undefined,
     prepTimeMinutes: parsed.data.prepTimeMinutes ?? undefined,
     cookingTimeMinutes: parsed.data.cookingTimeMinutes ?? undefined,

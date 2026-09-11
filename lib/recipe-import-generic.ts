@@ -4,6 +4,7 @@ import {
   importedEditorialProseWarning,
   keepConciseProceduralSteps,
 } from '@/lib/recipe-import-content'
+import { sanitizePlainText } from '@/lib/contracts/text'
 import type { RecipeImportCandidate } from '@/lib/recipe-import-schema-org'
 
 const textLimits = {
@@ -12,28 +13,7 @@ const textLimits = {
   instruction: 2000,
 } as const
 
-function cleanText(value: string) {
-  return value
-    .replace(
-      /<\s*(script|style|iframe|object|embed|template|svg|math)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi,
-      ' ',
-    )
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&(?:amp|lt|gt|quot|#39|nbsp);/gi, (entity) => {
-      const values: Record<string, string> = {
-        '&amp;': '&',
-        '&lt;': '<',
-        '&gt;': '>',
-        '&quot;': '"',
-        '&#39;': "'",
-        '&nbsp;': ' ',
-      }
-      return values[entity.toLowerCase()] ?? entity
-    })
-    .replace(/[\u0000-\u001F\u007F]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
+const cleanText = sanitizePlainText
 
 function attributeValue(attributes: string, name: string) {
   const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')

@@ -8,6 +8,7 @@ import {
   listOwnerFilter,
 } from '@/lib/lists'
 import { parseAnalyticsEvent } from '@/lib/analytics'
+import { sanitizePlainText } from '@/lib/contracts/text'
 import {
   isPubliclyRenderableRecipe,
   publicRecipeFilter,
@@ -82,9 +83,14 @@ describe('security regression boundaries', () => {
 
   it('sanitizes authored content and rejects script-like source URLs', () => {
     expect(
+      sanitizePlainText(
+        '  <p>Dinner</p> <!-- private note --> &lt;script&gt;alert(1)&lt;/script&gt; plan\u0000  ',
+      ),
+    ).toBe('Dinner plan')
+    expect(
       updateDraftSchema.parse({
-        title: '  Dinner\u0000 plan  ',
-        instructions: ['  Stir\u0007 gently  '],
+        title: '  <strong>Dinner</strong>\u0000 plan  ',
+        instructions: ['  <em>Stir</em>\u0007 gently  '],
       }),
     ).toMatchObject({
       title: 'Dinner plan',

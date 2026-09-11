@@ -38,12 +38,17 @@ import type {
   GroceryPurchasedDocument,
   GroceryPurchasedMutationReceipt,
 } from '@/lib/recipes/grocery-purchased'
+import { sanitizePlainText } from '@/lib/contracts/text'
 
 const listNameSchema = z
   .string({ error: 'Enter a list name.' })
-  .trim()
-  .min(1, 'Enter a list name.')
-  .max(100, 'List names must be 100 characters or fewer.')
+  .transform(sanitizePlainText)
+  .pipe(
+    z
+      .string()
+      .min(1, 'Enter a list name.')
+      .max(100, 'List names must be 100 characters or fewer.'),
+  )
 
 export const listIdSchema = z
   .string({ error: 'Enter a list id.' })

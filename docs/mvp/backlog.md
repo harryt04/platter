@@ -888,6 +888,11 @@ complaints; 35: Delete an account safely
         stable retryable problem responses.
 - [ ] User-authored content is sanitized, imported active content is never
       rendered, and secrets or private contacts do not enter logs or analytics.
+  - [x] Plain-text write boundaries remove markup-shaped content from authored
+        recipe, list, profile, grocery, complaint, and moderation text, while
+        import extraction uses the same sanitizer.
+  - [x] Imported preview descriptions use the authored recipe sanitizer before
+        persistence, and public rendering remains gated on approved imports.
 - [ ] Administrative access to private user content is exceptional, policy-bound,
       and auditable rather than implied by the administrator role.
 - [x] A security regression suite covers horizontal and vertical authorization,

@@ -33,7 +33,9 @@ vi.mock('@/lib/realtime/events', () => ({ createRealtimeEmitter }))
 
 describe('lists', () => {
   it('validates and trims names while rejecting blank or oversized values', () => {
-    expect(createListSchema.parse({ name: '  Family  ' }).name).toBe('Family')
+    expect(
+      createListSchema.parse({ name: '  <strong>Family</strong>  ' }).name,
+    ).toBe('Family')
     expect(createListSchema.safeParse({ name: ' ' }).success).toBe(false)
     expect(createListSchema.safeParse({ name: 'x'.repeat(101) }).success).toBe(
       false,
@@ -102,9 +104,10 @@ describe('lists', () => {
   })
 
   it('validates renamed list names with the same contract as creation', () => {
-    expect(updateListSchema.parse({ name: '  Weeknight meals  ' }).name).toBe(
-      'Weeknight meals',
-    )
+    expect(
+      updateListSchema.parse({ name: '  <strong>Weeknight meals</strong>  ' })
+        .name,
+    ).toBe('Weeknight meals')
     expect(updateListSchema.safeParse({ name: ' ' }).success).toBe(false)
   })
 

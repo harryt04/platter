@@ -845,13 +845,13 @@ deduplicate public imports
 
 **Status:** ready-for-agent
 
-- [ ] Typed events cover list creation or joining, usable-recipe creation,
+- [x] Typed events cover list creation or joining, usable-recipe creation,
       selection and run completion, recipe count per run, review actions, merge
       corrections, import outcomes, synchronization reliability, collaboration,
       and history reuse.
 - [ ] The primary repeated-completion signal can identify runs generated from
       two or more recipes without recording which recipes they were.
-- [ ] Recipe content, ingredient text, grocery content, URLs, complaint contacts,
+- [x] Recipe content, ingredient text, grocery content, URLs, complaint contacts,
       and secrets are impossible or explicitly rejected event properties.
 - [ ] Client and server adapters remain typed no-ops unless analytics is
       explicitly enabled with valid configuration.

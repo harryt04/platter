@@ -746,7 +746,7 @@ and stop automatic republication without breaking legitimate private history.
 **Blocked by:** 29: Add replaceable importer adapters; 31: Process public-content
 complaints
 
-**Status:** ready-for-agent
+**Status:** implemented
 
 - [x] Administrators can find public content by recipe ID, URL, domain, importer,
       or content fingerprint.
@@ -757,9 +757,9 @@ complaints
       recipe references.
 - [x] New imports and reprocessing honor recipe, URL, fingerprint, source, and
       domain suppression before publication.
-- [ ] Restoration is explicit and auditable; ordinary administrators do not gain
+- [x] Restoration is explicit and auditable; ordinary administrators do not gain
       shopping authority over a user's private list.
-- [ ] Tests prove prompt public removal, republication prevention, historical
+- [x] Tests prove prompt public removal, republication prevention, historical
       resolution, domain suppression, and role enforcement.
 
 ## 33: Configure hosted public-catalog policy

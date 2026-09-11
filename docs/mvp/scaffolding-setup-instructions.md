@@ -564,7 +564,7 @@ claims that a control already works.
 | --- | --- |
 | `/admin/public-recipes` | Find public content by ID, URL, domain, importer, or fingerprint. |
 | `/admin/complaints` | Complaint queue and restricted contact-data warning. |
-| `/admin/suppressions` | Recipe/source/domain suppression shell. |
+| `/admin/suppressions` | Audited recipe/source/domain suppression management. |
 | `/settings/instance` | Self-hosting, public-catalog, email, analytics, and moderation settings summary. |
 
 Add root and major-segment `loading.tsx`, `error.tsx`, and `not-found.tsx`

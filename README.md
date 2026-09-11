@@ -218,6 +218,11 @@ and detail reads then exclude those records while retaining the recipe document
 and immutable history references for private moderation and completed-run
 resolution. Active target uniqueness prevents duplicate suppression records, and
 the new indexes support audit review without exposing private recipe content.
+Administrators can review those records on the suppression-management page and
+explicitly restore one active target. Restoration is transactional and creates a
+second audit record; a recipe is reopened only when no other active suppression
+still matches it, and the moderation route has no list-membership or shopping
+authority.
 New imports and historical reprocessing check all of those source identities
 before exposing a preview, while preview saves repeat the check inside their
 transaction so a suppression cannot race with public publication.

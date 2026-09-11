@@ -69,6 +69,22 @@ export type CreatePublicContentSuppression = z.infer<
 
 export type PublicContentSuppressionStatus = 'active' | 'restored'
 
+export const suppressionIdSchema = z.string().uuid()
+
+export type PublicContentSuppressionSummary = {
+  id: string
+  targetType: PublicContentSuppressionTargetType
+  target: string
+  reason: string
+  status: PublicContentSuppressionStatus
+  createdBy: string
+  createdAt: IsoDateTime
+  auditId: string
+  restoredBy?: string
+  restoredAt?: IsoDateTime
+  restorationAuditId?: string
+}
+
 export type PublicContentSuppressionDocument = {
   _id: string
   targetType: PublicContentSuppressionTargetType
@@ -225,6 +241,33 @@ export function createPublicContentSuppression(
   return { suppression, audit }
 }
 
+export function restorePublicContentSuppression(
+  document: PublicContentSuppressionDocument,
+  actorId: string,
+  now = new Date(),
+) {
+  const restoredAt = isoDateTime(now)
+  const restorationAuditId = crypto.randomUUID()
+  const suppression: PublicContentSuppressionDocument = {
+    ...document,
+    status: 'restored',
+    restoredBy: actorId,
+    restoredAt,
+    restorationAuditId,
+  }
+  const audit: PublicContentSuppressionAuditDocument = {
+    _id: restorationAuditId,
+    suppressionId: document._id,
+    action: 'restored',
+    targetType: document.targetType,
+    target: document.target,
+    reason: document.reason,
+    actorId,
+    occurredAt: restoredAt,
+  }
+  return { suppression, audit }
+}
+
 export type PublicContentSuppressionImportIdentity = {
   recipeId?: string
   submittedUrl?: string
@@ -319,7 +362,7 @@ export async function findActivePublicContentSuppressionForImport(
 
 export function toPublicContentSuppressionSummary(
   document: PublicContentSuppressionDocument,
-) {
+): PublicContentSuppressionSummary {
   return {
     id: document._id,
     targetType: document.targetType,
@@ -345,4 +388,13 @@ export async function findActivePublicContentSuppression(
   return db
     .collection<PublicContentSuppressionDocument>('public_content_suppressions')
     .findOne({ targetType, target, status: 'active' })
+}
+
+export async function findPublicContentSuppressions(db: Db, limit = 100) {
+  return db
+    .collection<PublicContentSuppressionDocument>('public_content_suppressions')
+    .find({})
+    .sort({ status: 1, createdAt: -1, _id: 1 })
+    .limit(limit)
+    .toArray()
 }

@@ -71,6 +71,46 @@ export type PublicContentSuppressionStatus = 'active' | 'restored'
 
 export const suppressionIdSchema = z.string().uuid()
 
+const suppressionTimestampSchema = z.string().datetime()
+
+/** Runtime boundary for moderation records read from MongoDB. */
+export const publicContentSuppressionDocumentSchema = z
+  .object({
+    _id: suppressionIdSchema,
+    targetType: publicContentSuppressionTargetTypeSchema,
+    target: z.string().min(1).max(2048),
+    reason: z.string().min(1).max(2000),
+    status: z.enum(['active', 'restored']),
+    createdBy: z.string().min(1),
+    createdAt: suppressionTimestampSchema,
+    auditId: suppressionIdSchema,
+    restoredBy: z.string().min(1).optional(),
+    restoredAt: suppressionTimestampSchema.optional(),
+    restorationAuditId: suppressionIdSchema.optional(),
+  })
+  .strict()
+
+/** Runtime boundary for moderation responses returned to administrator clients. */
+export const publicContentSuppressionResponseSchema = z
+  .object({
+    suppression: z
+      .object({
+        id: suppressionIdSchema,
+        targetType: publicContentSuppressionTargetTypeSchema,
+        target: z.string().min(1).max(2048),
+        reason: z.string().min(1).max(2000),
+        status: z.enum(['active', 'restored']),
+        createdBy: z.string().min(1),
+        createdAt: suppressionTimestampSchema,
+        auditId: suppressionIdSchema,
+        restoredBy: z.string().min(1).optional(),
+        restoredAt: suppressionTimestampSchema.optional(),
+        restorationAuditId: suppressionIdSchema.optional(),
+      })
+      .strict(),
+  })
+  .strict()
+
 export type PublicContentSuppressionSummary = {
   id: string
   targetType: PublicContentSuppressionTargetType

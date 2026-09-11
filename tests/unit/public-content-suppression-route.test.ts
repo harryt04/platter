@@ -298,4 +298,50 @@ describe('POST /api/v1/admin/public-content-suppressions', () => {
       ).status,
     ).toBe(409)
   })
+
+  it('hides database and transaction failures behind a retryable problem', async () => {
+    getConnectedDatabase.mockRejectedValueOnce(
+      new Error('database credentials leaked'),
+    )
+    const unavailableResponse = await POST(
+      new Request('http://localhost/api/v1/admin/public-content-suppressions', {
+        method: 'POST',
+        body: JSON.stringify({
+          targetType: 'domain',
+          target: 'example.com',
+          reason: 'Rights holder request.',
+        }),
+      }),
+    )
+
+    expect(unavailableResponse.status).toBe(503)
+    expect(unavailableResponse.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(JSON.stringify(await unavailableResponse.json())).not.toContain(
+      'database credentials leaked',
+    )
+
+    setup({ recipe: false })
+    getMongoClient.mockReturnValue({
+      withSession: vi
+        .fn()
+        .mockRejectedValue(new Error('transaction details leaked')),
+    })
+    const transactionResponse = await POST(
+      new Request('http://localhost/api/v1/admin/public-content-suppressions', {
+        method: 'POST',
+        body: JSON.stringify({
+          targetType: 'domain',
+          target: 'example.com',
+          reason: 'Rights holder request.',
+        }),
+      }),
+    )
+
+    expect(transactionResponse.status).toBe(503)
+    expect(JSON.stringify(await transactionResponse.json())).not.toContain(
+      'transaction details leaked',
+    )
+  })
 })

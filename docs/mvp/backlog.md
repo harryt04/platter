@@ -947,6 +947,9 @@ complaints; 35: Delete an account safely
   - [x] Manual grocery create, update, and removal mutations validate replayed
         and newly-created response envelopes and hide storage or malformed
         receipt failures behind a stable retryable problem response.
+  - [x] Administrator public-content suppression creation and restoration
+        validate moderation response envelopes and hide storage or malformed
+        suppression-record failures behind a stable retryable problem response.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

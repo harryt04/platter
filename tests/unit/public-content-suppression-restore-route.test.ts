@@ -215,4 +215,35 @@ describe('POST /api/v1/admin/public-content-suppressions/:id/restore', () => {
         .status,
     ).toBe(409)
   })
+
+  it('hides storage and malformed-record failures behind a retryable problem', async () => {
+    getConnectedDatabase.mockRejectedValueOnce(
+      new Error('database credentials leaked'),
+    )
+    const unavailableResponse = await POST(request(), {
+      params: Promise.resolve({ suppressionId }),
+    })
+
+    expect(unavailableResponse.status).toBe(503)
+    expect(JSON.stringify(await unavailableResponse.json())).not.toContain(
+      'database credentials leaked',
+    )
+
+    getConnectedDatabase.mockResolvedValueOnce({
+      collection: vi.fn().mockReturnValue({
+        findOne: vi.fn().mockResolvedValue({
+          ...activeSuppression,
+          createdAt: 'not-a-timestamp',
+        }),
+      }),
+    })
+    const malformedResponse = await POST(request(), {
+      params: Promise.resolve({ suppressionId }),
+    })
+
+    expect(malformedResponse.status).toBe(503)
+    expect(JSON.stringify(await malformedResponse.json())).not.toContain(
+      'not-a-timestamp',
+    )
+  })
 })

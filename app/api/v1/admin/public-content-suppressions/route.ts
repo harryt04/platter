@@ -8,6 +8,7 @@ import {
   findActivePublicContentSuppression,
   normalizePublicContentSuppressionTarget,
   publicContentSuppressionRecipeFilter,
+  publicContentSuppressionResponseSchema,
   toPublicContentSuppressionSummary,
   validatePublicContentSuppressionInput,
   type PublicContentSuppressionDocument,
@@ -74,6 +75,17 @@ function alreadySuppressed() {
   })
 }
 
+function suppressionStorageUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/public-content-suppression-unavailable',
+    title: 'Public-content suppression temporarily unavailable',
+    status: 503,
+    detail:
+      'The public-content suppression service is temporarily unavailable. Try again shortly.',
+    code: 'PUBLIC_CONTENT_SUPPRESSION_UNAVAILABLE',
+  })
+}
+
 export async function POST(request: Request) {
   const session = await getSession()
   if (!session) return authenticationRequired()
@@ -101,71 +113,82 @@ export async function POST(request: Request) {
     return validationFailed()
   }
 
-  const db = await getConnectedDatabase()
-  if (parsed.data.targetType === 'recipe') {
-    const recipe = await db.collection<RecipeDraftDocument>('recipes').findOne({
-      _id: target,
-      status: 'usable',
-      visibility: { $in: ['public', 'suppressed'] },
-    })
-    if (!recipe) return targetNotFound()
-  }
+  try {
+    const db = await getConnectedDatabase()
+    if (parsed.data.targetType === 'recipe') {
+      const recipe = await db
+        .collection<RecipeDraftDocument>('recipes')
+        .findOne({
+          _id: target,
+          status: 'usable',
+          visibility: { $in: ['public', 'suppressed'] },
+        })
+      if (!recipe) return targetNotFound()
+    }
 
-  if (
-    await findActivePublicContentSuppression(db, parsed.data.targetType, target)
-  ) {
-    return alreadySuppressed()
-  }
+    if (
+      await findActivePublicContentSuppression(
+        db,
+        parsed.data.targetType,
+        target,
+      )
+    ) {
+      return alreadySuppressed()
+    }
 
-  const { suppression, audit } = createPublicContentSuppression(
-    { ...parsed.data, target },
-    session.user.id,
-  )
+    const { suppression, audit } = createPublicContentSuppression(
+      { ...parsed.data, target },
+      session.user.id,
+    )
 
-  await getMongoClient().withSession(async (mongoSession) => {
-    await mongoSession.withTransaction(async (transactionSession) => {
-      await db
-        .collection<PublicContentSuppressionDocument>(
-          'public_content_suppressions',
-        )
-        .insertOne(suppression, { session: transactionSession })
-      await db
-        .collection<PublicContentSuppressionAuditDocument>(
-          'public_content_suppression_audit',
-        )
-        .insertOne(audit, { session: transactionSession })
-      if (suppression.targetType === 'recipe') {
-        await db.collection<RecipeDraftDocument>('recipes').updateOne(
-          { _id: suppression.target },
-          {
-            $set: {
-              visibility: 'suppressed',
-              updatedAt: suppression.createdAt,
+    await getMongoClient().withSession(async (mongoSession) => {
+      await mongoSession.withTransaction(async (transactionSession) => {
+        await db
+          .collection<PublicContentSuppressionDocument>(
+            'public_content_suppressions',
+          )
+          .insertOne(suppression, { session: transactionSession })
+        await db
+          .collection<PublicContentSuppressionAuditDocument>(
+            'public_content_suppression_audit',
+          )
+          .insertOne(audit, { session: transactionSession })
+        if (suppression.targetType === 'recipe') {
+          await db.collection<RecipeDraftDocument>('recipes').updateOne(
+            { _id: suppression.target },
+            {
+              $set: {
+                visibility: 'suppressed',
+                updatedAt: suppression.createdAt,
+              },
             },
-          },
-          { session: transactionSession },
-        )
-      } else {
-        await db.collection<RecipeDraftDocument>('recipes').updateMany(
-          {
-            status: 'usable',
-            visibility: 'public',
-            ...publicContentSuppressionRecipeFilter(suppression),
-          },
-          {
-            $set: {
-              visibility: 'suppressed',
-              updatedAt: suppression.createdAt,
+            { session: transactionSession },
+          )
+        } else {
+          await db.collection<RecipeDraftDocument>('recipes').updateMany(
+            {
+              status: 'usable',
+              visibility: 'public',
+              ...publicContentSuppressionRecipeFilter(suppression),
             },
-          },
-          { session: transactionSession },
-        )
-      }
+            {
+              $set: {
+                visibility: 'suppressed',
+                updatedAt: suppression.createdAt,
+              },
+            },
+            { session: transactionSession },
+          )
+        }
+      })
     })
-  })
 
-  return Response.json(
-    { suppression: toPublicContentSuppressionSummary(suppression) },
-    { status: 201 },
-  )
+    const response = publicContentSuppressionResponseSchema.safeParse({
+      suppression: toPublicContentSuppressionSummary(suppression),
+    })
+    if (!response.success) return suppressionStorageUnavailable()
+    return Response.json(response.data, { status: 201 })
+  } catch {
+    return suppressionStorageUnavailable()
+  }
 }

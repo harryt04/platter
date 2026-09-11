@@ -75,6 +75,9 @@ storage or malformed-record failures behind a stable retryable problem.
 Purchased checklist mutations validate replayed and newly-created response
 envelopes and hide storage or malformed-record failures behind the same stable
 retryable problem contract.
+Manual grocery create, update, and removal mutations apply the same response
+validation and retryable storage-failure boundary, including idempotent replay
+receipts.
 Authenticated list collection reads and creation writes validate their
 client-facing envelopes and hide storage or malformed-record failures behind
 stable retryable problems.

@@ -12,7 +12,9 @@ import { completedRunProblem } from '@/lib/contracts/run-mutation'
 import {
   createManualGroceryAdditionDocument,
   createManualGroceryRequestSchema,
+  manualGroceryMutationResponseSchema,
   manualMutationReceiptFor,
+  type ManualGroceryMutationResponse,
 } from '@/lib/recipes/manual-groceries'
 
 type RouteContext = { params: Promise<{ listId: string }> }
@@ -38,7 +40,23 @@ function validationFailed(fields: Record<string, string[]>) {
   })
 }
 
-export async function POST(request: Request, context: RouteContext) {
+function manualGroceryStateUnavailable() {
+  return problem(
+    'MANUAL_GROCERY_UNAVAILABLE',
+    'Manual grocery items temporarily unavailable',
+    'That manual grocery action could not be completed. Try again shortly.',
+    503,
+  )
+}
+
+function responseJson(value: unknown, status = 200) {
+  const parsed = manualGroceryMutationResponseSchema.safeParse(value)
+  return parsed.success
+    ? Response.json(parsed.data, { status })
+    : manualGroceryStateUnavailable()
+}
+
+async function post(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session)
     return problem(
@@ -124,8 +142,7 @@ export async function POST(request: Request, context: RouteContext) {
       'create',
       'manual:create',
     )
-    if (receipt)
-      return Response.json(receipt.response, { status: receipt.status })
+    if (receipt) return responseJson(receipt.response, receipt.status)
   } catch {
     return problem(
       'OPERATION_ID_REUSED',
@@ -147,7 +164,7 @@ export async function POST(request: Request, context: RouteContext) {
     )
 
   const addition = createManualGroceryAdditionDocument(parsed.data.line)
-  const response = {
+  const response: ManualGroceryMutationResponse = {
     addition,
     detail: 'Manual grocery item added.',
     code: 'MANUAL_GROCERY_ADDED',
@@ -186,7 +203,7 @@ export async function POST(request: Request, context: RouteContext) {
       operationId: parsed.data.operationId,
       actorId: session.user.id,
     }).catch(() => undefined)
-    return Response.json(response, { status: 201 })
+    return responseJson(response, 201)
   }
 
   const retryRun = await runs.findOne({
@@ -201,8 +218,7 @@ export async function POST(request: Request, context: RouteContext) {
       'create',
       'manual:create',
     )
-    if (receipt)
-      return Response.json(receipt.response, { status: receipt.status })
+    if (receipt) return responseJson(receipt.response, receipt.status)
   } catch {
     return problem(
       'OPERATION_ID_REUSED',
@@ -217,4 +233,12 @@ export async function POST(request: Request, context: RouteContext) {
     'Reload the shopping run before changing its groceries.',
     409,
   )
+}
+
+export async function POST(request: Request, context: RouteContext) {
+  try {
+    return await post(request, context)
+  } catch {
+    return manualGroceryStateUnavailable()
+  }
 }

@@ -120,7 +120,21 @@ describe('manual grocery routes', () => {
 
   it('replays a repeated create without adding a duplicate', async () => {
     const replay = {
-      addition: { id: 'manual-1' },
+      addition: {
+        id: 'manual-1',
+        ingredient: {
+          originalText: '2 bags spinach',
+          quantity: '2',
+          unit: 'bag',
+          ingredientName: 'spinach',
+          parserConfidence: 'high' as const,
+          optional: false,
+        },
+        createdAt: '2026-09-10T12:00:00.000Z',
+        updatedAt: '2026-09-10T12:00:00.000Z',
+      },
+      detail: 'Manual grocery item added.',
+      code: 'MANUAL_GROCERY_ADDED',
       revision: 4,
     }
     const database = databaseFor({
@@ -265,5 +279,65 @@ describe('manual grocery routes', () => {
     )
     expect(stale.status).toBe(409)
     expect((await stale.json()).code).toBe('RUN_REVISION_CONFLICT')
+  })
+
+  it('hides storage failures and malformed replay receipts behind a retryable problem', async () => {
+    getConnectedDatabase.mockRejectedValueOnce(
+      new Error('database unavailable'),
+    )
+
+    const unavailable = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/manual-items', {
+        method: 'POST',
+        body: JSON.stringify({
+          line: 'paper towels',
+          ...metadata('manual-unavailable'),
+        }),
+      }),
+      listContext(),
+    )
+
+    expect(unavailable.status).toBe(503)
+    expect(await unavailable.json()).toEqual({
+      type: 'https://platter.dev/problems/manual-grocery-unavailable',
+      title: 'Manual grocery items temporarily unavailable',
+      status: 503,
+      detail:
+        'That manual grocery action could not be completed. Try again shortly.',
+      code: 'MANUAL_GROCERY_UNAVAILABLE',
+    })
+
+    const database = databaseFor({
+      _id: 'run-1',
+      listId: 'list-1',
+      state: 'active',
+      revision: 4,
+      manualAdditions: [],
+      manualMutationReceipts: [
+        {
+          operationId: 'manual-malformed-replay',
+          clientId: 'client-1',
+          target: 'manual:create',
+          kind: 'create',
+          status: 201,
+          response: { code: 'MANUAL_GROCERY_ADDED' },
+        },
+      ],
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const malformed = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/manual-items', {
+        method: 'POST',
+        body: JSON.stringify({
+          line: 'paper towels',
+          ...metadata('manual-malformed-replay', 4),
+        }),
+      }),
+      listContext(),
+    )
+
+    expect(malformed.status).toBe(503)
+    expect((await malformed.json()).code).toBe('MANUAL_GROCERY_UNAVAILABLE')
   })
 })

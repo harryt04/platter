@@ -10,8 +10,10 @@ import { problemResponse } from '@/lib/contracts/problem'
 import { publishRunMutationEvent } from '@/lib/realtime/events'
 import {
   manualMutationReceiptFor,
+  manualGroceryMutationResponseSchema,
   updateManualGroceryRequestSchema,
   updateManualGroceryAdditionDocument,
+  type ManualGroceryMutationResponse,
 } from '@/lib/recipes/manual-groceries'
 import { selectionMutationMetadataSchema } from '@/lib/recipes/selections'
 import { completedRunProblem } from '@/lib/contracts/run-mutation'
@@ -41,6 +43,22 @@ function validationFailed(fields?: Record<string, string[]>) {
   })
 }
 
+function manualGroceryStateUnavailable() {
+  return problem(
+    'MANUAL_GROCERY_UNAVAILABLE',
+    'Manual grocery items temporarily unavailable',
+    'That manual grocery action could not be completed. Try again shortly.',
+    503,
+  )
+}
+
+function responseJson(value: unknown, status = 200) {
+  const parsed = manualGroceryMutationResponseSchema.safeParse(value)
+  return parsed.success
+    ? Response.json(parsed.data, { status })
+    : manualGroceryStateUnavailable()
+}
+
 async function loadRun(listId: string, userId: string, runId: string) {
   const db = await getConnectedDatabase()
   const list = await db
@@ -53,7 +71,7 @@ async function loadRun(listId: string, userId: string, runId: string) {
   return { db, list, run }
 }
 
-export async function PATCH(request: Request, context: RouteContext) {
+async function patch(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session)
     return problem(
@@ -128,8 +146,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       'update',
       target,
     )
-    if (receipt)
-      return Response.json(receipt.response, { status: receipt.status })
+    if (receipt) return responseJson(receipt.response, receipt.status)
   } catch {
     return problem(
       'OPERATION_ID_REUSED',
@@ -163,7 +180,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     addition,
     parsed.data.line,
   )
-  const response = {
+  const response: ManualGroceryMutationResponse = {
     addition: updatedAddition,
     detail: 'Manual grocery item updated.',
     code: 'MANUAL_GROCERY_UPDATED',
@@ -213,10 +230,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     operationId: parsed.data.operationId,
     actorId: session.user.id,
   }).catch(() => undefined)
-  return Response.json(response)
+  return responseJson(response)
 }
 
-export async function DELETE(request: Request, context: RouteContext) {
+async function remove(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session)
     return problem(
@@ -276,8 +293,7 @@ export async function DELETE(request: Request, context: RouteContext) {
       'remove',
       target,
     )
-    if (receipt)
-      return Response.json(receipt.response, { status: receipt.status })
+    if (receipt) return responseJson(receipt.response, receipt.status)
   } catch {
     return problem(
       'OPERATION_ID_REUSED',
@@ -304,7 +320,7 @@ export async function DELETE(request: Request, context: RouteContext) {
       'That manual grocery item is not in this shopping run.',
       404,
     )
-  const response = {
+  const response: ManualGroceryMutationResponse = {
     detail: 'Manual grocery item removed.',
     code: 'MANUAL_GROCERY_REMOVED',
     additionId,
@@ -351,5 +367,21 @@ export async function DELETE(request: Request, context: RouteContext) {
     operationId: parsed.data.operationId,
     actorId: session.user.id,
   }).catch(() => undefined)
-  return Response.json(response)
+  return responseJson(response)
+}
+
+export async function PATCH(request: Request, context: RouteContext) {
+  try {
+    return await patch(request, context)
+  } catch {
+    return manualGroceryStateUnavailable()
+  }
+}
+
+export async function DELETE(request: Request, context: RouteContext) {
+  try {
+    return await remove(request, context)
+  } catch {
+    return manualGroceryStateUnavailable()
+  }
 }

@@ -1,5 +1,9 @@
 import { z } from 'zod'
-import { isoDateTime, type IsoDateTime } from '@/lib/contracts/ids'
+import {
+  isoDateTime,
+  opaqueIdSchema,
+  type IsoDateTime,
+} from '@/lib/contracts/ids'
 import { selectionMutationMetadataSchema } from '@/lib/recipes/selections'
 import { parseIngredientLine } from '@/lib/recipes/ingredient-parser'
 import { sanitizePlainText } from '@/lib/contracts/text'
@@ -32,13 +36,40 @@ export type ManualGroceryAdditionDocument = {
   updatedAt: IsoDateTime
 }
 
+const manualGroceryAdditionResponseSchema = z.strictObject({
+  id: opaqueIdSchema,
+  ingredient: recipeIngredientSchema.strict(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+})
+
+/** Runtime boundary for manual-grocery mutation receipts and responses. */
+export const manualGroceryMutationResponseSchema = z.union([
+  z.strictObject({
+    addition: manualGroceryAdditionResponseSchema,
+    detail: z.string().min(1).max(500),
+    code: z.enum(['MANUAL_GROCERY_ADDED', 'MANUAL_GROCERY_UPDATED']),
+    revision: z.number().int().nonnegative(),
+  }),
+  z.strictObject({
+    detail: z.string().min(1).max(500),
+    code: z.literal('MANUAL_GROCERY_REMOVED'),
+    additionId: opaqueIdSchema,
+    revision: z.number().int().nonnegative(),
+  }),
+])
+
+export type ManualGroceryMutationResponse = z.infer<
+  typeof manualGroceryMutationResponseSchema
+>
+
 export type ManualGroceryMutationReceipt = {
   operationId: string
   clientId: string
   target: string
   kind: 'create' | 'update' | 'remove'
   status: 200 | 201
-  response: Record<string, unknown>
+  response: ManualGroceryMutationResponse
 }
 
 function quantityText(quantity: { min: string; max?: string }) {

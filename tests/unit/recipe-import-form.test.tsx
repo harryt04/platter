@@ -90,4 +90,21 @@ describe('RecipeImportForm', () => {
     ).toBeDisabled()
     expect(screen.getByText('https://example.com/recipe')).toBeInTheDocument()
   })
+
+  it('explains hosted policy gating separately from an operator pause', () => {
+    render(
+      <RecipeImportForm
+        importsBlockedByPolicy
+        importsEnabled={false}
+        initialImports={[]}
+      />,
+    )
+
+    expect(
+      screen.getByText(/must publish and configure the terms/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/disabled by the instance operator/i),
+    ).not.toBeInTheDocument()
+  })
 })

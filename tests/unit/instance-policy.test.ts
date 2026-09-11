@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { getInstancePolicySummary } from '@/lib/instance-policy'
 
 const baseEnvironment = {
+  NODE_ENV: 'production' as const,
   SMTP_ENABLED: false,
   SMTP_HOST: 'localhost',
   SMTP_FROM: 'noreply@example.test',
@@ -10,6 +11,11 @@ const baseEnvironment = {
   NEXT_PUBLIC_POSTHOG_HOST: undefined,
   RECIPE_IMPORTS_ENABLED: true,
   RECIPE_IMPORT_DISABLED_ADAPTERS: '',
+  PUBLIC_CATALOG_POLICIES_PUBLISHED: false,
+  PUBLIC_CATALOG_TERMS_URL: undefined,
+  PUBLIC_CATALOG_PRIVACY_URL: undefined,
+  PUBLIC_CATALOG_REMOVAL_CONTACT: undefined,
+  PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL: undefined,
 }
 
 describe('instance policy summary', () => {
@@ -101,6 +107,28 @@ describe('instance policy summary', () => {
           status: 'disabled',
           statusLabel: 'Disabled',
           detail: expect.stringContaining('manual recipes'),
+        }),
+      ]),
+    )
+  })
+
+  it('marks hosted imports enabled only after every policy is published', () => {
+    const summary = getInstancePolicySummary({
+      ...baseEnvironment,
+      PUBLIC_CATALOG_POLICIES_PUBLISHED: true,
+      PUBLIC_CATALOG_TERMS_URL: 'https://platter.example/terms',
+      PUBLIC_CATALOG_PRIVACY_URL: 'https://platter.example/privacy',
+      PUBLIC_CATALOG_REMOVAL_CONTACT: 'copyright@platter.example',
+      PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL:
+        'https://platter.example/repeat-infringer',
+    })
+
+    expect(summary.services).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'public-catalog',
+          status: 'enabled',
+          statusLabel: 'Enabled',
         }),
       ]),
     )

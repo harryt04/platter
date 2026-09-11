@@ -4,12 +4,17 @@ import { requireSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { serverEnv } from '@/lib/env/server'
 import {
+  publicCatalogImportsEnabled,
+  publicCatalogPolicyIsReady,
+} from '@/lib/instance-policy'
+import {
   toRecipeImportSummary,
   type RecipeImportDocument,
 } from '@/lib/recipe-imports'
 
 export default async function ImportPage() {
   const session = await requireSession('/import')
+  const environment = serverEnv()
   const db = await getConnectedDatabase()
   const imports = await db
     .collection<RecipeImportDocument>('recipe_imports')
@@ -26,7 +31,12 @@ export default async function ImportPage() {
         title="Bring a recipe into Platter"
       />
       <RecipeImportForm
-        importsEnabled={serverEnv().RECIPE_IMPORTS_ENABLED}
+        importsBlockedByPolicy={
+          environment.NODE_ENV === 'production' &&
+          environment.RECIPE_IMPORTS_ENABLED &&
+          !publicCatalogPolicyIsReady(environment)
+        }
+        importsEnabled={publicCatalogImportsEnabled(environment)}
         initialImports={imports.map(toRecipeImportSummary)}
       />
     </ContentContainer>

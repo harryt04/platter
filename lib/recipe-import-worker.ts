@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import type { Db } from 'mongodb'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { serverEnv } from '@/lib/env/server'
+import { publicCatalogImportsEnabled } from '@/lib/instance-policy'
 import { validateJobPayload } from '@/lib/jobs/registry'
 import {
   parseDisabledRecipeImportAdapters,
@@ -103,7 +104,7 @@ export function createRecipeImportJobHandler(
     }
 
     try {
-      if (!serverEnv().RECIPE_IMPORTS_ENABLED) {
+      if (!publicCatalogImportsEnabled()) {
         await collection.updateOne(processingFilter, {
           $set: {
             status: 'failed',

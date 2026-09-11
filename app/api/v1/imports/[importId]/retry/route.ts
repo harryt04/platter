@@ -4,7 +4,6 @@ import { getSession } from '@/lib/auth/authorization'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
-import { serverEnv } from '@/lib/env/server'
 import { enqueueRecipeImport } from '@/lib/jobs/queue'
 import {
   recipeImportIdSchema,
@@ -13,6 +12,7 @@ import {
   type RecipeImportDocument,
 } from '@/lib/recipe-imports'
 import { checkRateLimit } from '@/lib/security/rate-limit'
+import { publicCatalogImportsEnabled } from '@/lib/instance-policy'
 
 const retryRequestSchema = z.object({
   action: z.enum(['retry', 'reprocess']),
@@ -86,7 +86,7 @@ export async function POST(
 ) {
   const session = await getSession()
   if (!session) return authenticationRequired()
-  if (!serverEnv().RECIPE_IMPORTS_ENABLED) return publicImportsDisabled()
+  if (!publicCatalogImportsEnabled()) return publicImportsDisabled()
 
   const limit = checkRateLimit(`recipe-import-retry:${session.user.id}`, {
     limit: 30,

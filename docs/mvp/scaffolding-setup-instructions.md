@@ -250,6 +250,10 @@ Create `.env.example` with names and safe local defaults where possible. Keep
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` | Password reset and invitation email delivery | Required when SMTP is enabled; local defaults target Mailpit. |
 | `RECIPE_IMPORTS_ENABLED` | Allow new public recipe URL imports and source refreshes | Optional; `true` by default. Set to `false` to keep manual recipes, existing saved recipes, and shopping available while disabling public import work. |
 | `RECIPE_IMPORT_DISABLED_ADAPTERS` | Comma-separated recipe import adapter IDs to disable | Optional; empty by default. Disabled adapters fail only their import job. |
+| `PUBLIC_CATALOG_POLICIES_PUBLISHED` | Affirm that the hosted terms, privacy, removal-contact, and repeat-infringer policies are published | Defaults to `false`; production public imports remain disabled until this is `true` and all four policy fields below are configured. |
+| `PUBLIC_CATALOG_TERMS_URL`, `PUBLIC_CATALOG_PRIVACY_URL` | Published hosted terms and privacy-policy URLs | Required for production public imports. |
+| `PUBLIC_CATALOG_REMOVAL_CONTACT` | Public content-removal contact | Required for production public imports; do not use a private support credential. |
+| `PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL` | Published repeat-infringer handling URL | Required for production public imports. |
 | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE` | Hosted SMTP settings | Optional locally. |
 | `REALTIME_PORT` | Socket.IO service port | Local default `3001`. |
 | `NEXT_PUBLIC_REALTIME_URL` | Browser-visible realtime origin | Local default `http://localhost:3001`. |

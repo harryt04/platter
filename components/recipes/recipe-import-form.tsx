@@ -63,9 +63,11 @@ function getServerOnlineStatus() {
 export function RecipeImportForm({
   initialImports,
   importsEnabled = true,
+  importsBlockedByPolicy = false,
 }: {
   initialImports: RecipeImportSummary[]
   importsEnabled?: boolean
+  importsBlockedByPolicy?: boolean
 }) {
   const router = useRouter()
   const [imports, setImports] = React.useState(initialImports)
@@ -225,7 +227,14 @@ export function RecipeImportForm({
                 queued offline.
               </p>
             )}
-            {!importsEnabled && (
+            {!importsEnabled && importsBlockedByPolicy && (
+              <p className="text-warning text-sm" role="status">
+                Public URL imports are not enabled for this hosted instance. The
+                operator must publish and configure the terms, privacy,
+                removal-contact, and repeat-infringer policies first.
+              </p>
+            )}
+            {!importsEnabled && !importsBlockedByPolicy && (
               <p className="text-muted-foreground text-sm" role="status">
                 Public URL imports are disabled by the instance operator. Manual
                 recipes, existing saved recipes, and shopping remain available.

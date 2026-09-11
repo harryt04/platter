@@ -83,6 +83,26 @@ describe('/api/v1/imports', () => {
     expect(enqueueRecipeImport).not.toHaveBeenCalled()
   })
 
+  it('keeps hosted imports disabled until the published policy configuration is complete', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('RECIPE_IMPORTS_ENABLED', 'true')
+    vi.stubEnv('PUBLIC_CATALOG_POLICIES_PUBLISHED', 'false')
+    resetServerEnvForTests()
+    const collection = setup()
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/imports', {
+        method: 'POST',
+        headers: { 'idempotency-key': 'policy-gated-import-key' },
+        body: JSON.stringify({ sourceUrl: importDocument.sourceUrl }),
+      }),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('PUBLIC_IMPORTS_DISABLED')
+    expect(collection.insertOne).not.toHaveBeenCalled()
+  })
+
   it('requires authentication for submission and status listing', async () => {
     getSession.mockResolvedValue(null)
 

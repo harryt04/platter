@@ -30,6 +30,27 @@ const serverSchema = z.object({
     return value
   }, z.coerce.boolean().default(true)),
   RECIPE_IMPORT_DISABLED_ADAPTERS: z.string().default(''),
+  PUBLIC_CATALOG_POLICIES_PUBLISHED: z.preprocess((value) => {
+    if (value === 'true') return true
+    if (value === 'false') return false
+    return value
+  }, z.coerce.boolean().default(false)),
+  PUBLIC_CATALOG_TERMS_URL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().url().optional(),
+  ),
+  PUBLIC_CATALOG_PRIVACY_URL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().url().optional(),
+  ),
+  PUBLIC_CATALOG_REMOVAL_CONTACT: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().trim().min(3).max(320).optional(),
+  ),
+  PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().url().optional(),
+  ),
   SMTP_USER: optionalString,
   SMTP_PASSWORD: optionalString,
   SMTP_SECURE: z.coerce.boolean().default(false),

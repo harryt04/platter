@@ -27,6 +27,17 @@ previously saved imported recipes remain available, and manual recipes and
 shopping do not depend on this setting. The API, UI, and worker all enforce
 the setting so queued work cannot fetch or publish after the pause.
 
+Production also fails closed until the hosted public-catalog policy is
+published and configured. Set `PUBLIC_CATALOG_POLICIES_PUBLISHED=true` only
+after publishing the deployment's terms, privacy policy, content-removal
+contact, and repeat-infringer handling, then provide their URLs/contact in
+`PUBLIC_CATALOG_TERMS_URL`, `PUBLIC_CATALOG_PRIVACY_URL`,
+`PUBLIC_CATALOG_REMOVAL_CONTACT`, and
+`PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL`. Missing or malformed values keep
+new public imports disabled while manual recipes, existing saved recipes, and
+shopping continue to work. Local development and automated tests may exercise
+the import workflow without claiming that hosted policies are published.
+
 The worker passes only the bounded result of the SSRF-safe fetch stage to an
 import adapter. Adapters implement the typed contract in
 `lib/recipe-import-adapters.ts` and return a normalized candidate, a partial

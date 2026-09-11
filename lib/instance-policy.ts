@@ -21,6 +21,16 @@ export type InstancePolicySummary = {
   services: InstanceServiceSummary[]
 }
 
+type PublicCatalogPolicyEnvironment = Pick<
+  ServerEnv,
+  | 'NODE_ENV'
+  | 'PUBLIC_CATALOG_POLICIES_PUBLISHED'
+  | 'PUBLIC_CATALOG_TERMS_URL'
+  | 'PUBLIC_CATALOG_PRIVACY_URL'
+  | 'PUBLIC_CATALOG_REMOVAL_CONTACT'
+  | 'PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL'
+>
+
 type InstancePolicyEnvironment = Pick<
   ServerEnv,
   | 'SMTP_ENABLED'
@@ -31,9 +41,36 @@ type InstancePolicyEnvironment = Pick<
   | 'NEXT_PUBLIC_POSTHOG_HOST'
   | 'RECIPE_IMPORTS_ENABLED'
   | 'RECIPE_IMPORT_DISABLED_ADAPTERS'
->
+> &
+  PublicCatalogPolicyEnvironment
 
 const builtInImporterIds = ['schema-org-json-ld', 'generic-html'] as const
+
+export function publicCatalogPolicyIsReady(
+  environment: PublicCatalogPolicyEnvironment,
+) {
+  return Boolean(
+    environment.PUBLIC_CATALOG_POLICIES_PUBLISHED &&
+    environment.PUBLIC_CATALOG_TERMS_URL &&
+    environment.PUBLIC_CATALOG_PRIVACY_URL &&
+    environment.PUBLIC_CATALOG_REMOVAL_CONTACT &&
+    environment.PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL,
+  )
+}
+
+export function publicCatalogImportsEnabled(
+  environment: Pick<ServerEnv, 'NODE_ENV' | 'RECIPE_IMPORTS_ENABLED'> &
+    PublicCatalogPolicyEnvironment = serverEnv(),
+) {
+  if (!environment.RECIPE_IMPORTS_ENABLED) return false
+
+  // Local and test instances may exercise the import workflow without
+  // pretending that their policies are published for a hosted deployment.
+  return (
+    environment.NODE_ENV !== 'production' ||
+    publicCatalogPolicyIsReady(environment)
+  )
+}
 
 function configuredEmailStatus(env: InstancePolicyEnvironment) {
   if (!env.SMTP_ENABLED) {
@@ -96,6 +133,8 @@ export function getInstancePolicySummary(
   )
   const email = configuredEmailStatus(environment)
   const analytics = configuredAnalyticsStatus(environment)
+  const policyReady = publicCatalogPolicyIsReady(environment)
+  const hosted = environment.NODE_ENV === 'production'
 
   return {
     services: [
@@ -112,13 +151,25 @@ export function getInstancePolicySummary(
       {
         id: 'public-catalog',
         label: 'Public catalog',
-        status: environment.RECIPE_IMPORTS_ENABLED ? 'incomplete' : 'disabled',
-        statusLabel: environment.RECIPE_IMPORTS_ENABLED
-          ? 'Policy required'
-          : 'Disabled',
-        detail: environment.RECIPE_IMPORTS_ENABLED
-          ? 'Hosted public imports are not ready to be enabled until terms, privacy, removal contact, and repeat-infringer handling are published.'
-          : 'New public URL imports are disabled; manual recipes, existing saved recipes, and shopping remain available.',
+        status: !environment.RECIPE_IMPORTS_ENABLED
+          ? 'disabled'
+          : hosted && !policyReady
+            ? 'incomplete'
+            : 'enabled',
+        statusLabel: !environment.RECIPE_IMPORTS_ENABLED
+          ? 'Disabled'
+          : hosted && !policyReady
+            ? 'Policy required'
+            : hosted
+              ? 'Enabled'
+              : 'Development only',
+        detail: !environment.RECIPE_IMPORTS_ENABLED
+          ? 'New public URL imports are disabled; manual recipes, existing saved recipes, and shopping remain available.'
+          : hosted && !policyReady
+            ? 'Hosted public imports stay disabled until terms, privacy, removal contact, and repeat-infringer handling are published and configured.'
+            : hosted
+              ? 'Required hosted policies are published; new public URL imports are available.'
+              : 'Public URL imports are available for local development; hosted enablement still requires the published policy configuration.',
       },
       {
         id: 'importer',

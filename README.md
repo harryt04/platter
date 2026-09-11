@@ -236,6 +236,14 @@ Operators can pause new public URL imports and source refreshes with
 `RECIPE_IMPORTS_ENABLED=false`; import history remains readable and manual
 recipes, existing saved recipes, and shopping continue to work. Individual
 adapters remain independently disableable with
+`RECIPE_IMPORT_DISABLED_ADAPTERS`.
+Production also keeps imports disabled until the operator publishes and
+configures the terms, privacy, removal-contact, and repeat-infringer policies:
+set `PUBLIC_CATALOG_POLICIES_PUBLISHED=true` and provide the four corresponding
+`PUBLIC_CATALOG_*` URL/contact settings documented in
+[`docs/mvp/deployment.md`](docs/mvp/deployment.md). Local development and
+automated tests can still exercise imports without representing hosted policy
+publication.
 The import extraction stage now runs through a typed replaceable adapter
 contract: bounded fetched HTML can produce a normalized candidate, a partial
 candidate with warnings, or an isolated typed failure. Selection tries

@@ -776,7 +776,7 @@ the required policies and contacts.
       moderation, and source-adapter status without exposing secret values.
 - [x] An operator can disable public imports or specified adapters while manual
       recipes, existing saved recipes, and shopping continue to work.
-- [ ] Hosted public imports cannot be enabled until terms, privacy policy,
+- [x] Hosted public imports cannot be enabled until terms, privacy policy,
       content-removal contact, and repeat-infringer handling are explicitly
       configured and published.
 - [ ] Optional DMCA-agent and notice/counter-notice information can be configured

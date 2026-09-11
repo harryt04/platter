@@ -10,6 +10,7 @@ describe('InstanceStatusSummary', () => {
     render(
       <InstanceStatusSummary
         summary={getInstancePolicySummary({
+          NODE_ENV: 'production',
           SMTP_ENABLED: false,
           SMTP_HOST: 'localhost',
           SMTP_FROM: 'noreply@example.test',
@@ -18,6 +19,11 @@ describe('InstanceStatusSummary', () => {
           NEXT_PUBLIC_POSTHOG_HOST: undefined,
           RECIPE_IMPORTS_ENABLED: true,
           RECIPE_IMPORT_DISABLED_ADAPTERS: '',
+          PUBLIC_CATALOG_POLICIES_PUBLISHED: false,
+          PUBLIC_CATALOG_TERMS_URL: undefined,
+          PUBLIC_CATALOG_PRIVACY_URL: undefined,
+          PUBLIC_CATALOG_REMOVAL_CONTACT: undefined,
+          PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL: undefined,
         })}
       />,
     )
@@ -29,7 +35,7 @@ describe('InstanceStatusSummary', () => {
       screen.queryByText(/Secret values are never shown here/i),
     ).not.toBeInTheDocument()
     expect(
-      screen.getByText(/Hosted public imports are not ready to be enabled/i),
+      screen.getByText(/Hosted public imports stay disabled/i),
     ).toBeInTheDocument()
   })
 })

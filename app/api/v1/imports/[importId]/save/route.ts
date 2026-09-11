@@ -2,7 +2,7 @@ import { getSession } from '@/lib/auth/authorization'
 import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase, getMongoClient } from '@/lib/db/mongo-client'
 import { isoDateTime } from '@/lib/contracts/ids'
-import { serverEnv } from '@/lib/env/server'
+import { publicCatalogImportsEnabled } from '@/lib/instance-policy'
 import {
   createDraftDocument,
   createDraftSchema,
@@ -228,7 +228,7 @@ export async function POST(
   if (source.savedRecipeId) {
     return Response.json({ recipeId: source.savedRecipeId }, { status: 200 })
   }
-  if (!serverEnv().RECIPE_IMPORTS_ENABLED) return publicImportsDisabled()
+  if (!publicCatalogImportsEnabled()) return publicImportsDisabled()
   if (source.status !== 'preview-ready' || !source.preview) return notReady()
 
   let body: unknown

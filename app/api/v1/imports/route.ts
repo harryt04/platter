@@ -2,7 +2,7 @@ import { getSession } from '@/lib/auth/authorization'
 import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { isoDateTime } from '@/lib/contracts/ids'
-import { serverEnv } from '@/lib/env/server'
+import { publicCatalogImportsEnabled } from '@/lib/instance-policy'
 import {
   createRecipeImportDocument,
   recipeImportIdempotencyKeySchema,
@@ -118,7 +118,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const session = await getSession()
   if (!session) return authenticationRequired()
-  if (!serverEnv().RECIPE_IMPORTS_ENABLED) return publicImportsDisabled()
+  if (!publicCatalogImportsEnabled()) return publicImportsDisabled()
 
   const idempotencyKey = request.headers.get('idempotency-key')
   const parsedIdempotencyKey =

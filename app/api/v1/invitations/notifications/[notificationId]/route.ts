@@ -8,6 +8,8 @@ import {
 } from '@/lib/notifications'
 import {
   invitationIsExpired,
+  invitationAcceptanceResponseSchema,
+  invitationRecipientResponseSchema,
   toInvitationRecipientSummary,
   type InvitationDocument,
 } from '@/lib/invitations'
@@ -80,6 +82,16 @@ function invitationRateLimited(retryAfterSeconds: number) {
   return response
 }
 
+function invitationUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/invitation-unavailable',
+    title: 'Invitation temporarily unavailable',
+    status: 503,
+    detail: 'The invitation could not be loaded. Try again shortly.',
+    code: 'INVITATION_UNAVAILABLE',
+  })
+}
+
 function clientKey(request: Request) {
   const forwarded = request.headers.get('x-forwarded-for')
   return (
@@ -104,69 +116,77 @@ async function readInvitation(notificationId: string, userId: string) {
 }
 
 export async function GET(_request: Request, context: RouteContext) {
-  const session = await getSession()
-  if (!session) return authenticationRequired()
+  try {
+    const session = await getSession()
+    if (!session) return authenticationRequired()
 
-  const { notificationId } = await context.params
-  if (!notificationIdSchema.safeParse(notificationId).success) {
-    return invitationNotFound()
+    const { notificationId } = await context.params
+    if (!notificationIdSchema.safeParse(notificationId).success) {
+      return invitationNotFound()
+    }
+
+    const record = await readInvitation(notificationId, session.user.id)
+    if (!record) return invitationNotFound()
+    if (session.user.email.trim().toLowerCase() !== record.invitation.email) {
+      return invitedAccountRequired()
+    }
+
+    const stateError = invitationStateError(record.invitation)
+    if (stateError) return stateError
+
+    const response = invitationRecipientResponseSchema.safeParse({
+      invitation: toInvitationRecipientSummary(
+        record.invitation,
+        record.list.name,
+      ),
+    })
+    if (!response.success) return invitationUnavailable()
+
+    return Response.json(response.data)
+  } catch {
+    return invitationUnavailable()
   }
-
-  const record = await readInvitation(notificationId, session.user.id)
-  if (!record) return invitationNotFound()
-  if (session.user.email.trim().toLowerCase() !== record.invitation.email) {
-    return invitedAccountRequired()
-  }
-
-  const stateError = invitationStateError(record.invitation)
-  if (stateError) return stateError
-
-  return Response.json({
-    invitation: toInvitationRecipientSummary(
-      record.invitation,
-      record.list.name,
-    ),
-  })
 }
 
 class ListUnavailableError extends Error {}
 
 export async function POST(request: Request, context: RouteContext) {
-  const session = await getSession()
-  if (!session) return authenticationRequired()
-
-  const { notificationId } = await context.params
-  if (!notificationIdSchema.safeParse(notificationId).success) {
-    return invitationNotFound()
-  }
-
-  const rateLimit = checkRateLimit(
-    `invitation:accept:notification:${clientKey(request)}`,
-    { limit: 10, windowMs: 60 * 1000 },
-  )
-  if (!rateLimit.allowed) {
-    return invitationRateLimited(rateLimit.retryAfterSeconds)
-  }
-
-  const record = await readInvitation(notificationId, session.user.id)
-  if (!record) return invitationNotFound()
-
-  const stateError = invitationStateError(record.invitation)
-  if (stateError) return stateError
-  if (session.user.email.trim().toLowerCase() !== record.invitation.email) {
-    return invitedAccountRequired()
-  }
-
-  const db = await getConnectedDatabase()
-  const invitationCollection =
-    db.collection<InvitationDocument>('list_invitations')
-  const listCollection = db.collection<ListDocument>('lists')
-  const now = new Date()
-  const updatedAt = isoDateTime(now)
   let accepted:
     { invitation: InvitationDocument; list: ListDocument } | undefined
 
   try {
+    const session = await getSession()
+    if (!session) return authenticationRequired()
+
+    const { notificationId } = await context.params
+    if (!notificationIdSchema.safeParse(notificationId).success) {
+      return invitationNotFound()
+    }
+
+    const rateLimit = checkRateLimit(
+      `invitation:accept:notification:${clientKey(request)}`,
+      { limit: 10, windowMs: 60 * 1000 },
+    )
+    if (!rateLimit.allowed) {
+      return invitationRateLimited(rateLimit.retryAfterSeconds)
+    }
+
+    const record = await readInvitation(notificationId, session.user.id)
+    if (!record) return invitationNotFound()
+
+    const stateError = invitationStateError(record.invitation)
+    if (stateError) return stateError
+    if (session.user.email.trim().toLowerCase() !== record.invitation.email) {
+      return invitedAccountRequired()
+    }
+
+    const db = await getConnectedDatabase()
+    const invitationCollection =
+      db.collection<InvitationDocument>('list_invitations')
+    const listCollection = db.collection<ListDocument>('lists')
+    const now = new Date()
+    const updatedAt = isoDateTime(now)
+
     await getMongoClient().withSession(async (mongoSession) => {
       await mongoSession.withTransaction(async (transactionSession) => {
         const invitation = await invitationCollection.findOneAndUpdate(
@@ -219,16 +239,19 @@ export async function POST(request: Request, context: RouteContext) {
     })
   } catch (error) {
     if (error instanceof ListUnavailableError) return invitationNotFound()
-    throw error
+    return invitationUnavailable()
   }
 
   if (!accepted) return invitationNoLongerAvailable()
 
-  return Response.json({
+  const response = invitationAcceptanceResponseSchema.safeParse({
     invitation: toInvitationRecipientSummary(
       accepted.invitation,
       accepted.list.name,
     ),
     list: toPlatterList(accepted.list),
   })
+  if (!response.success) return invitationUnavailable()
+
+  return Response.json(response.data)
 }

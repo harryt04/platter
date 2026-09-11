@@ -950,6 +950,9 @@ complaints; 35: Delete an account safely
   - [x] Administrator public-content suppression creation and restoration
         validate moderation response envelopes and hide storage or malformed
         suppression-record failures behind a stable retryable problem response.
+  - [x] Invitation-notification inspection and acceptance validate recipient
+        response envelopes and hide storage, transaction, or malformed-record
+        failures behind a stable retryable problem response.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

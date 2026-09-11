@@ -68,20 +68,27 @@ function context(id = notificationId) {
   return { params: Promise.resolve({ notificationId: id }) }
 }
 
-function database(overrides?: { notification?: unknown }) {
+function database(overrides?: {
+  invitation?: unknown
+  list?: unknown
+  notification?: unknown
+}) {
   const notificationValue =
     overrides?.notification === undefined
       ? notification
       : overrides.notification
+  const invitationValue =
+    overrides?.invitation === undefined ? invitation : overrides.invitation
+  const listValue = overrides?.list === undefined ? list : overrides.list
   const notificationCollection = {
     findOne: vi.fn().mockResolvedValue(notificationValue),
   }
   const invitationCollection = {
-    findOne: vi.fn().mockResolvedValue(invitation),
-    findOneAndUpdate: vi.fn().mockResolvedValue(invitation),
+    findOne: vi.fn().mockResolvedValue(invitationValue),
+    findOneAndUpdate: vi.fn().mockResolvedValue(invitationValue),
   }
   const listCollection = {
-    findOne: vi.fn().mockResolvedValue(list),
+    findOne: vi.fn().mockResolvedValue(listValue),
     findOneAndUpdate: vi.fn().mockResolvedValue({
       ...list,
       members: [
@@ -187,5 +194,104 @@ describe('notification invitation routes', () => {
 
     expect(malformed.status).toBe(404)
     expect(foreign.status).toBe(404)
+  })
+
+  it('hides malformed invitation data behind a retryable problem', async () => {
+    getSession.mockResolvedValue({
+      user: { id: 'guest-1', email: 'guest@example.com' },
+    })
+    const { db } = database({
+      invitation: { ...invitation, expiresAt: 'not-a-timestamp' },
+    })
+    getConnectedDatabase.mockResolvedValue(db)
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/invitations/notifications/id'),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(await response.json()).toMatchObject({
+      code: 'INVITATION_UNAVAILABLE',
+    })
+  })
+
+  it('hides invitation storage failures behind a retryable problem', async () => {
+    getSession.mockResolvedValue({
+      user: { id: 'guest-1', email: 'guest@example.com' },
+    })
+    getConnectedDatabase.mockRejectedValue(new Error('database details'))
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/invitations/notifications/id'),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect(JSON.stringify(await response.json())).not.toContain(
+      'database details',
+    )
+  })
+
+  it('hides acceptance storage failures behind a retryable problem', async () => {
+    getSession.mockResolvedValue({
+      user: { id: 'guest-1', email: 'guest@example.com' },
+    })
+    getConnectedDatabase.mockRejectedValue(new Error('database details'))
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/invitations/notifications/id', {
+        method: 'POST',
+      }),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect(JSON.stringify(await response.json())).not.toContain(
+      'database details',
+    )
+  })
+
+  it('hides malformed accepted-list data behind a retryable problem', async () => {
+    getSession.mockResolvedValue({
+      user: { id: 'guest-1', email: 'guest@example.com' },
+    })
+    const { db } = database({
+      list: {
+        ...list,
+        activeRunId: '',
+        members: [
+          ...list.members,
+          {
+            userId: 'guest-1',
+            role: 'editor' as const,
+            invitationState: 'active' as const,
+          },
+        ],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(db)
+    getMongoClient.mockReturnValue({
+      withSession: async (callback: (session: unknown) => unknown) =>
+        callback({
+          withTransaction: async (transaction: (session: unknown) => unknown) =>
+            transaction({}),
+        }),
+    })
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/invitations/notifications/id', {
+        method: 'POST',
+      }),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'INVITATION_UNAVAILABLE',
+    })
   })
 })

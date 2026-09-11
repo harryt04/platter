@@ -14,6 +14,17 @@ const analyticsSurfaceSchema = z.enum([
   'settings',
 ])
 
+const shoppingRunCompletedPropertiesSchema = z
+  .strictObject({
+    recipeCount: z.number().int().min(0),
+    includedMultipleRecipes: z.boolean(),
+  })
+  .refine(
+    ({ recipeCount, includedMultipleRecipes }) =>
+      includedMultipleRecipes === recipeCount >= 2,
+    'The multi-recipe signal must match the recipe count.',
+  )
+
 const analyticsEventSchemas = {
   page_viewed: z.strictObject({ surface: analyticsSurfaceSchema }),
   recipe_opened: z.strictObject({
@@ -30,10 +41,7 @@ const analyticsEventSchemas = {
   recipe_selected: z.strictObject({
     recipeCount: z.number().int().min(1),
   }),
-  shopping_run_completed: z.strictObject({
-    recipeCount: z.number().int().min(0),
-    includedMultipleRecipes: z.boolean(),
-  }),
+  shopping_run_completed: shoppingRunCompletedPropertiesSchema,
   review_action: z.strictObject({
     action: z.enum(['already_have', 'amount_adjusted', 'amount_reset']),
   }),
@@ -71,6 +79,16 @@ export type AnalyticsEventProperties = {
   [Event in AnalyticsEvent]: z.infer<(typeof analyticsEventSchemas)[Event]>
 }
 export type SafeAnalyticsProperties = AnalyticsEventProperties[AnalyticsEvent]
+
+export function getShoppingRunCompletionProperties(
+  recipeCount: number,
+): AnalyticsEventProperties['shopping_run_completed'] | null {
+  if (!Number.isInteger(recipeCount) || recipeCount < 0) return null
+  return {
+    recipeCount,
+    includedMultipleRecipes: recipeCount >= 2,
+  }
+}
 
 export interface Analytics {
   capture<Event extends AnalyticsEvent>(

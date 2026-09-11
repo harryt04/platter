@@ -6,11 +6,15 @@ const {
   getConnectedDatabase,
   getMongoClient,
   publishRunCompletionEvent,
+  getServerAnalytics,
+  analyticsCapture,
 } = vi.hoisted(() => ({
   getSession: vi.fn(),
   getConnectedDatabase: vi.fn(),
   getMongoClient: vi.fn(),
   publishRunCompletionEvent: vi.fn(),
+  getServerAnalytics: vi.fn(),
+  analyticsCapture: vi.fn(),
 }))
 
 vi.mock('@/lib/auth/authorization', () => ({ getSession }))
@@ -19,6 +23,13 @@ vi.mock('@/lib/db/mongo-client', () => ({
   getMongoClient,
 }))
 vi.mock('@/lib/realtime/events', () => ({ publishRunCompletionEvent }))
+vi.mock('@/lib/analytics', () => ({
+  getServerAnalytics,
+  getShoppingRunCompletionProperties: (recipeCount: number) => ({
+    recipeCount,
+    includedMultipleRecipes: recipeCount >= 2,
+  }),
+}))
 
 const owner = {
   userId: 'user-1',
@@ -165,6 +176,7 @@ function databaseFor({
 beforeEach(() => {
   vi.clearAllMocks()
   getSession.mockResolvedValue({ user: { id: 'user-1' } })
+  getServerAnalytics.mockResolvedValue({ capture: analyticsCapture })
   getMongoClient.mockReturnValue({
     withSession: (callback: (session: unknown) => unknown) =>
       callback({
@@ -182,6 +194,10 @@ describe('POST /api/v1/lists/[listId]/complete', () => {
     const response = await POST(request(metadata()), routeContext())
 
     expect(response.status).toBe(200)
+    expect(analyticsCapture).toHaveBeenCalledWith('shopping_run_completed', {
+      recipeCount: 1,
+      includedMultipleRecipes: false,
+    })
     const body = await response.json()
     expect(body).toMatchObject({
       completed: true,

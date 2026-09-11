@@ -16,6 +16,10 @@ import {
 import { z } from 'zod'
 import { publishRunCompletionEvent } from '@/lib/realtime/events'
 import { completedRunProblem } from '@/lib/contracts/run-mutation'
+import {
+  getServerAnalytics,
+  getShoppingRunCompletionProperties,
+} from '@/lib/analytics'
 
 type RouteContext = { params: Promise<{ listId: string }> }
 
@@ -104,6 +108,18 @@ function findCompletionReceipt(
   if (!receipt) return null
   if (receipt.clientId !== clientId) throw new Error('operation-id-reused')
   return receipt
+}
+
+async function recordCompletionAnalytics(recipeCount: number) {
+  const properties = getShoppingRunCompletionProperties(recipeCount)
+  if (!properties) return
+
+  try {
+    const analytics = await getServerAnalytics()
+    analytics.capture('shopping_run_completed', properties)
+  } catch {
+    // Optional analytics must never make a completed shopping run unavailable.
+  }
 }
 
 export async function POST(request: Request, context: RouteContext) {
@@ -248,6 +264,8 @@ export async function POST(request: Request, context: RouteContext) {
   } catch {
     // The transaction is authoritative; a realtime outage must not undo it.
   }
+
+  await recordCompletionAnalytics(run.recipeSelections.length)
 
   return Response.json(response)
 }

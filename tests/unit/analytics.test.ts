@@ -25,6 +25,7 @@ vi.mock('posthog-node', () => ({ PostHog }))
 import {
   getClientAnalytics,
   getServerAnalytics,
+  getShoppingRunCompletionProperties,
   parseAnalyticsEvent,
 } from '@/lib/analytics'
 
@@ -147,6 +148,24 @@ describe('optional analytics integration', () => {
     expect(
       parseAnalyticsEvent('collaboration', { action: 'member_joined' }),
     ).toEqual({ action: 'member_joined' })
+  })
+
+  it('derives the multi-recipe completion signal from the count', () => {
+    expect(getShoppingRunCompletionProperties(0)).toEqual({
+      recipeCount: 0,
+      includedMultipleRecipes: false,
+    })
+    expect(getShoppingRunCompletionProperties(2)).toEqual({
+      recipeCount: 2,
+      includedMultipleRecipes: true,
+    })
+    expect(getShoppingRunCompletionProperties(1.5)).toBeNull()
+    expect(
+      parseAnalyticsEvent('shopping_run_completed', {
+        recipeCount: 1,
+        includedMultipleRecipes: true,
+      }),
+    ).toBeNull()
   })
 
   it('rejects unknown properties and content-bearing values at the event boundary', () => {

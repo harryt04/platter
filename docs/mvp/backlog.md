@@ -849,7 +849,7 @@ deduplicate public imports
       selection and run completion, recipe count per run, review actions, merge
       corrections, import outcomes, synchronization reliability, collaboration,
       and history reuse.
-- [ ] The primary repeated-completion signal can identify runs generated from
+- [x] The primary repeated-completion signal can identify runs generated from
       two or more recipes without recording which recipes they were.
 - [x] Recipe content, ingredient text, grocery content, URLs, complaint contacts,
       and secrets are impossible or explicitly rejected event properties.
@@ -857,7 +857,7 @@ deduplicate public imports
       explicitly enabled with valid configuration.
 - [x] Core application behavior and builds are identical with the analytics
       provider absent or unavailable.
-- [ ] Contract tests verify allowed event shapes, forbidden properties, disabled
+- [x] Contract tests verify allowed event shapes, forbidden properties, disabled
       behavior, and representative funnel calculations.
 
 ## 37: Harden product security and abuse controls

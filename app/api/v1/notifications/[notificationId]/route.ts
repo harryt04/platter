@@ -4,6 +4,7 @@ import { isoDateTime } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
 import {
   notificationIdSchema,
+  notificationResponseSchema,
   notificationRecipientFilter,
   toNotificationSummary,
   type NotificationDocument,
@@ -31,6 +32,16 @@ function notificationNotFound() {
   })
 }
 
+function notificationUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/notification-unavailable',
+    title: 'Notification temporarily unavailable',
+    status: 503,
+    detail: 'That notification could not be updated. Try again shortly.',
+    code: 'NOTIFICATION_UNAVAILABLE',
+  })
+}
+
 export async function PATCH(_request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session) return authenticationRequired()
@@ -40,16 +51,27 @@ export async function PATCH(_request: Request, context: RouteContext) {
     return notificationNotFound()
   }
 
-  const updated = await (
-    await getConnectedDatabase()
-  )
-    .collection<NotificationDocument>('notifications')
-    .findOneAndUpdate(
-      { _id: notificationId, ...notificationRecipientFilter(session.user.id) },
-      { $set: { readAt: isoDateTime(new Date()) } },
-      { returnDocument: 'after' },
+  try {
+    const updated = await (
+      await getConnectedDatabase()
     )
-  if (!updated) return notificationNotFound()
+      .collection<NotificationDocument>('notifications')
+      .findOneAndUpdate(
+        {
+          _id: notificationId,
+          ...notificationRecipientFilter(session.user.id),
+        },
+        { $set: { readAt: isoDateTime(new Date()) } },
+        { returnDocument: 'after' },
+      )
+    if (!updated) return notificationNotFound()
 
-  return Response.json({ notification: toNotificationSummary(updated) })
+    return Response.json(
+      notificationResponseSchema.parse({
+        notification: toNotificationSummary(updated),
+      }),
+    )
+  } catch {
+    return notificationUnavailable()
+  }
 }

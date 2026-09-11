@@ -112,4 +112,47 @@ describe('notification routes', () => {
     expect(response.status).toBe(404)
     expect(getConnectedDatabase).not.toHaveBeenCalled()
   })
+
+  it('hides malformed persisted notifications behind a retryable problem', async () => {
+    getSession.mockResolvedValue({ user: { id: 'guest-1' } })
+    const query = {
+      sort: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      toArray: vi
+        .fn()
+        .mockResolvedValue([{ ...notification, createdAt: 'not-a-timestamp' }]),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi
+        .fn()
+        .mockReturnValue({ find: vi.fn().mockReturnValue(query) }),
+    })
+
+    const response = await GET()
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(await response.json()).toMatchObject({
+      code: 'NOTIFICATIONS_UNAVAILABLE',
+    })
+  })
+
+  it('hides notification storage failures behind a retryable problem', async () => {
+    getSession.mockResolvedValue({ user: { id: 'guest-1' } })
+    getConnectedDatabase.mockRejectedValue(new Error('database details'))
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/notifications/notification', {
+        method: 'PATCH',
+      }),
+      { params: Promise.resolve({ notificationId: notification._id }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(JSON.stringify(await response.json())).not.toContain(
+      'database details',
+    )
+  })
 })

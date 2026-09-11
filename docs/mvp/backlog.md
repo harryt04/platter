@@ -892,6 +892,9 @@ complaints; 35: Delete an account safely
   - [x] Administrator complaint queue and status-update storage or audit
         failures return stable retryable problems without exposing backend
         details.
+  - [x] Notification collection reads and read-state writes validate persisted
+        documents and response summaries, returning stable retryable problems
+        for storage or malformed-record failures.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

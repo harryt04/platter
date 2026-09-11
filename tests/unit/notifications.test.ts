@@ -6,6 +6,8 @@ import {
   notificationInputSchema,
   notificationCopy,
   notificationRecipientFilter,
+  notificationDocumentSchema,
+  notificationSummarySchema,
   toNotificationSummary,
 } from '@/lib/notifications'
 
@@ -134,5 +136,23 @@ describe('notification contracts', () => {
       }),
     )
     expect(insertOne.mock.calls[0]?.[0]).not.toHaveProperty('email')
+  })
+
+  it('validates persisted documents and API summaries at the notification boundary', () => {
+    const document = createNotificationDocument({
+      userId: 'user-1',
+      event: 'removed',
+      listId: 'list-1',
+      listName: 'Family',
+    })
+    expect(notificationDocumentSchema.safeParse(document).success).toBe(true)
+    expect(
+      notificationSummarySchema.safeParse(toNotificationSummary(document))
+        .success,
+    ).toBe(true)
+    expect(
+      notificationDocumentSchema.safeParse({ ...document, createdAt: 'broken' })
+        .success,
+    ).toBe(false)
   })
 })

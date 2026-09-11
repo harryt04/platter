@@ -2,6 +2,7 @@ import type { Db } from 'mongodb'
 import { z } from 'zod'
 import {
   isoDateTime,
+  opaqueIdSchema,
   type EntityId,
   type IsoDateTime,
 } from '@/lib/contracts/ids'
@@ -50,6 +51,48 @@ export type NotificationSummary = {
   title: string
   body: string
 }
+
+const notificationTimestampSchema = z.string().datetime()
+
+/** Runtime boundary for documents read from the notifications collection. */
+export const notificationDocumentSchema = z
+  .object({
+    _id: notificationIdSchema,
+    userId: opaqueIdSchema,
+    event: notificationEventSchema,
+    listId: opaqueIdSchema,
+    listName: z.string().min(1).max(2000),
+    invitationId: opaqueIdSchema.optional(),
+    role: z.enum(['owner', 'editor']).optional(),
+    readAt: notificationTimestampSchema.optional(),
+    createdAt: notificationTimestampSchema,
+  })
+  .strict()
+
+/** Runtime boundary for notification API responses. */
+export const notificationSummarySchema = z
+  .object({
+    id: notificationIdSchema,
+    event: notificationEventSchema,
+    listId: opaqueIdSchema,
+    listName: z.string().min(1).max(2000),
+    invitationId: opaqueIdSchema.optional(),
+    role: z.enum(['owner', 'editor']).optional(),
+    readAt: notificationTimestampSchema.optional(),
+    createdAt: notificationTimestampSchema,
+    href: z.string().regex(/^\/(?:lists|invitations)\//),
+    title: z.string().min(1).max(2000),
+    body: z.string().min(1).max(2000),
+  })
+  .strict()
+
+export const notificationListResponseSchema = z
+  .object({ notifications: z.array(notificationSummarySchema) })
+  .strict()
+
+export const notificationResponseSchema = z
+  .object({ notification: notificationSummarySchema })
+  .strict()
 
 export const notificationInputSchema = z
   .object({
@@ -104,22 +147,23 @@ export function notificationCopy(document: NotificationDocument) {
 export function toNotificationSummary(
   document: NotificationDocument,
 ): NotificationSummary {
-  return {
-    id: document._id as EntityId,
-    event: document.event,
-    listId: document.listId as EntityId,
-    listName: document.listName,
-    ...(document.invitationId
-      ? { invitationId: document.invitationId as EntityId }
+  const validated = notificationDocumentSchema.parse(document)
+  return notificationSummarySchema.parse({
+    id: validated._id as EntityId,
+    event: validated.event,
+    listId: validated.listId as EntityId,
+    listName: validated.listName,
+    ...(validated.invitationId
+      ? { invitationId: validated.invitationId as EntityId }
       : {}),
-    ...(document.role ? { role: document.role } : {}),
-    ...(document.readAt ? { readAt: document.readAt } : {}),
-    createdAt: document.createdAt,
-    href: document.invitationId
-      ? `/invitations/notification/${document._id}`
-      : `/lists/${document.listId}`,
+    ...(validated.role ? { role: validated.role } : {}),
+    ...(validated.readAt ? { readAt: validated.readAt } : {}),
+    createdAt: validated.createdAt,
+    href: validated.invitationId
+      ? `/invitations/notification/${validated._id}`
+      : `/lists/${validated.listId}`,
     ...notificationCopy(document),
-  }
+  }) as unknown as NotificationSummary
 }
 
 export async function findInvitationForNotification(

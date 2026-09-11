@@ -3,11 +3,12 @@ import type { Collection } from 'mongodb'
 import { z } from 'zod'
 import {
   isoDateTime,
+  opaqueIdSchema,
   type EntityId,
   type IsoDateTime,
 } from '@/lib/contracts/ids'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
-import type { ListDocument } from '@/lib/lists'
+import { platterListSchema, type ListDocument } from '@/lib/lists'
 
 export const createInvitationSchema = z.object({
   email: z
@@ -46,6 +47,30 @@ export const invitationListResponseSchema = z
 /** Runtime boundary for a single owner invitation mutation response. */
 export const invitationResponseSchema = z
   .object({ invitation: invitationSummarySchema })
+  .strict()
+
+/** Runtime boundary for invitation summaries exposed to recipients. */
+export const invitationRecipientSummarySchema = z
+  .object({
+    listId: opaqueIdSchema,
+    listName: z.string().min(1).max(100),
+    email: z.string().email().max(320),
+    status: z.enum(['pending', 'accepted', 'revoked']),
+    expiresAt: z.string().datetime(),
+  })
+  .strict()
+
+/** Runtime boundary for public invitation inspection responses. */
+export const invitationRecipientResponseSchema = z
+  .object({ invitation: invitationRecipientSummarySchema })
+  .strict()
+
+/** Runtime boundary for connected invitation acceptance responses. */
+export const invitationAcceptanceResponseSchema = z
+  .object({
+    invitation: invitationRecipientSummarySchema,
+    list: platterListSchema,
+  })
   .strict()
 
 export type InvitationStatus = 'pending' | 'accepted' | 'revoked'

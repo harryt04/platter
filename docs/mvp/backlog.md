@@ -926,6 +926,9 @@ complaints; 35: Delete an account safely
   - [x] Owner-only invitation list, create, resend, and revoke operations
         validate response envelopes and hide storage or malformed-record
         failures behind a stable retryable problem response.
+  - [x] Recipient invitation inspection and connected acceptance validate
+        invitation and list response envelopes and hide lookup, transaction,
+        or malformed-record failures behind a stable retryable problem.
   - [x] Public complaint submission validates its minimal receipt and hides
         database lookup or persistence failures behind a stable retryable
         problem without exposing report details.

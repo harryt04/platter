@@ -101,6 +101,47 @@ describe('invitation recipient route', () => {
     })
   })
 
+  it('hides invitation lookup failures behind a stable retryable problem', async () => {
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await GET(
+      new Request(`http://localhost/api/v1/invitations/${token}`),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    const body = await response.json()
+    expect(body).toEqual({
+      type: 'https://platter.dev/problems/invitation-unavailable',
+      title: 'Invitation temporarily unavailable',
+      status: 503,
+      detail: 'The invitation could not be loaded. Try again shortly.',
+      code: 'INVITATION_UNAVAILABLE',
+    })
+    expect(JSON.stringify(body)).not.toContain('database offline')
+  })
+
+  it('hides malformed persisted invitation summaries behind the same problem', async () => {
+    const invitationCollection = {
+      findOne: vi.fn().mockResolvedValue({ ...invitation, email: 'invalid' }),
+    }
+    const listCollection = { findOne: vi.fn().mockResolvedValue(list) }
+    getConnectedDatabase.mockResolvedValue(
+      database(invitationCollection, listCollection),
+    )
+
+    const response = await GET(
+      new Request(`http://localhost/api/v1/invitations/${token}`),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('INVITATION_UNAVAILABLE')
+  })
+
   it('reports expired invitations without exposing recipient account details', async () => {
     const expiredInvitation = {
       ...invitation,

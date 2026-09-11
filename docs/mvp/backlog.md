@@ -1050,6 +1050,9 @@ recipes; 31: Process public-content complaints; 35: Delete an account safely
         when dismissed.
   - [x] Theme preference controls use one native radio group so Tab and arrow-key
         navigation preserve a single selected System, Light, or Dark choice.
+  - [x] Mobile navigation exposes its expanded state, moves focus into the open
+        menu, traps Tab navigation, closes on Escape or route selection, and
+        restores focus to the trigger when dismissed.
 - [ ] Automated checks report no serious or critical issues, and documented
       keyboard and screen-reader reviews cover the shopping journey.
 - [x] Remote changes, optimistic state, offline queues, reconciliation, and

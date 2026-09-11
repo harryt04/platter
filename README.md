@@ -522,6 +522,10 @@ stable cursor pagination while preserving the same ownership, membership, and
 saved-reference boundaries. Deleting a recipe explains current list impact,
 removes its owner-scoped share records, and preserves the pinned immutable
 version for shopping or history references.
+The mobile application shell treats navigation as a keyboard-accessible modal
+surface: opening it exposes its state, moves focus into the menu, keeps Tab
+within the menu, supports Escape and route-selection dismissal, and returns
+focus to the trigger.
 Mongo-backed list integration coverage now exercises three-list creation,
 membership isolation, owner lifecycle changes, editor restrictions, and the
 one-active-run database invariant; authenticated browser coverage runs when the

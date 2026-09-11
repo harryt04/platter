@@ -179,4 +179,43 @@ test.describe('shopping responsive and theme accessibility', () => {
 
     await system.check()
   })
+
+  test('@a11y traps and restores focus in mobile navigation', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 800 })
+    await signIn(page)
+
+    const trigger = page.getByRole('button', { name: 'Open navigation' })
+    await trigger.focus()
+    await trigger.press('Enter')
+
+    const navigation = page.getByRole('complementary', {
+      name: 'Primary navigation',
+    })
+    await expect(navigation).toBeVisible()
+    const closeTrigger = page
+      .getByRole('main')
+      .getByRole('button', { name: 'Close navigation' })
+    await expect(closeTrigger).toHaveAttribute('aria-expanded', 'true')
+    await expect(
+      navigation.getByRole('link', { name: 'Platter home' }),
+    ).toBeFocused()
+
+    await page.keyboard.press('Shift+Tab')
+    await expect(
+      navigation.getByRole('button', { name: 'Sign out' }),
+    ).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(trigger).toBeFocused()
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+
+    await trigger.press('Enter')
+    await expect(navigation).toBeVisible()
+    await navigation.getByRole('link', { name: 'Discover' }).click()
+    await expect(page).toHaveURL(/\/discover$/)
+    await expect(
+      page.getByRole('button', { name: 'Open navigation' }),
+    ).toHaveAttribute('aria-expanded', 'false')
+  })
 })

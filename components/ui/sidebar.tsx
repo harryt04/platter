@@ -45,9 +45,87 @@ export function Sidebar({
   className?: string
 }) {
   const { open, isMobile, setOpen } = useSidebar()
+  const sidebarRef = React.useRef<HTMLElement>(null)
+  const restoreFocusRef = React.useRef<HTMLElement | null>(null)
+  const mobileOpenRef = React.useRef(false)
+
+  React.useEffect(() => {
+    const wasMobileOpen = mobileOpenRef.current
+
+    if (isMobile && open && !wasMobileOpen) {
+      const activeElement = document.activeElement
+      restoreFocusRef.current =
+        activeElement instanceof HTMLElement &&
+        !sidebarRef.current?.contains(activeElement)
+          ? activeElement
+          : null
+
+      const focusFirstControl = () => {
+        const firstControl = sidebarRef.current?.querySelector<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        )
+        firstControl?.focus()
+      }
+      focusFirstControl()
+    }
+
+    if (isMobile && !open && wasMobileOpen) {
+      const restoreTarget = restoreFocusRef.current
+      if (restoreTarget && document.contains(restoreTarget))
+        restoreTarget.focus()
+      restoreFocusRef.current = null
+    }
+
+    mobileOpenRef.current = isMobile && open
+  }, [isMobile, open])
+
+  React.useEffect(() => {
+    if (!isMobile || !open) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setOpen(false)
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const focusable = Array.from(
+        sidebarRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      )
+      if (focusable.length === 0) {
+        event.preventDefault()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const activeElement = document.activeElement
+      if (!sidebarRef.current?.contains(activeElement)) {
+        event.preventDefault()
+        first.focus()
+      } else if (event.shiftKey && activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isMobile, open, setOpen])
+
   return (
     <>
       <aside
+        id="primary-navigation"
+        ref={sidebarRef}
+        aria-hidden={isMobile && !open}
+        inert={isMobile && !open ? true : undefined}
         className={cn(
           'sticky top-0 z-30 flex h-screen shrink-0 flex-col border-r bg-[var(--sidebar)] transition-[width,transform] duration-200',
           isMobile
@@ -170,6 +248,8 @@ export function SidebarTrigger() {
   return (
     <Button
       aria-label={open ? 'Close navigation' : 'Open navigation'}
+      aria-controls="primary-navigation"
+      aria-expanded={open}
       variant="ghost"
       size="icon"
       onClick={() => setOpen(!open)}

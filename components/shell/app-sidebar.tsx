@@ -46,7 +46,10 @@ export function AppSidebar({
   lists: { id: string; name: string }[]
 }) {
   const pathname = usePathname()
-  const { open } = useSidebar()
+  const { open, isMobile, setOpen } = useSidebar()
+  const closeMobileNavigation = () => {
+    if (isMobile) setOpen(false)
+  }
   return (
     <Sidebar>
       <SidebarHeader>
@@ -54,6 +57,7 @@ export function AppSidebar({
           href="/lists"
           aria-label="Platter home"
           className="font-display flex min-h-11 items-center gap-3 text-xl font-semibold"
+          onClick={closeMobileNavigation}
         >
           <PlatterMark aria-hidden="true" className="h-9 w-9 rounded-md" />
           <span className="sidebar-label">Platter</span>
@@ -74,7 +78,11 @@ export function AppSidebar({
                     }
                     asChild
                   >
-                    <Link href={item.href} aria-label={item.label}>
+                    <Link
+                      href={item.href}
+                      aria-label={item.label}
+                      onClick={closeMobileNavigation}
+                    >
                       <item.icon size={18} />
                       <span className="sidebar-label">{item.label}</span>
                     </Link>
@@ -93,7 +101,11 @@ export function AppSidebar({
                   active={pathname.startsWith(`/lists/${list.id}`)}
                   asChild
                 >
-                  <Link href={`/lists/${list.id}`} aria-label={list.name}>
+                  <Link
+                    href={`/lists/${list.id}`}
+                    aria-label={list.name}
+                    onClick={closeMobileNavigation}
+                  >
                     <ChefHat size={18} />
                     <span className="sidebar-label">{list.name}</span>
                   </Link>
@@ -102,7 +114,11 @@ export function AppSidebar({
             ))}
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link href="/lists/new" aria-label="New list">
+                <Link
+                  href="/lists/new"
+                  aria-label="New list"
+                  onClick={closeMobileNavigation}
+                >
                   <Plus size={18} />
                   <span className="sidebar-label">New list</span>
                 </Link>
@@ -127,7 +143,7 @@ export function AppSidebar({
             aria-label="Open settings"
             asChild
           >
-            <Link href="/settings">
+            <Link href="/settings" onClick={closeMobileNavigation}>
               <Settings size={18} />
             </Link>
           </Button>

@@ -296,7 +296,10 @@ one transaction; a unique public fingerprint index and duplicate-key recovery
 keep concurrent or retried saves from creating duplicate identities or
 versions. Mongo-backed integration coverage now verifies this workflow's
 deduplication, source-version coexistence, discovery visibility, private
-boundaries, and complete provenance.
+boundaries, and complete provenance. Preview-save reads and writes also
+validate persisted import records and response envelopes, with authentication,
+storage, transaction, and malformed-data failures isolated behind a stable
+retryable problem response.
 Public copyright and removal pages explain the information needed for a
 content request and state that complaint contacts stay out of public recipe
 responses and general application logs. The public report form accepts a

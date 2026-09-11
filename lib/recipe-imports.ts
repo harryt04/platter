@@ -8,6 +8,7 @@ import {
   type IsoDateTime,
 } from '@/lib/contracts/ids'
 import {
+  recipeDraftResponseSchema,
   recipeIngredientSchema,
   recipeInstructionSchema,
 } from '@/lib/recipes/drafts'
@@ -142,6 +143,44 @@ export const recipeImportCandidateSchema = z.strictObject({
   attribution: z.string().max(1000).optional(),
   warnings: z.array(importedTextSchema).max(50),
 })
+
+/** Runtime boundary for import records read from MongoDB. */
+export const recipeImportDocumentSchema = z.strictObject({
+  _id: recipeImportIdSchema,
+  userId: opaqueIdSchema,
+  idempotencyKey: recipeImportIdempotencyKeySchema,
+  sourceUrl: recipeImportUrlSchema,
+  status: recipeImportStatusSchema,
+  attemptCount: z.number().int().nonnegative(),
+  jobGeneration: opaqueIdSchema.optional(),
+  submittedAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  canonicalUrl: recipeImportUrlSchema.optional(),
+  sourceDomain: z.string().min(1).max(253).optional(),
+  sourceTitle: importedTextSchema.optional(),
+  sourceAuthor: importedTextSchema.optional(),
+  importer: recipeImportImporterSchema.optional(),
+  acquiredAt: z.string().datetime().optional(),
+  acquisitionMethod: recipeImportAcquisitionMethodSchema.optional(),
+  contentFingerprint: z.string().min(1).max(256).optional(),
+  rightsStatus: recipeImportRightsStatusSchema.optional(),
+  sourceAvailability: recipeImportSourceAvailabilitySchema.optional(),
+  sourceCheckedAt: z.string().datetime().optional(),
+  failureCode: z.string().max(200).optional(),
+  preview: recipeImportCandidateSchema.optional(),
+  savedRecipeId: opaqueIdSchema.optional(),
+})
+
+/** Runtime boundary for an idempotent import-save replay response. */
+export const recipeImportSaveReplayResponseSchema = z.strictObject({
+  recipeId: opaqueIdSchema,
+})
+
+/** Runtime boundary for either a new import save or an idempotent replay. */
+export const recipeImportSaveResponseSchema = z.union([
+  recipeImportSaveReplayResponseSchema,
+  z.strictObject({ recipe: recipeDraftResponseSchema }),
+])
 
 export const recipeImportSummarySchema = z.strictObject({
   id: opaqueIdSchema,

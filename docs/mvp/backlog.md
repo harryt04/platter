@@ -901,6 +901,9 @@ complaints; 35: Delete an account safely
   - [x] Import submission and retry mutations validate their response
         envelopes and hide storage or malformed replay data behind a stable
         retryable problem response.
+  - [x] Import preview saves validate persisted import records and save or
+        replay envelopes, hiding authentication, storage, transaction, and
+        malformed-record failures behind a stable retryable problem response.
   - [x] Administrator complaint queue and status-update storage or audit
         failures return stable retryable problems without exposing backend
         details.

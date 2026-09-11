@@ -22,9 +22,12 @@ import {
 } from '@/lib/recipes/drafts'
 import {
   recipeImportIdSchema,
+  recipeImportDocumentSchema,
+  recipeImportSaveReplayResponseSchema,
+  recipeImportSaveResponseSchema,
   type RecipeImportDocument,
 } from '@/lib/recipe-imports'
-import type { ClientSession } from 'mongodb'
+import type { ClientSession, Collection, Db } from 'mongodb'
 import {
   findExistingPublicImportedRecipe,
   isExactImportedContent,
@@ -95,6 +98,16 @@ function notReady() {
     status: 409,
     detail: 'Wait for the recipe preview before saving it.',
     code: 'IMPORT_NOT_READY',
+  })
+}
+
+function importSaveUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/import-save-unavailable',
+    title: 'Import save temporarily unavailable',
+    status: 503,
+    detail: 'The imported recipe could not be saved. Try again shortly.',
+    code: 'IMPORT_SAVE_UNAVAILABLE',
   })
 }
 
@@ -213,142 +226,174 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ importId: string }> },
 ) {
-  const session = await getSession()
+  let session
+  try {
+    session = await getSession()
+  } catch {
+    return importSaveUnavailable()
+  }
   if (!session) return authenticationRequired()
 
   const { importId } = await context.params
   if (!recipeImportIdSchema.safeParse(importId).success) return notFound()
 
-  const db = await getConnectedDatabase()
-  const imports = db.collection<RecipeImportDocument>('recipe_imports')
-  const source = await imports.findOne({
-    _id: importId,
-    userId: session.user.id,
-  })
-  if (!source) return notFound()
-  if (source.savedRecipeId) {
-    return Response.json({ recipeId: source.savedRecipeId }, { status: 200 })
-  }
-  if (!publicCatalogImportsEnabled()) return publicImportsDisabled()
-  if (source.status !== 'preview-ready' || !source.preview) return notReady()
+  let db: Db | undefined
+  let imports: Collection<RecipeImportDocument> | undefined
+  let source: RecipeImportDocument | undefined
+  let draft: RecipeDraftDocument | undefined
 
-  let body: unknown
   try {
-    body = await request.json()
-  } catch {
-    return invalidJson()
-  }
-  const parsed = importPreviewSaveSchema.safeParse(body)
-  if (!parsed.success) {
-    return problemResponse({
-      type: 'https://platter.dev/problems/validation-failed',
-      title: 'Check the recipe preview',
-      status: 422,
-      detail: 'Correct the highlighted recipe fields before saving.',
-      code: 'VALIDATION_FAILED',
-      fields: parsed.error.issues.reduce<Record<string, string[]>>(
-        (fields, issue) => {
-          const field = issue.path[0]?.toString() ?? 'recipe'
-          fields[field] = [...(fields[field] ?? []), issue.message]
-          return fields
-        },
-        {},
-      ),
+    const connectedDb = await getConnectedDatabase()
+    db = connectedDb
+    const importCollection =
+      connectedDb.collection<RecipeImportDocument>('recipe_imports')
+    imports = importCollection
+    const sourceDocument = await importCollection.findOne({
+      _id: importId,
+      userId: session.user.id,
     })
-  }
+    if (!sourceDocument) return notFound()
+    source = recipeImportDocumentSchema.parse(
+      sourceDocument,
+    ) as RecipeImportDocument
+    const sourceRecord = source
+    if (sourceRecord.savedRecipeId) {
+      return Response.json(
+        recipeImportSaveReplayResponseSchema.parse({
+          recipeId: sourceRecord.savedRecipeId,
+        }),
+        { status: 200 },
+      )
+    }
+    if (!publicCatalogImportsEnabled()) return publicImportsDisabled()
+    if (sourceRecord.status !== 'preview-ready' || !sourceRecord.preview) {
+      return notReady()
+    }
 
-  const approvedForPublicCatalog = isUsableRecipe(
-    parsed.data.typicalPeopleFed ?? undefined,
-    parsed.data.ingredients,
-  )
-  const activeSuppression = await findActivePublicContentSuppressionForImport(
-    db,
-    {
-      submittedUrl: source.sourceUrl,
-      canonicalUrl: source.canonicalUrl,
-      sourceDomain: source.sourceDomain,
-      contentFingerprint: source.contentFingerprint,
-    },
-  )
-  if (approvedForPublicCatalog && activeSuppression) {
-    return publicContentSuppressed()
-  }
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return invalidJson()
+    }
+    const parsed = importPreviewSaveSchema.safeParse(body)
+    if (!parsed.success) {
+      return problemResponse({
+        type: 'https://platter.dev/problems/validation-failed',
+        title: 'Check the recipe preview',
+        status: 422,
+        detail: 'Correct the highlighted recipe fields before saving.',
+        code: 'VALIDATION_FAILED',
+        fields: parsed.error.issues.reduce<Record<string, string[]>>(
+          (fields, issue) => {
+            const field = issue.path[0]?.toString() ?? 'recipe'
+            fields[field] = [...(fields[field] ?? []), issue.message]
+            return fields
+          },
+          {},
+        ),
+      })
+    }
 
-  const existingRecipe = await findExistingPublicImportedRecipe(db, source)
-  const isExactDuplicate =
-    existingRecipe && isExactImportedContent(source, existingRecipe)
-  const isRelatedVersion =
-    existingRecipe && isRelatedImportedContent(source, existingRecipe)
-  if (isExactDuplicate || (existingRecipe && !isRelatedVersion)) {
-    return duplicateImport(existingRecipe)
-  }
-  if (isRelatedVersion && !parsed.data.acceptRelatedVersion) {
-    return problemResponse({
-      type: 'https://platter.dev/problems/import-related-version',
-      title: 'Source has a newer recipe version',
-      status: 409,
-      detail:
-        'This source has changed since the public recipe was imported. Confirm the related source version before saving it.',
-      code: 'IMPORT_RELATED_VERSION',
-      relatedRecipe: {
-        id: existingRecipe.id,
-        title: existingRecipe.title,
-        ...(existingRecipe.sourceUrl
-          ? { sourceUrl: existingRecipe.sourceUrl }
-          : {}),
-        versionNumber: existingRecipe.versionNumber ?? 1,
-        relationship: 'source-update',
+    const approvedForPublicCatalog = isUsableRecipe(
+      parsed.data.typicalPeopleFed ?? undefined,
+      parsed.data.ingredients,
+    )
+    const activeSuppression = await findActivePublicContentSuppressionForImport(
+      connectedDb,
+      {
+        submittedUrl: sourceRecord.sourceUrl,
+        canonicalUrl: sourceRecord.canonicalUrl,
+        sourceDomain: sourceRecord.sourceDomain,
+        contentFingerprint: sourceRecord.contentFingerprint,
       },
-    })
-  }
+    )
+    if (approvedForPublicCatalog && activeSuppression) {
+      return publicContentSuppressed()
+    }
 
-  const draft = createDraftDocument(session.user.id, parsed.data.title, {
-    origin: 'imported',
-    importReviewStatus: approvedForPublicCatalog ? 'approved' : 'pending',
-    visibility: approvedForPublicCatalog ? 'public' : 'private',
-    description: parsed.data.description ?? undefined,
-    typicalPeopleFed: parsed.data.typicalPeopleFed ?? undefined,
-    prepTimeMinutes: parsed.data.prepTimeMinutes ?? undefined,
-    cookingTimeMinutes: parsed.data.cookingTimeMinutes ?? undefined,
-    totalTimeMinutes: parsed.data.totalTimeMinutes ?? undefined,
-    cuisine: parsed.data.cuisine ?? undefined,
-    mealType: parsed.data.mealType ?? undefined,
-    sourceName: parsed.data.sourceName ?? undefined,
-    sourceUrl: parsed.data.sourceUrl ?? undefined,
-    sourceAuthor: parsed.data.sourceAuthor ?? undefined,
-    attribution: parsed.data.attribution ?? undefined,
-    tags: parsed.data.tags ?? undefined,
-    dietaryLabels: parsed.data.dietaryLabels ?? undefined,
-    image: parsed.data.image ?? undefined,
-    nutrition: parsed.data.nutrition ?? undefined,
-    importProvenance: createImportProvenance(
-      source,
-      isoDateTime(new Date()),
-      isRelatedVersion ? 'source-update' : 'source-original',
-      isRelatedVersion
-        ? {
-            id: existingRecipe.id,
-            versionId: existingRecipe.versionId,
-            versionNumber: existingRecipe.versionNumber,
-          }
-        : undefined,
-    ),
-    ingredients: parsed.data.ingredients,
-    instructions: parsed.data.instructions,
-  })
-  try {
+    const existingRecipe = await findExistingPublicImportedRecipe(
+      connectedDb,
+      sourceRecord,
+    )
+    const isExactDuplicate =
+      existingRecipe && isExactImportedContent(sourceRecord, existingRecipe)
+    const isRelatedVersion =
+      existingRecipe && isRelatedImportedContent(sourceRecord, existingRecipe)
+    if (isExactDuplicate || (existingRecipe && !isRelatedVersion)) {
+      return duplicateImport(existingRecipe)
+    }
+    if (isRelatedVersion && !parsed.data.acceptRelatedVersion) {
+      return problemResponse({
+        type: 'https://platter.dev/problems/import-related-version',
+        title: 'Source has a newer recipe version',
+        status: 409,
+        detail:
+          'This source has changed since the public recipe was imported. Confirm the related source version before saving it.',
+        code: 'IMPORT_RELATED_VERSION',
+        relatedRecipe: {
+          id: existingRecipe.id,
+          title: existingRecipe.title,
+          ...(existingRecipe.sourceUrl
+            ? { sourceUrl: existingRecipe.sourceUrl }
+            : {}),
+          versionNumber: existingRecipe.versionNumber ?? 1,
+          relationship: 'source-update',
+        },
+      })
+    }
+
+    const createdDraft = createDraftDocument(
+      session.user.id,
+      parsed.data.title,
+      {
+        origin: 'imported',
+        importReviewStatus: approvedForPublicCatalog ? 'approved' : 'pending',
+        visibility: approvedForPublicCatalog ? 'public' : 'private',
+        description: parsed.data.description ?? undefined,
+        typicalPeopleFed: parsed.data.typicalPeopleFed ?? undefined,
+        prepTimeMinutes: parsed.data.prepTimeMinutes ?? undefined,
+        cookingTimeMinutes: parsed.data.cookingTimeMinutes ?? undefined,
+        totalTimeMinutes: parsed.data.totalTimeMinutes ?? undefined,
+        cuisine: parsed.data.cuisine ?? undefined,
+        mealType: parsed.data.mealType ?? undefined,
+        sourceName: parsed.data.sourceName ?? undefined,
+        sourceUrl: parsed.data.sourceUrl ?? undefined,
+        sourceAuthor: parsed.data.sourceAuthor ?? undefined,
+        attribution: parsed.data.attribution ?? undefined,
+        tags: parsed.data.tags ?? undefined,
+        dietaryLabels: parsed.data.dietaryLabels ?? undefined,
+        image: parsed.data.image ?? undefined,
+        nutrition: parsed.data.nutrition ?? undefined,
+        importProvenance: createImportProvenance(
+          sourceRecord,
+          isoDateTime(new Date()),
+          isRelatedVersion ? 'source-update' : 'source-original',
+          isRelatedVersion
+            ? {
+                id: existingRecipe.id,
+                versionId: existingRecipe.versionId,
+                versionNumber: existingRecipe.versionNumber,
+              }
+            : undefined,
+        ),
+        ingredients: parsed.data.ingredients,
+        instructions: parsed.data.instructions,
+      },
+    )
+    draft = createdDraft
     await getMongoClient().withSession(async (mongoSession) => {
       await mongoSession.withTransaction(
         async (transactionSession: ClientSession) => {
           if (
             approvedForPublicCatalog &&
             (await findActivePublicContentSuppressionForImport(
-              db,
+              connectedDb,
               {
-                submittedUrl: source.sourceUrl,
-                canonicalUrl: source.canonicalUrl,
-                sourceDomain: source.sourceDomain,
-                contentFingerprint: source.contentFingerprint,
+                submittedUrl: sourceRecord.sourceUrl,
+                canonicalUrl: sourceRecord.canonicalUrl,
+                sourceDomain: sourceRecord.sourceDomain,
+                contentFingerprint: sourceRecord.contentFingerprint,
               },
               transactionSession,
             ))
@@ -356,7 +401,7 @@ export async function POST(
             throw new PublicContentSuppressed()
           }
 
-          const claim = await imports.findOneAndUpdate(
+          const claim = await importCollection.findOneAndUpdate(
             {
               _id: importId,
               userId: session.user.id,
@@ -365,7 +410,7 @@ export async function POST(
             },
             {
               $set: {
-                savedRecipeId: draft._id,
+                savedRecipeId: createdDraft._id,
                 updatedAt: isoDateTime(new Date()),
               },
             },
@@ -373,12 +418,12 @@ export async function POST(
           )
           if (!claim) throw new ImportSaveClaimLost()
 
-          await db
+          await connectedDb
             .collection<RecipeDraftDocument>('recipes')
-            .insertOne(draft, { session: transactionSession })
-          const version = createRecipeVersionDocument(draft)
+            .insertOne(createdDraft, { session: transactionSession })
+          const version = createRecipeVersionDocument(createdDraft)
           const { _id: versionId, ...versionContent } = version
-          await db
+          await connectedDb
             .collection<RecipeVersionDocument>('recipe_versions')
             .insertOne(
               { _id: versionId, ...versionContent },
@@ -392,20 +437,44 @@ export async function POST(
       return publicContentSuppressed()
     }
     if (error instanceof ImportSaveClaimLost) {
-      const raced = await imports.findOne({
-        _id: importId,
-        userId: session.user.id,
-      })
-      return raced?.savedRecipeId
-        ? Response.json({ recipeId: raced.savedRecipeId }, { status: 200 })
-        : notReady()
+      if (!imports) return importSaveUnavailable()
+      try {
+        const raced = await imports.findOne({
+          _id: importId,
+          userId: session.user.id,
+        })
+        const parsedRaced = recipeImportDocumentSchema.safeParse(raced)
+        if (!parsedRaced.success) return importSaveUnavailable()
+        return parsedRaced.data.savedRecipeId
+          ? Response.json(
+              recipeImportSaveReplayResponseSchema.parse({
+                recipeId: parsedRaced.data.savedRecipeId,
+              }),
+              { status: 200 },
+            )
+          : notReady()
+      } catch {
+        return importSaveUnavailable()
+      }
     }
-    if (isDuplicateKeyError(error)) {
-      const racedRecipe = await findExistingPublicImportedRecipe(db, source)
-      if (racedRecipe) return duplicateImport(racedRecipe)
+    if (isDuplicateKeyError(error) && db && source) {
+      try {
+        const racedRecipe = await findExistingPublicImportedRecipe(db, source)
+        if (racedRecipe) return duplicateImport(racedRecipe)
+      } catch {
+        return importSaveUnavailable()
+      }
     }
-    throw error
+    return importSaveUnavailable()
   }
 
-  return Response.json({ recipe: toRecipeDraft(draft) }, { status: 201 })
+  if (!draft) return importSaveUnavailable()
+  try {
+    return Response.json(
+      recipeImportSaveResponseSchema.parse({ recipe: toRecipeDraft(draft) }),
+      { status: 201 },
+    )
+  } catch {
+    return importSaveUnavailable()
+  }
 }

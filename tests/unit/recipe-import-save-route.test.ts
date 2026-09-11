@@ -439,4 +439,59 @@ describe('POST /api/v1/imports/[importId]/save', () => {
     })
     expect(versions.insertOne).toHaveBeenCalledOnce()
   })
+
+  it('hides import-save storage failures behind a retryable problem', async () => {
+    getConnectedDatabase.mockRejectedValue(new Error('mongo credentials'))
+
+    const response = await POST(
+      request({ title: 'Soup', ingredients: [], instructions: [] }),
+      { params: Promise.resolve({ importId }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    const problem = await response.json()
+    expect(JSON.stringify(problem)).not.toContain('mongo credentials')
+    expect(problem).toMatchObject({
+      code: 'IMPORT_SAVE_UNAVAILABLE',
+    })
+  })
+
+  it('hides malformed persisted imports behind a retryable problem', async () => {
+    setup({ ...source, updatedAt: 'not-a-timestamp' })
+
+    const response = await POST(
+      request({ title: 'Soup', ingredients: [], instructions: [] }),
+      { params: Promise.resolve({ importId }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'IMPORT_SAVE_UNAVAILABLE',
+    })
+  })
+
+  it('hides transaction failures behind a retryable problem', async () => {
+    setup()
+    getMongoClient.mockReturnValue({
+      withSession: vi.fn().mockRejectedValue(new Error('transaction details')),
+    })
+
+    const response = await POST(
+      request({
+        title: 'Corrected soup',
+        typicalPeopleFed: 4,
+        ingredients: source.preview.ingredients,
+        instructions: source.preview.instructions,
+      }),
+      { params: Promise.resolve({ importId }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(JSON.stringify(await response.json())).not.toContain(
+      'transaction details',
+    )
+  })
 })

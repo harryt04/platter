@@ -28,6 +28,7 @@ import {
   isExactImportedContent,
   isRelatedImportedContent,
 } from '@/lib/recipes/import-deduplication'
+import { findActivePublicContentSuppressionForImport } from '@/lib/public-content-suppressions'
 import { z } from 'zod'
 
 const importPreviewSaveSchema = z.object({
@@ -84,6 +85,17 @@ function notReady() {
   })
 }
 
+function publicContentSuppressed() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/public-content-suppressed',
+    title: 'Public import unavailable',
+    status: 409,
+    detail:
+      'This source has been suppressed from public publication. It cannot be saved as a public imported recipe.',
+    code: 'PUBLIC_CONTENT_SUPPRESSED',
+  })
+}
+
 function duplicateImport(existingRecipe: {
   id: string
   title: string
@@ -117,6 +129,13 @@ class ImportSaveClaimLost extends Error {
   constructor() {
     super('Recipe import save was claimed by another request.')
     this.name = 'ImportSaveClaimLost'
+  }
+}
+
+class PublicContentSuppressed extends Error {
+  constructor() {
+    super('Recipe import content is suppressed from public publication.')
+    this.name = 'PublicContentSuppressed'
   }
 }
 
@@ -224,6 +243,23 @@ export async function POST(
     })
   }
 
+  const approvedForPublicCatalog = isUsableRecipe(
+    parsed.data.typicalPeopleFed ?? undefined,
+    parsed.data.ingredients,
+  )
+  const activeSuppression = await findActivePublicContentSuppressionForImport(
+    db,
+    {
+      submittedUrl: source.sourceUrl,
+      canonicalUrl: source.canonicalUrl,
+      sourceDomain: source.sourceDomain,
+      contentFingerprint: source.contentFingerprint,
+    },
+  )
+  if (approvedForPublicCatalog && activeSuppression) {
+    return publicContentSuppressed()
+  }
+
   const existingRecipe = await findExistingPublicImportedRecipe(db, source)
   const isExactDuplicate =
     existingRecipe && isExactImportedContent(source, existingRecipe)
@@ -252,10 +288,6 @@ export async function POST(
     })
   }
 
-  const approvedForPublicCatalog = isUsableRecipe(
-    parsed.data.typicalPeopleFed ?? undefined,
-    parsed.data.ingredients,
-  )
   const draft = createDraftDocument(session.user.id, parsed.data.title, {
     origin: 'imported',
     importReviewStatus: approvedForPublicCatalog ? 'approved' : 'pending',
@@ -293,6 +325,22 @@ export async function POST(
     await getMongoClient().withSession(async (mongoSession) => {
       await mongoSession.withTransaction(
         async (transactionSession: ClientSession) => {
+          if (
+            approvedForPublicCatalog &&
+            (await findActivePublicContentSuppressionForImport(
+              db,
+              {
+                submittedUrl: source.sourceUrl,
+                canonicalUrl: source.canonicalUrl,
+                sourceDomain: source.sourceDomain,
+                contentFingerprint: source.contentFingerprint,
+              },
+              transactionSession,
+            ))
+          ) {
+            throw new PublicContentSuppressed()
+          }
+
           const claim = await imports.findOneAndUpdate(
             {
               _id: importId,
@@ -325,6 +373,9 @@ export async function POST(
       )
     })
   } catch (error) {
+    if (error instanceof PublicContentSuppressed) {
+      return publicContentSuppressed()
+    }
     if (error instanceof ImportSaveClaimLost) {
       const raced = await imports.findOne({
         _id: importId,

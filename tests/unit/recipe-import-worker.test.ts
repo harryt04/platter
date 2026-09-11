@@ -24,6 +24,7 @@ describe('recipe import worker fetch stage', () => {
   it('atomically claims a queued import and stores an editable preview', async () => {
     const collection = {
       findOneAndUpdate: vi.fn().mockResolvedValue(document),
+      findOne: vi.fn().mockResolvedValue(null),
       updateOne: vi.fn(),
     }
     const db = { collection: vi.fn().mockReturnValue(collection) }
@@ -97,6 +98,7 @@ describe('recipe import worker fetch stage', () => {
   it('uses generic extraction when no structured recipe candidate is found', async () => {
     const collection = {
       findOneAndUpdate: vi.fn().mockResolvedValue(document),
+      findOne: vi.fn().mockResolvedValue(null),
       updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
     }
     const db = { collection: vi.fn().mockReturnValue(collection) }
@@ -150,6 +152,7 @@ describe('recipe import worker fetch stage', () => {
   it('records a typed fetch failure without publishing or retrying unsafe content', async () => {
     const collection = {
       findOneAndUpdate: vi.fn().mockResolvedValue(document),
+      findOne: vi.fn().mockResolvedValue(null),
       updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
     }
     const db = { collection: vi.fn().mockReturnValue(collection) }
@@ -182,6 +185,57 @@ describe('recipe import worker fetch stage', () => {
     )
   })
 
+  it('fails a fetched import when its source identity is actively suppressed', async () => {
+    const collection = {
+      findOneAndUpdate: vi.fn().mockResolvedValue(document),
+      findOne: vi.fn().mockResolvedValue({
+        _id: 'suppression-1',
+        targetType: 'domain',
+        target: 'example.com',
+        status: 'active',
+      }),
+      updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
+    }
+    const db = { collection: vi.fn().mockReturnValue(collection) }
+    const fetcher = vi.fn().mockResolvedValue({
+      requestedUrl: document.sourceUrl,
+      finalUrl: document.sourceUrl,
+      contentType: 'text/html',
+      body: '<html><title>Suppressed soup</title></html>',
+      byteLength: 45,
+    })
+
+    await createRecipeImportJobHandler(
+      db as never,
+      fetcher,
+    )({
+      attrs: {
+        data: {
+          importId: document._id,
+          userId: document.userId,
+          idempotencyKey: document.idempotencyKey,
+        },
+      },
+    })
+
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      { _id: document._id, userId: document.userId, status: 'processing' },
+      {
+        $set: {
+          status: 'failed',
+          failureCode: 'PUBLIC_CONTENT_SUPPRESSED',
+          updatedAt: expect.any(String),
+        },
+      },
+    )
+    expect(collection.updateOne).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        $set: expect.objectContaining({ status: 'preview-ready' }),
+      }),
+    )
+  })
+
   it('isolates imports when the operator disables every configured adapter', async () => {
     vi.stubEnv(
       'RECIPE_IMPORT_DISABLED_ADAPTERS',
@@ -191,6 +245,7 @@ describe('recipe import worker fetch stage', () => {
 
     const collection = {
       findOneAndUpdate: vi.fn().mockResolvedValue(document),
+      findOne: vi.fn().mockResolvedValue(null),
       updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
     }
     const db = { collection: vi.fn().mockReturnValue(collection) }
@@ -231,6 +286,7 @@ describe('recipe import worker fetch stage', () => {
   it('marks transient failures for retry and rethrows them for Agenda', async () => {
     const collection = {
       findOneAndUpdate: vi.fn().mockResolvedValue(document),
+      findOne: vi.fn().mockResolvedValue(null),
       updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
     }
     const db = { collection: vi.fn().mockReturnValue(collection) }
@@ -266,6 +322,7 @@ describe('recipe import worker fetch stage', () => {
     const exhaustedDocument = { ...document, attemptCount: 4 }
     const collection = {
       findOneAndUpdate: vi.fn().mockResolvedValue(exhaustedDocument),
+      findOne: vi.fn().mockResolvedValue(null),
       updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
     }
     const db = { collection: vi.fn().mockReturnValue(collection) }
@@ -375,6 +432,7 @@ describe('recipe import worker fetch stage', () => {
     }
     const collection = {
       findOneAndUpdate: vi.fn().mockResolvedValue(historicalDocument),
+      findOne: vi.fn().mockResolvedValue(null),
       updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
     }
     const db = { collection: vi.fn().mockReturnValue(collection) }

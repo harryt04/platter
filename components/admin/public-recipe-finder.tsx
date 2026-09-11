@@ -217,6 +217,15 @@ export function PublicRecipeFinder({
                               },
                             ]
                           : []),
+                        ...(recipe.contentFingerprint
+                          ? [
+                              {
+                                targetType: 'fingerprint' as const,
+                                target: recipe.contentFingerprint,
+                                label: 'This content fingerprint',
+                              },
+                            ]
+                          : []),
                       ] satisfies PublicContentSuppressionTarget[]
                     }
                   />

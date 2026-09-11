@@ -755,7 +755,7 @@ complaints
 - [x] Suppression removes a recipe from public search and its public page while
       retaining the minimum private data needed for complaints and completed-run
       recipe references.
-- [ ] New imports and reprocessing honor recipe, URL, fingerprint, source, and
+- [x] New imports and reprocessing honor recipe, URL, fingerprint, source, and
       domain suppression before publication.
 - [ ] Restoration is explicit and auditable; ordinary administrators do not gain
       shopping authority over a user's private list.

@@ -1,4 +1,4 @@
-import type { Db, Filter } from 'mongodb'
+import type { ClientSession, Db, Filter } from 'mongodb'
 import { z } from 'zod'
 import { isoDateTime, type IsoDateTime } from '@/lib/contracts/ids'
 import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
@@ -33,9 +33,15 @@ const sourceUrlTargetSchema = targetTextSchema.refine((value) => {
   }
 }, 'Source URL must be an HTTP or HTTPS URL without credentials.')
 
+const fingerprintTargetSchema = targetTextSchema.refine(
+  (value) => /^sha256:[a-f0-9]{64}$/i.test(value),
+  'Content fingerprints must be a SHA-256 fingerprint.',
+)
+
 export const publicContentSuppressionTargetTypeSchema = z.enum([
   'recipe',
   'source-url',
+  'fingerprint',
   'domain',
 ])
 
@@ -99,6 +105,7 @@ export function normalizePublicContentSuppressionTarget(
     url.hash = ''
     return url.toString()
   }
+  if (targetType === 'fingerprint') return trimmed.toLowerCase()
 
   const url = new URL(trimmed.includes('://') ? trimmed : `https://${trimmed}`)
   if (url.username || url.password || url.pathname !== '/' || url.search) {
@@ -136,6 +143,10 @@ export function publicContentSuppressionRecipeFilter(
     }
   }
 
+  if (suppression.targetType === 'fingerprint') {
+    return { 'importProvenance.contentFingerprint': suppression.target }
+  }
+
   const domainPattern = `^https?://(?:www\\.)?${escapeRegex(
     suppression.target,
   )}(?::\\d+)?(?:/|$)`
@@ -164,6 +175,9 @@ export function validatePublicContentSuppressionInput(
 ) {
   if (input.targetType === 'source-url') {
     return sourceUrlTargetSchema.safeParse(input.target).success
+  }
+  if (input.targetType === 'fingerprint') {
+    return fingerprintTargetSchema.safeParse(input.target).success
   }
   if (input.targetType === 'domain') {
     try {
@@ -209,6 +223,98 @@ export function createPublicContentSuppression(
     occurredAt: createdAt,
   }
   return { suppression, audit }
+}
+
+export type PublicContentSuppressionImportIdentity = {
+  recipeId?: string
+  submittedUrl?: string
+  canonicalUrl?: string
+  sourceDomain?: string
+  contentFingerprint?: string
+}
+
+function normalizedSourceUrl(value: string) {
+  try {
+    return normalizePublicContentSuppressionTarget('source-url', value)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Resolve all active suppression keys that can identify an imported source.
+ * Import workers and preview saves use the same lookup so a suppression cannot
+ * be bypassed by changing the submitted URL, importer, or review timing.
+ */
+export async function findActivePublicContentSuppressionForImport(
+  db: Db,
+  identity: PublicContentSuppressionImportIdentity,
+  session?: ClientSession,
+) {
+  const targets: Array<{
+    targetType: PublicContentSuppressionTargetType
+    target: string
+  }> = []
+
+  if (identity.recipeId) {
+    targets.push({ targetType: 'recipe', target: identity.recipeId })
+  }
+
+  for (const url of [identity.submittedUrl, identity.canonicalUrl]) {
+    if (!url) continue
+    const normalized = normalizedSourceUrl(url)
+    if (
+      normalized &&
+      !targets.some(
+        (target) =>
+          target.targetType === 'source-url' && target.target === normalized,
+      )
+    ) {
+      targets.push({ targetType: 'source-url', target: normalized })
+    }
+  }
+
+  if (identity.contentFingerprint) {
+    targets.push({
+      targetType: 'fingerprint',
+      target: identity.contentFingerprint.toLowerCase(),
+    })
+  }
+
+  const domains = new Set<string>()
+  if (identity.sourceDomain) {
+    domains.add(identity.sourceDomain.replace(/^www\./i, '').toLowerCase())
+  }
+  for (const url of [identity.submittedUrl, identity.canonicalUrl]) {
+    if (!url) continue
+    try {
+      domains.add(new URL(url).hostname.replace(/^www\./i, '').toLowerCase())
+    } catch {
+      // The import boundary validates URLs; an invalid optional provenance
+      // value should not make the suppression lookup fail open.
+    }
+  }
+  for (const domain of domains) {
+    if (
+      !targets.some(
+        (target) => target.targetType === 'domain' && target.target === domain,
+      )
+    ) {
+      targets.push({ targetType: 'domain', target: domain })
+    }
+  }
+
+  if (targets.length === 0) return null
+
+  return db
+    .collection<PublicContentSuppressionDocument>('public_content_suppressions')
+    .findOne(
+      {
+        status: 'active',
+        $or: targets,
+      },
+      session ? { session } : undefined,
+    )
 }
 
 export function toPublicContentSuppressionSummary(

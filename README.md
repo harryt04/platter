@@ -210,14 +210,17 @@ the contacts and jurisdiction-specific removal or repeat-infringer processes
 required for their deployment; Platter does not provide legal advice or select
 those obligations.
 Administrators can now record an active suppression for a public recipe, exact
-source URL, or source domain from the public-content finder. Suppression reasons
-retain the acting administrator, timestamp, and linked audit record; recipe
-targets and every matching public recipe for URL or domain targets are marked
-suppressed in the same Mongo transaction. Public search and detail reads then
-exclude those records while retaining the recipe document and immutable history
-references for private moderation and completed-run resolution. Active target
-uniqueness prevents duplicate suppression records, and the new indexes support
-audit review without exposing private recipe content.
+source URL, content fingerprint, or source domain from the public-content finder.
+Suppression reasons retain the acting administrator, timestamp, and linked audit
+record; recipe targets and every matching public recipe for URL, fingerprint, or
+domain targets are marked suppressed in the same Mongo transaction. Public search
+and detail reads then exclude those records while retaining the recipe document
+and immutable history references for private moderation and completed-run
+resolution. Active target uniqueness prevents duplicate suppression records, and
+the new indexes support audit review without exposing private recipe content.
+New imports and historical reprocessing check all of those source identities
+before exposing a preview, while preview saves repeat the check inside their
+transaction so a suppression cannot race with public publication.
 The import extraction stage now runs through a typed replaceable adapter
 contract: bounded fetched HTML can produce a normalized candidate, a partial
 candidate with warnings, or an isolated typed failure. Selection tries

@@ -56,6 +56,7 @@ const source = {
 function setup(
   importDocument: typeof source & { savedRecipeId?: string } = source,
   existingRecipe: Record<string, unknown> | null = null,
+  activeSuppression: Record<string, unknown> | null = null,
 ) {
   const imports = {
     findOne: vi.fn().mockResolvedValue(importDocument),
@@ -69,12 +70,17 @@ function setup(
   const versions = {
     insertOne: vi.fn().mockResolvedValue({ acknowledged: true }),
   }
+  const suppressions = {
+    findOne: vi.fn().mockResolvedValue(activeSuppression),
+  }
   const collection = vi.fn((name: string) =>
     name === 'recipe_imports'
       ? imports
       : name === 'recipes'
         ? recipes
-        : versions,
+        : name === 'recipe_versions'
+          ? versions
+          : suppressions,
   )
   getConnectedDatabase.mockResolvedValue({
     collection,
@@ -86,7 +92,7 @@ function setup(
           transaction({}),
       }),
   })
-  return { collection, imports, recipes, versions }
+  return { collection, imports, recipes, versions, suppressions }
 }
 
 function request(body: unknown) {
@@ -205,6 +211,31 @@ describe('POST /api/v1/imports/[importId]/save', () => {
       }),
       expect.objectContaining({ session: expect.anything() }),
     )
+  })
+
+  it('does not publish a usable preview when its source is suppressed', async () => {
+    const { recipes, versions } = setup(source, null, {
+      _id: 'suppression-1',
+      targetType: 'fingerprint',
+      target: source.contentFingerprint,
+      status: 'active',
+    })
+    const response = await POST(
+      request({
+        title: 'Suppressed soup',
+        typicalPeopleFed: 4,
+        ingredients: source.preview.ingredients,
+        instructions: source.preview.instructions,
+      }),
+      { params: Promise.resolve({ importId }) },
+    )
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({
+      code: 'PUBLIC_CONTENT_SUPPRESSED',
+    })
+    expect(recipes.insertOne).not.toHaveBeenCalled()
+    expect(versions.insertOne).not.toHaveBeenCalled()
   })
 
   it('replays an already-saved import without creating another recipe', async () => {

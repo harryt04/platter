@@ -15,6 +15,7 @@ import {
 import { extractCanonicalUrl } from '@/lib/recipe-import-schema-org'
 import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
 import type { RecipeImportDocument } from '@/lib/recipe-imports'
+import { findActivePublicContentSuppressionForImport } from '@/lib/public-content-suppressions'
 
 export const recipeImportRetryPolicy = {
   maxAttempts: 4,
@@ -126,6 +127,24 @@ export function createRecipeImportJobHandler(
       const contentFingerprint = `sha256:${createHash('sha256')
         .update(fetched.body, 'utf8')
         .digest('hex')}`
+      const activeSuppression =
+        await findActivePublicContentSuppressionForImport(db, {
+          recipeId: document.savedRecipeId,
+          submittedUrl: document.sourceUrl,
+          canonicalUrl,
+          sourceDomain,
+          contentFingerprint,
+        })
+      if (activeSuppression) {
+        await collection.updateOne(processingFilter, {
+          $set: {
+            status: 'failed',
+            failureCode: 'PUBLIC_CONTENT_SUPPRESSED',
+            updatedAt: isoDateTime(new Date()),
+          },
+        })
+        return
+      }
       const previewUpdate = await collection.updateOne(processingFilter, {
         $set: {
           status: 'preview-ready',

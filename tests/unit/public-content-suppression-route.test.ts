@@ -177,6 +177,38 @@ describe('POST /api/v1/admin/public-content-suppressions', () => {
     )
   })
 
+  it('accepts a fingerprint target and suppresses matching public recipes', async () => {
+    const setupResult = setup({ recipe: false })
+    const target = `SHA256:${'A'.repeat(64)}`
+    const response = await POST(
+      new Request('http://localhost/api/v1/admin/public-content-suppressions', {
+        method: 'POST',
+        body: JSON.stringify({
+          targetType: 'fingerprint',
+          target,
+          reason: 'Rights holder requested removal of this content.',
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(201)
+    expect(setupResult.insertedSuppressions[0]).toMatchObject({
+      targetType: 'fingerprint',
+      target: `sha256:${'a'.repeat(64)}`,
+    })
+    expect(setupResult.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'usable',
+        visibility: 'public',
+        'importProvenance.contentFingerprint': `sha256:${'a'.repeat(64)}`,
+      }),
+      expect.objectContaining({
+        $set: expect.objectContaining({ visibility: 'suppressed' }),
+      }),
+      expect.objectContaining({ session: expect.anything() }),
+    )
+  })
+
   it('rejects unauthenticated, non-admin, invalid, missing, and duplicate requests', async () => {
     getSession.mockResolvedValueOnce(null)
     expect(

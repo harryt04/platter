@@ -853,9 +853,9 @@ deduplicate public imports
       two or more recipes without recording which recipes they were.
 - [x] Recipe content, ingredient text, grocery content, URLs, complaint contacts,
       and secrets are impossible or explicitly rejected event properties.
-- [ ] Client and server adapters remain typed no-ops unless analytics is
+- [x] Client and server adapters remain typed no-ops unless analytics is
       explicitly enabled with valid configuration.
-- [ ] Core application behavior and builds are identical with the analytics
+- [x] Core application behavior and builds are identical with the analytics
       provider absent or unavailable.
 - [ ] Contract tests verify allowed event shapes, forbidden properties, disabled
       behavior, and representative funnel calculations.

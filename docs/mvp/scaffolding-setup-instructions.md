@@ -429,6 +429,10 @@ contract without changing envelope fields.
 - Wrap client and server analytics behind a small adapter.
 - Return a typed no-op implementation unless `POSTHOG_ENABLED=true` and the
   required settings exist.
+- Browser callers must pass an explicit enabled configuration containing the
+  public key and host; the adapter disables autocapture and session recording.
+- Provider setup, delivery, and shutdown failures are isolated from product
+  actions and leave the adapter usable as a no-op.
 - Centralize allowed event names and properties. Recipe content, ingredient
   text, grocery content, URLs, complaint contacts, and secrets are forbidden
   properties.

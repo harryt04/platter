@@ -266,7 +266,10 @@ Analytics events are centralized in a typed, content-free contract covering the
 core recipe-to-shopping funnel, collaboration, synchronization, imports, and
 history reuse. Unknown properties—including recipe, ingredient, grocery, URL,
 complaint-contact, and secret values—are rejected before an enabled provider
-can receive them; disabled analytics remain a no-op.
+can receive them; disabled or incomplete analytics remain a typed no-op. The
+server and explicitly configured browser adapters also swallow provider setup,
+delivery, and shutdown failures so analytics cannot make core product actions
+unavailable.
 Operators can pause new public URL imports and source refreshes with
 `RECIPE_IMPORTS_ENABLED=false`; import history remains readable and manual
 recipes, existing saved recipes, and shopping continue to work. Individual

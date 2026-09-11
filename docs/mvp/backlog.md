@@ -1114,6 +1114,9 @@ and responsive QA
 - [x] Clean-clone setup and every documented non-watch command pass; CI includes
       format, lint, type checks, unit, integration, browser, accessibility,
       security, and production-build checks.
-- [ ] The repository contains no secrets, private data, unlicensed images, or
+- [x] The repository contains no secrets, private data, unlicensed images, or
       improperly redistributable recipe content, and all policy templates are
-      clearly distinguished from operator-completed public policies.
+      clearly distinguished from operator-completed public policies. The
+      tracked-content and asset guard is documented in
+      [the repository hygiene reference](repository-hygiene.md) and runs in
+      `npm run check` and `npm run ci`.

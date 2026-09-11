@@ -21,7 +21,6 @@ jobs:
     env:
       APP_URL: http://localhost:3000
       BETTER_AUTH_URL: http://localhost:3000
-      BETTER_AUTH_SECRET: ci-only-secret-please-replace
       MONGODB_URI: mongodb://localhost:27017/?replicaSet=rs0
       MONGODB_DATABASE: platter_ci
       ALLOWED_ORIGINS: http://localhost:3000
@@ -32,6 +31,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Generate ephemeral auth secret
+        run: echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
@@ -44,7 +45,6 @@ jobs:
     env:
       APP_URL: http://localhost:3000
       BETTER_AUTH_URL: http://localhost:3000
-      BETTER_AUTH_SECRET: ci-only-secret-please-replace
       MONGODB_URI: mongodb://localhost:27017/?replicaSet=rs0
       MONGODB_DATABASE: platter_ci_browser
       ALLOWED_ORIGINS: http://localhost:3000
@@ -55,6 +55,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Generate ephemeral auth secret
+        run: echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
       - run: npm run build
       - run: npx playwright install --with-deps
       - run: npm run test:e2e

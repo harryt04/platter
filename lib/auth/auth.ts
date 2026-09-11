@@ -16,11 +16,18 @@ import {
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 
 const env = serverEnv()
+const authSecret = env.BETTER_AUTH_SECRET
+
+if (!authSecret) {
+  throw new Error(
+    'Missing required environment variable: BETTER_AUTH_SECRET. Configure a local secret before starting Platter.',
+  )
+}
 
 export const auth = betterAuth({
   appName: 'Platter',
   baseURL: env.BETTER_AUTH_URL,
-  secret: env.BETTER_AUTH_SECRET ?? 'development-only-platter-secret-change-me',
+  secret: authSecret,
   database: mongodbAdapter(getDatabase(), { usePlural: true }),
   emailAndPassword: {
     enabled: true,

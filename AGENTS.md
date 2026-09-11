@@ -23,6 +23,7 @@ cross-device completion explanation.
 - `docs/DESIGN.md` — colors, type, layout, accessibility, screen sizes, and motion.
 - `docs/mvp/ui-implementation-guide.md` — UI work steps and component patterns.
 - `docs/mvp/copy-and-content-guidelines.md` — product words, labels, states, and trust copy.
+- `docs/mvp/repository-hygiene.md` — tracked-content, asset, fixture-rights, and operator-policy safeguards.
 - `docs/mvp/application-intentions.md` — original product intent and context.
 - `components/` — shared shell, state, pattern, and shadcn-style UI components.
 - `features/<slice>/` — reserved ownership boundary for post-foundation feature lanes.

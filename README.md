@@ -538,6 +538,7 @@ documented E2E test account environment variables are configured.
 
 - [Product requirements](docs/mvp/prd.md) — product rules, data model, permissions, edge cases, and acceptance checks.
 - [Architecture reference](docs/mvp/architecture.md) — current data model, import contract, grocery calculations, synchronization, privacy boundaries, indexes, migrations, and deployment assumptions.
+- [Repository hygiene](docs/mvp/repository-hygiene.md) — tracked-content, asset, fixture-rights, and operator-policy safeguards.
 - [Scaffolding setup instructions](docs/mvp/scaffolding-setup-instructions.md) — foundation architecture, setup phases, placeholder routes, verification, and parallel-agent ownership.
 - [Design system](docs/DESIGN.md) — visual style, colors, app layout, screen sizes, accessibility, and motion.
 - [UI implementation guide](docs/mvp/ui-implementation-guide.md) — UI work steps, component rules, and states.
@@ -603,6 +604,7 @@ missing-optional-metadata states.
 | `npm run start:web` | Start the production web build. |
 | `npm run start:realtime` / `start:worker` | Start bundled auxiliary processes. |
 | `npm run format` / `format:check` | Write or check Prettier formatting. |
+| `npm run repository:check` | Check tracked content for credential markers, unreviewed raster assets, and unmarked policy templates. |
 | `npm run lint` / `typecheck` | Run ESLint or TypeScript checks. |
 | `npm run test` / `test:security` / `test:watch` | Run the unit/component suite, security regression suite, or watch tests. |
 | `npm run test:integration` | Run integration tests against a test/CI Mongo database. |

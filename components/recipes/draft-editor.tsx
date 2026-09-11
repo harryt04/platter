@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowDown, ArrowLeft, ArrowUp, Save } from 'lucide-react'
@@ -112,6 +112,7 @@ export function DraftEditor({
   initialInstructions?: RecipeInstruction[]
 }) {
   const router = useRouter()
+  const editorId = useId()
   const [initialIngredientsSnapshot] = useState(() =>
     JSON.stringify(initialIngredients),
   )
@@ -160,6 +161,14 @@ export function DraftEditor({
     useState<IngredientForm[]>(initialIngredients)
   const [instructions, setInstructions] =
     useState<RecipeInstruction[]>(initialInstructions)
+  const [ingredientKeys, setIngredientKeys] = useState(() =>
+    initialIngredients.map((_, index) => `${editorId}-ingredient-${index}`),
+  )
+  const [instructionKeys, setInstructionKeys] = useState(() =>
+    initialInstructions.map((_, index) => `${editorId}-instruction-${index}`),
+  )
+  const ingredientKeyCounter = useRef(initialIngredients.length)
+  const instructionKeyCounter = useRef(initialInstructions.length)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [correctionDialogOpen, setCorrectionDialogOpen] = useState(false)
@@ -174,6 +183,76 @@ export function DraftEditor({
         itemIndex === index ? { ...ingredient, ...changes } : ingredient,
       ),
     )
+  }
+
+  function focusAfterRender(selector: string) {
+    if (typeof window === 'undefined') return
+    window.setTimeout(() => {
+      document.querySelector<HTMLElement>(selector)?.focus()
+    }, 0)
+  }
+
+  function focusMovedControl(key: string, preferredDirection: 'up' | 'down') {
+    const preferred = `[data-reorder-key="${key}:${preferredDirection}"]`
+    const fallbackDirection = preferredDirection === 'up' ? 'down' : 'up'
+    const fallback = `[data-reorder-key="${key}:${fallbackDirection}"]`
+    if (typeof window === 'undefined') return
+    window.setTimeout(() => {
+      const preferredButton =
+        document.querySelector<HTMLButtonElement>(preferred)
+      if (preferredButton && !preferredButton.disabled) {
+        preferredButton.focus()
+        return
+      }
+      document.querySelector<HTMLElement>(fallback)?.focus()
+    }, 0)
+  }
+
+  function focusAfterRemoval(
+    kind: 'ingredient' | 'instruction',
+    nextKey: string | undefined,
+  ) {
+    if (nextKey) {
+      focusAfterRender(`[data-reorder-key="${nextKey}:remove"]`)
+    } else {
+      focusAfterRender(`[data-reorder-add="${kind}"]`)
+    }
+  }
+
+  function moveIngredient(index: number, offset: -1 | 1) {
+    const key = ingredientKeys[index]
+    setIngredients((current) => moveItem(current, index, offset))
+    setIngredientKeys((current) => moveItem(current, index, offset))
+    if (key) focusMovedControl(key, offset === -1 ? 'up' : 'down')
+  }
+
+  function removeIngredient(index: number) {
+    const nextKey = ingredientKeys[index + 1] ?? ingredientKeys[index - 1]
+    setIngredients((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    )
+    setIngredientKeys((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    )
+    focusAfterRemoval('ingredient', nextKey)
+  }
+
+  function moveInstruction(index: number, offset: -1 | 1) {
+    const key = instructionKeys[index]
+    setInstructions((current) => moveItem(current, index, offset))
+    setInstructionKeys((current) => moveItem(current, index, offset))
+    if (key) focusMovedControl(key, offset === -1 ? 'up' : 'down')
+  }
+
+  function removeInstruction(index: number) {
+    const nextKey = instructionKeys[index + 1] ?? instructionKeys[index - 1]
+    setInstructions((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    )
+    setInstructionKeys((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    )
+    focusAfterRemoval('instruction', nextKey)
   }
 
   async function persist() {
@@ -757,7 +836,7 @@ export function DraftEditor({
                 {ingredients.map((ingredient, index) => (
                   <div
                     className="border-border space-y-4 rounded-[var(--radius-card)] border p-4"
-                    key={index}
+                    key={ingredientKeys[index]}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <h3 className="text-sm font-medium">
@@ -769,13 +848,10 @@ export function DraftEditor({
                           variant="ghost"
                           size="icon"
                           aria-label={`Move ingredient ${index + 1} up`}
+                          data-reorder-key={`${ingredientKeys[index]}:up`}
                           title="Move up"
                           disabled={index === 0}
-                          onClick={() =>
-                            setIngredients((current) =>
-                              moveItem(current, index, -1),
-                            )
-                          }
+                          onClick={() => moveIngredient(index, -1)}
                         >
                           <ArrowUp size={16} />
                         </Button>
@@ -784,26 +860,19 @@ export function DraftEditor({
                           variant="ghost"
                           size="icon"
                           aria-label={`Move ingredient ${index + 1} down`}
+                          data-reorder-key={`${ingredientKeys[index]}:down`}
                           title="Move down"
                           disabled={index === ingredients.length - 1}
-                          onClick={() =>
-                            setIngredients((current) =>
-                              moveItem(current, index, 1),
-                            )
-                          }
+                          onClick={() => moveIngredient(index, 1)}
                         >
                           <ArrowDown size={16} />
                         </Button>
                         <Button
                           type="button"
                           variant="ghost"
-                          onClick={() =>
-                            setIngredients((current) =>
-                              current.filter(
-                                (_, itemIndex) => itemIndex !== index,
-                              ),
-                            )
-                          }
+                          aria-label={`Remove ingredient ${index + 1}`}
+                          data-reorder-key={`${ingredientKeys[index]}:remove`}
+                          onClick={() => removeIngredient(index)}
                         >
                           Remove
                         </Button>
@@ -913,9 +982,14 @@ export function DraftEditor({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() =>
+                  data-reorder-add="ingredient"
+                  onClick={() => {
                     setIngredients((current) => [...current, blankIngredient()])
-                  }
+                    setIngredientKeys((current) => [
+                      ...current,
+                      `${editorId}-ingredient-${ingredientKeyCounter.current++}`,
+                    ])
+                  }}
                 >
                   Add ingredient
                 </Button>
@@ -929,7 +1003,7 @@ export function DraftEditor({
                 {instructions.map((instruction, index) => (
                   <div
                     className="border-border space-y-3 rounded-[var(--radius-card)] border p-4"
-                    key={index}
+                    key={instructionKeys[index]}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <h3 className="text-sm font-medium">Step {index + 1}</h3>
@@ -939,13 +1013,10 @@ export function DraftEditor({
                           variant="ghost"
                           size="icon"
                           aria-label={`Move step ${index + 1} up`}
+                          data-reorder-key={`${instructionKeys[index]}:up`}
                           title="Move up"
                           disabled={index === 0}
-                          onClick={() =>
-                            setInstructions((current) =>
-                              moveItem(current, index, -1),
-                            )
-                          }
+                          onClick={() => moveInstruction(index, -1)}
                         >
                           <ArrowUp size={16} />
                         </Button>
@@ -954,26 +1025,19 @@ export function DraftEditor({
                           variant="ghost"
                           size="icon"
                           aria-label={`Move step ${index + 1} down`}
+                          data-reorder-key={`${instructionKeys[index]}:down`}
                           title="Move down"
                           disabled={index === instructions.length - 1}
-                          onClick={() =>
-                            setInstructions((current) =>
-                              moveItem(current, index, 1),
-                            )
-                          }
+                          onClick={() => moveInstruction(index, 1)}
                         >
                           <ArrowDown size={16} />
                         </Button>
                         <Button
                           type="button"
                           variant="ghost"
-                          onClick={() =>
-                            setInstructions((current) =>
-                              current.filter(
-                                (_, itemIndex) => itemIndex !== index,
-                              ),
-                            )
-                          }
+                          aria-label={`Remove step ${index + 1}`}
+                          data-reorder-key={`${instructionKeys[index]}:remove`}
+                          onClick={() => removeInstruction(index)}
                         >
                           Remove
                         </Button>
@@ -1000,7 +1064,14 @@ export function DraftEditor({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setInstructions((current) => [...current, ''])}
+                  data-reorder-add="instruction"
+                  onClick={() => {
+                    setInstructions((current) => [...current, ''])
+                    setInstructionKeys((current) => [
+                      ...current,
+                      `${editorId}-instruction-${instructionKeyCounter.current++}`,
+                    ])
+                  }}
                 >
                   Add instruction
                 </Button>

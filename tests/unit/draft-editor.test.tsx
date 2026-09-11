@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { DraftEditor } from '@/components/recipes/draft-editor'
@@ -178,10 +178,54 @@ describe('DraftEditor', () => {
     await user.type(newInstruction, 'Finish with herbs.')
     expect(newInstruction).toHaveValue('Finish with herbs.')
 
-    await user.click(screen.getAllByRole('button', { name: 'Remove' })[2])
+    await user.click(screen.getByRole('button', { name: 'Remove step 3' }))
     expect(
       screen.queryByRole('textbox', { name: 'Instruction 3' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('restores focus to the moved recipe step after keyboard reordering', async () => {
+    const user = userEvent.setup()
+    render(
+      <DraftEditor
+        recipeId="recipe-1"
+        initialTitle="Tomato soup"
+        initialInstructions={['Warm the pan.', 'Add the onions.']}
+      />,
+    )
+
+    const moveDown = screen.getByRole('button', {
+      name: 'Move step 1 down',
+    })
+    moveDown.focus()
+    await user.keyboard('{Enter}')
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Move step 2 up' }),
+      ).toHaveFocus(),
+    )
+  })
+
+  it('restores focus to the next recipe item after keyboard removal', async () => {
+    const user = userEvent.setup()
+    render(
+      <DraftEditor
+        recipeId="recipe-1"
+        initialTitle="Tomato soup"
+        initialInstructions={['Warm the pan.', 'Add the onions.']}
+      />,
+    )
+
+    const removeFirst = screen.getByRole('button', { name: 'Remove step 1' })
+    removeFirst.focus()
+    await user.keyboard('{Enter}')
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Remove step 1' }),
+      ).toHaveFocus(),
+    )
   })
 
   it('requires confirmation before saving an ingredient correction as a new version', async () => {

@@ -55,6 +55,42 @@ test.describe('authenticated list workflow', () => {
     'Set E2E_USER_EMAIL and E2E_USER_PASSWORD to run authenticated browser coverage.',
   )
 
+  test('@a11y keeps recipe editor ordering keyboard-operable', async ({
+    page,
+  }) => {
+    await page.goto('/sign-in')
+    await page
+      .getByRole('textbox', { name: 'Email' })
+      .fill(process.env.E2E_USER_EMAIL!)
+    await page.getByLabel('Password').fill(process.env.E2E_USER_PASSWORD!)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await expect(page).toHaveURL(/\/lists$/)
+
+    await page.goto('/recipes/new')
+    await page
+      .getByRole('textbox', { name: 'Recipe title' })
+      .fill(`Keyboard recipe ${Date.now()}`)
+    await page.getByRole('button', { name: 'Save draft' }).click()
+    await expect(page).toHaveURL(/\/recipes\/[^/]+\/edit$/)
+
+    await page.getByRole('button', { name: 'Add instruction' }).click()
+    await page.getByRole('button', { name: 'Add instruction' }).click()
+
+    const moveDown = page.getByRole('button', { name: 'Move step 1 down' })
+    await moveDown.focus()
+    await page.keyboard.press('Enter')
+    await expect(
+      page.getByRole('button', { name: 'Move step 2 up' }),
+    ).toBeFocused()
+
+    const removeFirst = page.getByRole('button', { name: 'Remove step 1' })
+    await removeFirst.focus()
+    await page.keyboard.press('Enter')
+    await expect(
+      page.getByRole('button', { name: 'Remove step 1' }),
+    ).toBeFocused()
+  })
+
   test('creates three lists and completes the owner lifecycle', async ({
     page,
   }) => {

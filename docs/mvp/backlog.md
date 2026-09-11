@@ -1042,6 +1042,9 @@ recipes; 31: Process public-content complaints; 35: Delete an account safely
       authenticated shopping checklist has Playwright coverage at 320px in
       both resolved System themes plus explicit Light and Dark preferences,
       including axe checks, keyboard activation, and 44px touch-target checks.
+- [x] Recipe draft ingredient and instruction controls have item-specific
+      accessible names and restore focus to the moved or next remaining item
+      after keyboard reorder and removal.
 - [ ] Navigation, dialogs, recipe fields, lists, merge correction, reordering,
       theme controls, review, and shopping are fully keyboard operable with
       visible focus and correct focus restoration.

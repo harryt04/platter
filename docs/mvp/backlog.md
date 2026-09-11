@@ -798,7 +798,7 @@ visibility; 09: Manage the personal recipe library
 
 - [x] A signed-in user can view and update supported profile fields, including
       display name and locale, with server validation.
-- [ ] Locale affects user-facing date and supported unit presentation without
+- [x] Locale affects user-facing date and supported unit presentation without
       changing deterministic stored calculation values.
 - [ ] A user can request and securely retrieve an export of their account,
       memberships, recipes, saved references, and other appropriate personal data.

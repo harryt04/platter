@@ -22,11 +22,13 @@ export function AddRecipeToListForm({
   recipeTitle,
   defaultPeople,
   lists,
+  locale = 'en-US',
 }: {
   recipeId: string
   recipeTitle: string
   defaultPeople: number
   lists: ListOption[]
+  locale?: string
 }) {
   const router = useRouter()
   const [listId, setListId] = React.useState(lists[0]?.id ?? '')
@@ -121,7 +123,9 @@ export function AddRecipeToListForm({
       <p aria-live="polite" className="text-muted-foreground text-sm">
         {error ?? message}
       </p>
-      {preview && <SelectionIngredientPreview ingredients={preview} />}
+      {preview && (
+        <SelectionIngredientPreview ingredients={preview} locale={locale} />
+      )}
     </form>
   )
 }

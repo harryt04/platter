@@ -9,22 +9,7 @@ import type {
   GroceryMergeSuggestion,
 } from '@/lib/recipes/groceries'
 import { groceryCategoryLabel } from '@/lib/recipes/grocery-categories'
-
-function formatQuantity(item: GroceryItem) {
-  if (!item.shoppingAmount) return 'As needed'
-  const amount = item.shoppingAmount.max
-    ? `${item.shoppingAmount.min}–${item.shoppingAmount.max}`
-    : item.shoppingAmount.min
-  return item.unit.name ? `${amount} ${item.unit.name}` : amount
-}
-
-function formatRequirement(item: GroceryItem) {
-  if (!item.calculatedRequirement) return 'As needed'
-  const amount = item.calculatedRequirement.max
-    ? `${item.calculatedRequirement.min}–${item.calculatedRequirement.max}`
-    : item.calculatedRequirement.min
-  return item.unit.name ? `${amount} ${item.unit.name}` : amount
-}
+import { formatIngredientQuantity } from '@/lib/recipes/unit-presentation'
 
 function suggestionSource(item: GroceryItem) {
   const contribution = item.contributions[0]
@@ -98,6 +83,7 @@ export function GroceryRow({
   baseRevision,
   editable,
   showCalculatedRequirement = false,
+  locale = 'en-US',
 }: {
   item?: GroceryItem
   ingredient?: string
@@ -110,12 +96,11 @@ export function GroceryRow({
   baseRevision?: number
   editable?: boolean
   showCalculatedRequirement?: boolean
+  locale?: string
 }) {
   const itemIngredient = item?.ingredientName ?? ingredient ?? 'Grocery item'
   const itemAmount = item
-    ? item.shoppingAmount
-      ? `${item.shoppingAmount.max ? `${item.shoppingAmount.min}–${item.shoppingAmount.max}` : item.shoppingAmount.min}${item.unit.name ? ` ${item.unit.name}` : ''}`
-      : 'As needed'
+    ? formatIngredientQuantity(item.shoppingAmount, item.unit, locale)
     : (amount ?? 'As needed')
 
   return (
@@ -141,7 +126,12 @@ export function GroceryRow({
           </div>
           {item && (showCalculatedRequirement || item.override) && (
             <p className="text-muted-foreground mt-2 text-xs">
-              Calculated requirement: {formatRequirement(item)}
+              Calculated requirement:{' '}
+              {formatIngredientQuantity(
+                item.calculatedRequirement,
+                item.unit,
+                locale,
+              )}
             </p>
           )}
         </div>
@@ -167,6 +157,7 @@ export function GroceryRow({
             editable={editable}
             item={item}
             listId={listId}
+            locale={locale}
             runId={runId}
           />
         ) : (
@@ -179,7 +170,7 @@ export function GroceryRow({
           </Button>
         )}
       </Card>
-      {item && <GroceryOverrideWarning item={item} />}
+      {item && <GroceryOverrideWarning item={item} locale={locale} />}
       {mergeSuggestions.map((suggestion) => {
         const otherItem =
           suggestion.left.id === item?.id ? suggestion.right : suggestion.left
@@ -192,7 +183,12 @@ export function GroceryRow({
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="warning">Possible match</Badge>
               <span>
-                This item may match {formatQuantity(otherItem)}{' '}
+                This item may match{' '}
+                {formatIngredientQuantity(
+                  otherItem.shoppingAmount,
+                  otherItem.unit,
+                  locale,
+                )}{' '}
                 {otherItem.ingredientName} from {suggestionSource(otherItem)}.
               </span>
             </div>

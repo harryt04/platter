@@ -160,6 +160,7 @@ export default async function ShopPage({
                       listId={listId}
                       runId={run?._id ?? list.activeRunId}
                       editable={!isReadOnly}
+                      locale={session.user.locale ?? 'en-US'}
                       state={
                         purchasedItemIds.has(item.id) ? 'purchased' : 'buy'
                       }
@@ -198,6 +199,7 @@ export default async function ShopPage({
                       editable={!isReadOnly}
                       item={item}
                       listId={listId}
+                      locale={session.user.locale ?? 'en-US'}
                       runId={run?._id ?? list.activeRunId}
                       userId={session.user.id}
                     />

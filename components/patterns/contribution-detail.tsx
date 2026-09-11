@@ -1,15 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { GroceryContribution, GroceryItem } from '@/lib/recipes/groceries'
 import { SplitGroceryContributionButton } from '@/components/lists/split-grocery-contribution-button'
-
-function formatQuantity(
-  quantity: GroceryContribution['calculatedQuantity'],
-  unit?: string,
-) {
-  if (!quantity) return 'As needed'
-  const amount = quantity.max ? `${quantity.min}–${quantity.max}` : quantity.min
-  return unit ? `${amount} ${unit}` : amount
-}
+import { formatIngredientQuantity } from '@/lib/recipes/unit-presentation'
 
 function contributionSource(contribution: GroceryContribution) {
   return contribution.source.kind === 'recipe'
@@ -23,12 +15,14 @@ export function ContributionDetail({
   runId,
   baseRevision,
   editable = true,
+  locale = 'en-US',
 }: {
   item?: GroceryItem
   listId?: string
   runId?: string
   baseRevision?: number
   editable?: boolean
+  locale?: string
 }) {
   if (!item) {
     return (
@@ -77,9 +71,10 @@ export function ContributionDetail({
               <div className="flex items-start justify-between gap-3">
                 <span>{contributionSource(contribution)}</span>
                 <span className="font-data shrink-0">
-                  {formatQuantity(
+                  {formatIngredientQuantity(
                     contribution.calculatedQuantity,
-                    contribution.unit.name,
+                    contribution.unit,
+                    locale,
                   )}
                 </span>
               </div>
@@ -106,13 +101,17 @@ export function ContributionDetail({
           <div className="flex justify-between gap-3">
             <span>Calculated requirement</span>
             <span className="font-data">
-              {formatQuantity(item.calculatedRequirement, item.unit.name)}
+              {formatIngredientQuantity(
+                item.calculatedRequirement,
+                item.unit,
+                locale,
+              )}
             </span>
           </div>
           {item.override && (
             <p className="text-muted-foreground mt-1 text-xs">
               Shopping amount:{' '}
-              {formatQuantity(item.shoppingAmount, item.unit.name)}
+              {formatIngredientQuantity(item.shoppingAmount, item.unit, locale)}
             </p>
           )}
         </div>

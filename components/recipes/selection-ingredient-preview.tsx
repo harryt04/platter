@@ -1,5 +1,9 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  formatIngredientQuantity,
+  ingredientUnitForDisplay,
+} from '@/lib/recipes/unit-presentation'
 
 export type SelectionIngredientPreviewItem = {
   ingredientName: string
@@ -12,18 +16,12 @@ export type SelectionIngredientPreviewItem = {
   } | null
 }
 
-function formatQuantity(
-  quantity: SelectionIngredientPreviewItem['calculatedQuantity'],
-) {
-  if (!quantity) return 'As needed'
-  if (quantity.max) return `${quantity.min}–${quantity.max}`
-  return quantity.min
-}
-
 export function SelectionIngredientPreview({
   ingredients,
+  locale = 'en-US',
 }: {
   ingredients: SelectionIngredientPreviewItem[]
+  locale?: string
 }) {
   return (
     <Card className="mt-4">
@@ -48,8 +46,11 @@ export function SelectionIngredientPreview({
                 role="listitem"
               >
                 <span className="font-data shrink-0">
-                  {formatQuantity(ingredient.calculatedQuantity)}
-                  {ingredient.unit ? ` ${ingredient.unit}` : null}
+                  {formatIngredientQuantity(
+                    ingredient.calculatedQuantity,
+                    ingredientUnitForDisplay(ingredient.unit),
+                    locale,
+                  )}
                 </span>
                 <span className="text-right">
                   {ingredient.ingredientName}

@@ -1,15 +1,13 @@
 import type { GroceryItem } from '@/lib/recipes/groceries'
+import { formatIngredientQuantity } from '@/lib/recipes/unit-presentation'
 
-function formatQuantity(
-  quantity: GroceryItem['calculatedRequirement'],
-  unit: GroceryItem['unit'],
-) {
-  if (!quantity) return 'no calculated requirement'
-  const amount = quantity.max ? `${quantity.min}–${quantity.max}` : quantity.min
-  return unit.name ? `${amount} ${unit.name}` : amount
-}
-
-export function GroceryOverrideWarning({ item }: { item: GroceryItem }) {
+export function GroceryOverrideWarning({
+  item,
+  locale = 'en-US',
+}: {
+  item: GroceryItem
+  locale?: string
+}) {
   if (!item.overrideWarning || !item.override) return null
 
   return (
@@ -19,20 +17,22 @@ export function GroceryOverrideWarning({ item }: { item: GroceryItem }) {
     >
       Your intended shopping amount remains{' '}
       <span className="font-data">
-        {formatQuantity(item.override, item.unit)}
+        {formatIngredientQuantity(item.override, item.unit, locale)}
       </span>
       . The calculated requirement changed from{' '}
       <span className="font-data">
-        {formatQuantity(
+        {formatIngredientQuantity(
           item.overrideWarning.previousCalculatedRequirement,
           item.unit,
+          locale,
         )}
       </span>{' '}
       to{' '}
       <span className="font-data">
-        {formatQuantity(
+        {formatIngredientQuantity(
           item.overrideWarning.currentCalculatedRequirement,
           item.unit,
+          locale,
         )}
       </span>
       . Review this override before shopping.

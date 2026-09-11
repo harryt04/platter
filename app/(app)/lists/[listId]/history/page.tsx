@@ -73,7 +73,10 @@ export default async function ListHistoryPage({
                       href={`/lists/${listId}/history/${entry._id}`}
                     >
                       <time dateTime={entry.localDate}>
-                        {formatShoppingRunHistoryDate(entry.localDate)}
+                        {formatShoppingRunHistoryDate(
+                          entry.localDate,
+                          session.user.locale ?? 'en-US',
+                        )}
                       </time>
                     </Link>
                   </CardTitle>

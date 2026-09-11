@@ -100,6 +100,7 @@ export default async function RecipePage({
             }))}
             recipeId={recipe.recipeId}
             recipeTitle={recipe.title}
+            locale={session.user.locale ?? 'en-US'}
           />
         </div>
       )}

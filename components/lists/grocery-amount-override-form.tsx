@@ -9,20 +9,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SyncStatus } from '@/components/states/sync-status'
 import { browserIsOffline, queueBrowserMutation } from '@/lib/offline/mutations'
+import { formatIngredientQuantity } from '@/lib/recipes/unit-presentation'
 
-function formatQuantity(
-  quantity: GroceryItem['calculatedRequirement'],
-  unit: GroceryItem['unit'],
-) {
-  if (!quantity) return 'As needed'
-  const amount = quantity.max ? `${quantity.min}–${quantity.max}` : quantity.min
-  return unit.name ? `${amount} ${unit.name}` : amount
-}
-
-function formatSuggestion(item: GroceryItem) {
+function formatSuggestion(item: GroceryItem, locale: string) {
   const suggestion = item.suggestedShoppingAmount
   if (!suggestion) return null
-  return formatQuantity(suggestion.quantity, item.unit)
+  return formatIngredientQuantity(suggestion.quantity, item.unit, locale)
 }
 
 export function GroceryAmountOverrideForm({
@@ -32,6 +24,7 @@ export function GroceryAmountOverrideForm({
   runId,
   userId,
   editable = true,
+  locale = 'en-US',
 }: {
   item: GroceryItem
   listId: string
@@ -39,6 +32,7 @@ export function GroceryAmountOverrideForm({
   runId?: string
   userId?: string
   editable?: boolean
+  locale?: string
 }) {
   const router = useRouter()
   const [mutationRevision, setMutationRevision] = React.useState<number>()
@@ -49,7 +43,7 @@ export function GroceryAmountOverrideForm({
   const [message, setMessage] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [offlinePending, setOfflinePending] = React.useState(false)
-  const suggestion = formatSuggestion(item)
+  const suggestion = formatSuggestion(item, locale)
 
   const currentRevision =
     mutationRevision === undefined || baseRevision === undefined
@@ -200,7 +194,11 @@ export function GroceryAmountOverrideForm({
             id={`shopping-amount-help-${item.id}`}
           >
             Calculated requirement:{' '}
-            {formatQuantity(item.calculatedRequirement, item.unit)}
+            {formatIngredientQuantity(
+              item.calculatedRequirement,
+              item.unit,
+              locale,
+            )}
           </p>
           {suggestion && (
             <div

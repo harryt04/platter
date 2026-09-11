@@ -55,7 +55,10 @@ export default async function RunHistoryPage({
         <CardHeader>
           <CardTitle>
             <time dateTime={history.localDate}>
-              {formatShoppingRunHistoryDate(history.localDate)}
+              {formatShoppingRunHistoryDate(
+                history.localDate,
+                session.user.locale ?? 'en-US',
+              )}
             </time>
           </CardTitle>
           <p className="text-muted-foreground text-sm">

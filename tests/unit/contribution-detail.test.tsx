@@ -70,6 +70,12 @@ describe('ContributionDetail', () => {
     expect(screen.getByText('onions', { exact: true })).toBeInTheDocument()
   })
 
+  it('uses the signed-in locale for supported grocery units', () => {
+    render(<GroceryRow item={item} locale="de-DE" />)
+
+    expect(screen.getAllByText('1 l')).toHaveLength(2)
+  })
+
   it('keeps an unquantified contribution readable without inventing a total', () => {
     render(
       <ContributionDetail

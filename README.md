@@ -225,7 +225,9 @@ still matches it, and the moderation route has no list-membership or shopping
 authority.
 Signed-in users can now view and update their display name and supported locale
 from Account settings. Profile updates are validated on the server, sanitize
-control characters, and keep the authentication email read-only.
+control characters, and keep the authentication email read-only. History dates
+and supported grocery quantities use that locale for display while canonical
+stored quantities and deterministic grocery calculations remain unchanged.
 New imports and historical reprocessing check all of those source identities
 before exposing a preview, while preview saves repeat the check inside their
 transaction so a suppression cannot race with public publication.

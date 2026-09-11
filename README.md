@@ -46,6 +46,9 @@ All dynamic list pages and realtime room joins now reject malformed list IDs
 before authentication or storage access, matching the existing bounded ID
 checks across list APIs, recipe routes, shopping history, imports, and
 administrative complaint updates.
+Public recipe discovery is throttled per client address, and rate-limited
+search, import, report, export, and import-recovery responses share a stable
+problem document with a `Retry-After` hint.
 Archived lists preserve read access to their shopping run while disabling
 shopping changes such as completion and amount resets. Owners and editors can
 now confirm an active run through an atomic transition that retains only

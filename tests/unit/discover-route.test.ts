@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET } from '@/app/api/v1/discover/recipes/route'
+import { resetRateLimitsForTests } from '@/lib/security/rate-limit'
 
 const { decodeCursor, getConnectedDatabase, searchRecipes } = vi.hoisted(
   () => ({
@@ -21,6 +22,7 @@ vi.mock('@/lib/search/default-provider', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
+  resetRateLimitsForTests()
 })
 
 describe('GET /api/v1/discover/recipes', () => {
@@ -93,5 +95,28 @@ describe('GET /api/v1/discover/recipes', () => {
     expect(response.status).toBe(422)
     expect((await response.json()).code).toBe('VALIDATION_FAILED')
     expect(getConnectedDatabase).not.toHaveBeenCalled()
+  })
+
+  it('rate-limits public searches by client address with a retryable problem', async () => {
+    getConnectedDatabase.mockResolvedValue({})
+    searchRecipes.mockResolvedValue({ results: [] })
+    const requests = Array.from({ length: 121 }, () =>
+      GET(
+        new Request('http://localhost/api/v1/discover/recipes?q=soup', {
+          headers: { 'x-forwarded-for': '203.0.113.8' },
+        }),
+      ),
+    )
+
+    const responses = await Promise.all(requests)
+    const limited = responses.at(-1)
+
+    expect(
+      responses.slice(0, 120).every((response) => response.status === 200),
+    ).toBe(true)
+    expect(limited?.status).toBe(429)
+    expect(limited?.headers.get('retry-after')).toMatch(/^\d+$/)
+    expect((await limited?.json()).code).toBe('RATE_LIMITED')
+    expect(searchRecipes).toHaveBeenCalledTimes(120)
   })
 })

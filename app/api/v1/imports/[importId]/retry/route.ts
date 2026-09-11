@@ -11,7 +11,10 @@ import {
   toRecipeImportSummary,
   type RecipeImportDocument,
 } from '@/lib/recipe-imports'
-import { checkRateLimit } from '@/lib/security/rate-limit'
+import {
+  checkRateLimit,
+  rateLimitProblemResponse,
+} from '@/lib/security/rate-limit'
 import { publicCatalogImportsEnabled } from '@/lib/instance-policy'
 
 const retryRequestSchema = z.object({
@@ -93,9 +96,10 @@ export async function POST(
     windowMs: 60 * 60 * 1000,
   })
   if (!limit.allowed) {
-    return new Response(null, {
-      status: 429,
-      headers: { 'retry-after': String(limit.retryAfterSeconds) },
+    return rateLimitProblemResponse({
+      title: 'Import retry limit reached',
+      detail: 'Wait before retrying an import again.',
+      retryAfterSeconds: limit.retryAfterSeconds,
     })
   }
 

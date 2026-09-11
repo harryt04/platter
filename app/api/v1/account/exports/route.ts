@@ -6,7 +6,10 @@ import {
   type AccountExportDocument,
 } from '@/lib/account-exports'
 import { problemResponse } from '@/lib/contracts/problem'
-import { checkRateLimit } from '@/lib/security/rate-limit'
+import {
+  checkRateLimit,
+  rateLimitProblemResponse,
+} from '@/lib/security/rate-limit'
 
 function authenticationRequired() {
   return problemResponse({
@@ -27,23 +30,11 @@ export async function POST() {
     windowMs: 60 * 60 * 1000,
   })
   if (!rateLimit.allowed) {
-    return new Response(
-      JSON.stringify({
-        type: 'https://platter.dev/problems/rate-limited',
-        title: 'Export request limit reached',
-        status: 429,
-        detail:
-          'You can request another export after the current limit resets.',
-        code: 'RATE_LIMITED',
-      }),
-      {
-        status: 429,
-        headers: {
-          'content-type': 'application/problem+json',
-          'retry-after': String(rateLimit.retryAfterSeconds),
-        },
-      },
-    )
+    return rateLimitProblemResponse({
+      title: 'Export request limit reached',
+      detail: 'You can request another export after the current limit resets.',
+      retryAfterSeconds: rateLimit.retryAfterSeconds,
+    })
   }
 
   try {

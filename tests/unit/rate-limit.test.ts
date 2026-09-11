@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   checkRateLimit,
+  rateLimitProblemResponse,
   resetRateLimitsForTests,
 } from '@/lib/security/rate-limit'
 
@@ -32,5 +33,26 @@ describe('rate limiting', () => {
     expect(checkRateLimit('actor-a', options, 1_500).allowed).toBe(false)
     expect(checkRateLimit('actor-b', options, 1_500).allowed).toBe(true)
     expect(checkRateLimit('actor-a', options, 2_000).allowed).toBe(true)
+  })
+
+  it('returns a stable problem response with a retry hint', async () => {
+    const response = rateLimitProblemResponse({
+      title: 'Search limit reached',
+      detail: 'Wait before searching again.',
+      retryAfterSeconds: 12,
+    })
+
+    expect(response.status).toBe(429)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(response.headers.get('retry-after')).toBe('12')
+    expect(await response.json()).toEqual({
+      type: 'https://platter.dev/problems/rate-limited',
+      title: 'Search limit reached',
+      status: 429,
+      detail: 'Wait before searching again.',
+      code: 'RATE_LIMITED',
+    })
   })
 })

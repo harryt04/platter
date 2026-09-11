@@ -882,6 +882,9 @@ complaints; 35: Delete an account safely
       opaque IDs and cursors, and never expose stack traces or database errors.
 - [ ] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
+  - [x] Public recipe search is rate-limited per client address with tested
+        stable retryable problem responses; authentication and the remaining
+        abuse surfaces are still tracked by the parent criterion.
 - [ ] User-authored content is sanitized, imported active content is never
       rendered, and secrets or private contacts do not enter logs or analytics.
 - [ ] Administrative access to private user content is exceptional, policy-bound,

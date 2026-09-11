@@ -12,7 +12,10 @@ import {
   type RecipeImportDocument,
 } from '@/lib/recipe-imports'
 import { enqueueRecipeImport } from '@/lib/jobs/queue'
-import { checkRateLimit } from '@/lib/security/rate-limit'
+import {
+  checkRateLimit,
+  rateLimitProblemResponse,
+} from '@/lib/security/rate-limit'
 
 const IMPORT_RATE_LIMIT = { limit: 10, windowMs: 60 * 60 * 1000 }
 
@@ -38,22 +41,11 @@ function publicImportsDisabled() {
 }
 
 function rateLimited(retryAfterSeconds: number) {
-  return new Response(
-    JSON.stringify({
-      type: 'https://platter.dev/problems/rate-limited',
-      title: 'Too many import attempts',
-      status: 429,
-      detail: 'Wait before submitting another recipe URL.',
-      code: 'RATE_LIMITED',
-    }),
-    {
-      status: 429,
-      headers: {
-        'content-type': 'application/problem+json',
-        'retry-after': String(retryAfterSeconds),
-      },
-    },
-  )
+  return rateLimitProblemResponse({
+    title: 'Too many import attempts',
+    detail: 'Wait before submitting another recipe URL.',
+    retryAfterSeconds,
+  })
 }
 
 function invalidIdempotencyKey() {
@@ -95,9 +87,10 @@ export async function GET() {
     windowMs: 60 * 60 * 1000,
   })
   if (!limit.allowed) {
-    return new Response(null, {
-      status: 429,
-      headers: { 'retry-after': String(limit.retryAfterSeconds) },
+    return rateLimitProblemResponse({
+      title: 'Import status limit reached',
+      detail: 'Wait before requesting import status again.',
+      retryAfterSeconds: limit.retryAfterSeconds,
     })
   }
 

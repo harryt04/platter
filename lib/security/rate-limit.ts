@@ -1,3 +1,5 @@
+import { problemResponse } from '@/lib/contracts/problem'
+
 type RateLimitWindow = {
   count: number
   resetAt: number
@@ -56,6 +58,24 @@ export function checkRateLimit(
     remaining: Math.max(0, options.limit - window.count),
     retryAfterSeconds: Math.max(1, Math.ceil((window.resetAt - now) / 1000)),
   }
+}
+
+export function rateLimitProblemResponse(input: {
+  title: string
+  detail: string
+  retryAfterSeconds: number
+  code?: string
+  type?: string
+}) {
+  const response = problemResponse({
+    type: input.type ?? 'https://platter.dev/problems/rate-limited',
+    title: input.title,
+    status: 429,
+    detail: input.detail,
+    code: input.code ?? 'RATE_LIMITED',
+  })
+  response.headers.set('retry-after', String(input.retryAfterSeconds))
+  return response
 }
 
 export function resetRateLimitsForTests() {

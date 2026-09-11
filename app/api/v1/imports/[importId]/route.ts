@@ -7,7 +7,10 @@ import {
   toRecipeImportSummary,
   type RecipeImportDocument,
 } from '@/lib/recipe-imports'
-import { checkRateLimit } from '@/lib/security/rate-limit'
+import {
+  checkRateLimit,
+  rateLimitProblemResponse,
+} from '@/lib/security/rate-limit'
 
 function authenticationRequired() {
   return problemResponse({
@@ -41,9 +44,10 @@ export async function GET(
     windowMs: 60 * 60 * 1000,
   })
   if (!limit.allowed) {
-    return new Response(null, {
-      status: 429,
-      headers: { 'retry-after': String(limit.retryAfterSeconds) },
+    return rateLimitProblemResponse({
+      title: 'Import status limit reached',
+      detail: 'Wait before requesting import status again.',
+      retryAfterSeconds: limit.retryAfterSeconds,
     })
   }
 

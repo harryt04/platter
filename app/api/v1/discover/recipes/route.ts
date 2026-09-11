@@ -3,6 +3,21 @@ import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { decodeRecipeSearchCursor } from '@/lib/search/mongo-provider'
 import { createRecipeSearchProvider } from '@/lib/search/default-provider'
+import {
+  checkRateLimit,
+  rateLimitProblemResponse,
+} from '@/lib/security/rate-limit'
+
+const SEARCH_RATE_LIMIT = { limit: 120, windowMs: 60 * 1000 }
+
+function clientKey(request: Request) {
+  const forwarded = request.headers.get('x-forwarded-for')
+  return (
+    forwarded?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip')?.trim() ||
+    'anonymous'
+  ).slice(0, 128)
+}
 
 const searchParamsSchema = z.object({
   q: z
@@ -28,6 +43,18 @@ function validationFailed() {
 }
 
 export async function GET(request: Request) {
+  const limit = checkRateLimit(
+    `public-search:${clientKey(request)}`,
+    SEARCH_RATE_LIMIT,
+  )
+  if (!limit.allowed) {
+    return rateLimitProblemResponse({
+      title: 'Search limit reached',
+      detail: 'Wait before searching public recipes again.',
+      retryAfterSeconds: limit.retryAfterSeconds,
+    })
+  }
+
   const url = new URL(request.url)
   const parsed = searchParamsSchema.safeParse({
     q: url.searchParams.get('q') ?? '',

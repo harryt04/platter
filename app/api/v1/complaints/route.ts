@@ -10,7 +10,10 @@ import {
   publicRecipeFilter,
   type RecipeDraftDocument,
 } from '@/lib/recipes/drafts'
-import { checkRateLimit } from '@/lib/security/rate-limit'
+import {
+  checkRateLimit,
+  rateLimitProblemResponse,
+} from '@/lib/security/rate-limit'
 
 const COMPLAINT_RATE_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 }
 
@@ -24,22 +27,11 @@ function clientKey(request: Request) {
 }
 
 function rateLimited(retryAfterSeconds: number) {
-  return new Response(
-    JSON.stringify({
-      type: 'https://platter.dev/problems/rate-limited',
-      title: 'Too many reports',
-      status: 429,
-      detail: 'Wait before submitting another public-content report.',
-      code: 'RATE_LIMITED',
-    }),
-    {
-      status: 429,
-      headers: {
-        'content-type': 'application/problem+json',
-        'retry-after': String(retryAfterSeconds),
-      },
-    },
-  )
+  return rateLimitProblemResponse({
+    title: 'Too many reports',
+    detail: 'Wait before submitting another public-content report.',
+    retryAfterSeconds,
+  })
 }
 
 function invalidJson() {

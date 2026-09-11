@@ -1059,8 +1059,11 @@ recipes; 31: Process public-content complaints; 35: Delete an account safely
       foreground reserved for solid warning fills; and the shopping
       accessibility browser check verifies reduced-motion behavior in every
       supported theme.
-- [ ] Common shopping actions remain one tap, touch targets are at least 44 by
+- [x] Common shopping actions remain one tap, touch targets are at least 44 by
       44 pixels, and all reordering has a non-drag alternative.
+  - [x] The shared Button primitive keeps compact shopping actions, including
+        contribution splitting, at least 44px high; component and browser
+        checks cover one-tap checklist actions and button-based reordering.
 
 ## 40: Verify the complete recipe-to-shopping journey
 

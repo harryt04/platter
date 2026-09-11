@@ -23,7 +23,9 @@ export function Button({
       'bg-secondary text-secondary-foreground hover:brightness-95',
     variant === 'destructive' &&
       'bg-destructive text-destructive-foreground hover:opacity-90',
-    size === 'sm' && 'min-h-9 px-3',
+    // Compact buttons may use less horizontal space, but every action remains
+    // touch-safe per the product's 44px interaction-target contract.
+    size === 'sm' && 'min-h-11 px-3',
     size === 'icon' && 'w-11 px-0',
     className,
   )

@@ -99,6 +99,12 @@ test.describe('shopping responsive and theme accessibility', () => {
         page.getByRole('heading', { name: 'Shopping run' }),
       ).toBeVisible()
       await expect(
+        page.getByRole('navigation', { name: 'Shopping run views' }),
+      ).toBeVisible()
+      await expect(
+        page.getByRole('list', { name: 'Produce grocery items' }),
+      ).toBeVisible()
+      await expect(
         page.getByRole('button', { name: 'Mark spinach purchased' }),
       ).toBeVisible()
       await expect
@@ -117,6 +123,7 @@ test.describe('shopping responsive and theme accessibility', () => {
       const markPurchased = page.getByRole('button', {
         name: 'Mark spinach purchased',
       })
+      await expect(markPurchased).toHaveAttribute('aria-pressed', 'false')
       expect(
         (await markPurchased.boundingBox())?.height ?? 0,
       ).toBeGreaterThanOrEqual(44)
@@ -129,6 +136,12 @@ test.describe('shopping responsive and theme accessibility', () => {
         name: 'Undo purchased for spinach',
       })
       await expect(undoPurchased).toBeVisible()
+      await expect(undoPurchased).toHaveAttribute('aria-pressed', 'true')
+      await expect(
+        page
+          .getByRole('status')
+          .filter({ hasText: 'Marked spinach purchased.' }),
+      ).toBeVisible()
       await expect(undoPurchased).toBeEnabled()
       await undoPurchased.click()
       await expect(markPurchased).toBeVisible()

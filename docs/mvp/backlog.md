@@ -1053,8 +1053,9 @@ recipes; 31: Process public-content complaints; 35: Delete an account safely
   - [x] Mobile navigation exposes its expanded state, moves focus into the open
         menu, traps Tab navigation, closes on Escape or route selection, and
         restores focus to the trigger when dismissed.
-- [ ] Automated checks report no serious or critical issues, and documented
-      keyboard and screen-reader reviews cover the shopping journey.
+- [x] Automated checks report no serious or critical issues, and documented
+      keyboard and screen-reader reviews cover the shopping journey. See
+      [the shopping accessibility review](accessibility-review.md).
 - [x] Remote changes, optimistic state, offline queues, reconciliation, and
       completion are announced usefully without excessive live-region output.
 - [x] Status never depends on color alone, normal text and controls meet WCAG

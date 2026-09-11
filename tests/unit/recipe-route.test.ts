@@ -23,6 +23,25 @@ const draft = {
 }
 
 describe('PATCH /api/v1/recipes/[recipeId]', () => {
+  it('returns a stable retryable problem when recipe storage is unavailable', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/recipes/recipe-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ title: 'New title' }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect((await response.json()).code).toBe('RECIPE_UNAVAILABLE')
+  })
+
   it('transitions an owned draft to usable after valid structured details', async () => {
     getSession.mockResolvedValue({ user: { id: 'user-1' } })
     const collection = {
@@ -560,6 +579,22 @@ describe('PATCH /api/v1/recipes/[recipeId]', () => {
 })
 
 describe('DELETE /api/v1/recipes/[recipeId]', () => {
+  it('returns a stable retryable problem when recipe storage is unavailable', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await DELETE(
+      new Request('http://localhost/api/v1/recipes/recipe-1', {
+        method: 'DELETE',
+        body: JSON.stringify({ title: 'Tomato soup' }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('RECIPE_UNAVAILABLE')
+  })
+
   it('requires an exact title before changing a recipe or its references', async () => {
     getSession.mockResolvedValue({ user: { id: 'user-1' } })
     const recipes = {
@@ -652,6 +687,45 @@ describe('DELETE /api/v1/recipes/[recipeId]', () => {
 })
 
 describe('GET /api/v1/recipes/[recipeId]', () => {
+  it('returns a stable retryable problem when recipe storage is unavailable', async () => {
+    getSession.mockResolvedValue(null)
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/recipes/recipe-1'),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect((await response.json()).code).toBe('RECIPE_UNAVAILABLE')
+  })
+
+  it('rejects malformed persisted recipes without exposing their fields', async () => {
+    getSession.mockResolvedValue(null)
+    const collection = {
+      findOne: vi.fn().mockResolvedValue({
+        ...draft,
+        status: 'usable' as const,
+        visibility: 'public' as const,
+        createdAt: 'not-a-timestamp',
+      }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/recipes/recipe-1'),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('RECIPE_UNAVAILABLE')
+  })
+
   it('rejects malformed recipe ids before querying storage', async () => {
     getSession.mockResolvedValue(null)
     const collection = { findOne: vi.fn() }

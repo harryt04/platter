@@ -1,8 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  anonymizePublicImportedAccountContent,
   deletePrivateAccountContent,
   deletedAccountOwnerId,
 } from '@/lib/account-deletion'
+
+function collectionWithToArray<T>(documents: T[]) {
+  return {
+    find: vi.fn(() => ({
+      project: () => ({ toArray: async () => documents }),
+    })),
+  }
+}
 
 describe('deletePrivateAccountContent', () => {
   it('removes private recipes and reduces referenced versions to anonymous identities', async () => {
@@ -94,5 +103,74 @@ describe('deletePrivateAccountContent', () => {
       _id: { $in: ['recipe-private'] },
       ownerId: 'user-1',
     })
+  })
+})
+
+describe('anonymizePublicImportedAccountContent', () => {
+  it('preserves public imported facts and provenance while detaching ownership', async () => {
+    const publicRecipe = {
+      _id: 'recipe-public-import',
+      ownerId: 'user-1',
+      origin: 'imported',
+      importReviewStatus: 'approved',
+      status: 'usable',
+      visibility: 'public',
+      title: 'Public soup',
+      sourceName: 'Synthetic Kitchen',
+      importProvenance: {
+        canonicalUrl: 'https://example.test/soup',
+        sourceDomain: 'example.test',
+        rightsStatus: 'unknown',
+      },
+    }
+    const recipes = {
+      ...collectionWithToArray([publicRecipe]),
+      updateMany: vi.fn().mockResolvedValue({ modifiedCount: 1 }),
+    }
+    const versions = {
+      updateMany: vi.fn().mockResolvedValue({ modifiedCount: 1 }),
+    }
+    const db = {
+      collection: vi.fn((name: string) =>
+        name === 'recipes' ? recipes : versions,
+      ),
+    } as never
+
+    await expect(
+      anonymizePublicImportedAccountContent(db, 'user-1'),
+    ).resolves.toEqual({
+      anonymizedPublicRecipes: 1,
+      anonymizedPublicVersions: 1,
+    })
+    expect(recipes.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _id: { $in: ['recipe-public-import'] },
+        ownerId: 'user-1',
+        visibility: 'public',
+      }),
+      { $set: expect.objectContaining({ ownerId: deletedAccountOwnerId }) },
+    )
+    expect(versions.updateMany).toHaveBeenCalledWith(
+      { recipeId: { $in: ['recipe-public-import'] }, ownerId: 'user-1' },
+      { $set: { ownerId: deletedAccountOwnerId } },
+    )
+  })
+
+  it('does not change recipes that are private, pending, or owned by another account', async () => {
+    const recipes = {
+      ...collectionWithToArray([]),
+      updateMany: vi.fn(),
+    }
+    const db = {
+      collection: vi.fn(() => recipes),
+    } as never
+
+    await expect(
+      anonymizePublicImportedAccountContent(db, 'user-1'),
+    ).resolves.toEqual({
+      anonymizedPublicRecipes: 0,
+      anonymizedPublicVersions: 0,
+    })
+    expect(recipes.updateMany).not.toHaveBeenCalled()
   })
 })

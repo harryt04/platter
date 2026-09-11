@@ -65,6 +65,11 @@ export type AccountDeletionCleanupResult = {
   deletedUnreferencedVersions: number
 }
 
+export type PublicImportDeletionResult = {
+  anonymizedPublicRecipes: number
+  anonymizedPublicVersions: number
+}
+
 type RecipeReference = Pick<
   RecipeVersionDocument,
   '_id' | 'recipeId' | 'versionNumber'
@@ -172,6 +177,59 @@ export async function deletePrivateAccountContent(
   }
 }
 
+/**
+ * Keep approved public imports available after their importing account is
+ * deleted. Public catalog content is not private authorship: preserve its
+ * source and rights provenance, but detach the catalog record and immutable
+ * versions from the deleted account so ownership cannot silently survive it.
+ */
+export async function anonymizePublicImportedAccountContent(
+  db: Db,
+  userId: string,
+): Promise<PublicImportDeletionResult> {
+  const recipes = db.collection<RecipeDraftDocument>('recipes')
+  const publicImports = await recipes
+    .find({
+      ownerId: userId,
+      origin: 'imported',
+      importReviewStatus: 'approved',
+      status: 'usable',
+      visibility: 'public',
+    })
+    .project({ _id: 1 })
+    .toArray()
+  const recipeIds = publicImports.map(({ _id }) => _id)
+  if (recipeIds.length === 0) {
+    return { anonymizedPublicRecipes: 0, anonymizedPublicVersions: 0 }
+  }
+
+  const updatedAt = isoDateTime(new Date())
+  const [recipeUpdate, versionUpdate] = await Promise.all([
+    recipes.updateMany(
+      {
+        _id: { $in: recipeIds },
+        ownerId: userId,
+        origin: 'imported',
+        importReviewStatus: 'approved',
+        status: 'usable',
+        visibility: 'public',
+      },
+      { $set: { ownerId: deletedAccountOwnerId, updatedAt } },
+    ),
+    db
+      .collection<RecipeVersionDocument>('recipe_versions')
+      .updateMany(
+        { recipeId: { $in: recipeIds }, ownerId: userId },
+        { $set: { ownerId: deletedAccountOwnerId } },
+      ),
+  ])
+
+  return {
+    anonymizedPublicRecipes: recipeUpdate.modifiedCount,
+    anonymizedPublicVersions: versionUpdate.modifiedCount,
+  }
+}
+
 /** Remove account-owned membership and user-scoped artifacts after auth deletion. */
 export async function removeAccountMembershipAndPrivateArtifacts(
   db: Db,
@@ -188,6 +246,8 @@ export async function removeAccountMembershipAndPrivateArtifacts(
     db.collection('list_invitations').deleteMany({ inviterId: userId }),
     db.collection('notifications').deleteMany({ userId }),
     db.collection('account_exports').deleteMany({ userId }),
+    db.collection('recipe_imports').deleteMany({ userId }),
+    db.collection('recipe_saves').deleteMany({ userId }),
   ])
   await db
     .collection('shopping_run_history')

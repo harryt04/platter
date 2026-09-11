@@ -826,7 +826,7 @@ repeat recipes; 28: Save and deduplicate public imports; 34: Manage account data
 - [x] Private content is deleted or anonymized according to documented policy,
       while immutable minimal snapshots keep legitimate completed-run references
       resolvable.
-- [ ] Public imports and their provenance follow the stated public-content policy
+- [x] Public imports and their provenance follow the stated public-content policy
       rather than disappearing or changing ownership silently.
 - [ ] Authentication sessions, private caches, queued operations, and user-scoped
       offline storage are revoked or removed after successful deletion.

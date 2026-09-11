@@ -5,6 +5,7 @@ import { getDatabase } from '@/lib/db/mongo-client'
 import { serverEnv } from '@/lib/env/server'
 import { sendPasswordResetEmail } from '@/lib/auth/mailer'
 import {
+  anonymizePublicImportedAccountContent,
   deletePrivateAccountContent,
   getAccountDeletionOwnershipBlockers,
   removeAccountMembershipAndPrivateArtifacts,
@@ -39,6 +40,7 @@ export const auth = betterAuth({
           throw new Error('ACCOUNT_DELETION_OWNERSHIP_BLOCKED')
         }
         await deletePrivateAccountContent(db, user.id)
+        await anonymizePublicImportedAccountContent(db, user.id)
       },
       afterDelete: async (user) => {
         const db = await getConnectedDatabase()

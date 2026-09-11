@@ -66,8 +66,10 @@ export function AccountDeletionPanel({ email }: { email: string }) {
         <h2 className="text-lg font-semibold">Delete account</h2>
         <p className="text-muted-foreground text-sm">
           This permanently removes your account and private authored recipes.
-          Completed-run history keeps only an unavailable recipe reference.
-          Review the impact above first.
+          Approved public imports remain available with their source attribution
+          and rights information, without your account attached. Completed-run
+          history keeps only an unavailable recipe reference. Review the impact
+          above first.
         </p>
       </div>
       <Button
@@ -95,8 +97,10 @@ export function AccountDeletionPanel({ email }: { email: string }) {
               </AlertDialogTitle>
               <AlertDialogDescription id="delete-account-description">
                 This cannot be undone. Your private authored recipes and account
-                data will be removed. Existing list history keeps only a minimal
-                unavailable recipe reference.
+                data will be removed. Approved public imports remain available
+                with their source attribution and rights information, without
+                your account attached. Existing list history keeps only a
+                minimal unavailable recipe reference.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="mt-5 space-y-4">

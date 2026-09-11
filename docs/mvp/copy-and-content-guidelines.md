@@ -58,6 +58,10 @@ Recipe calculation, merging, and synchronization are the product’s core promis
 | Account export failure | `We couldn’t prepare your export. Try again.` |
 | Account deletion confirmation | `This cannot be undone. Your private authored recipes and account data will be removed. Existing list history keeps only a minimal unavailable recipe reference.` |
 
+Public imported recipes that remain in the catalog after account deletion keep
+their source attribution and rights status, but are owned by an anonymous
+catalog identity. Do not describe them as authored by the deleted user.
+
 Avoid vague confirmation such as `Updated`, `Success`, `Conflict detected`, or `Something changed` when Platter can name the object and consequence.
 
 ## Recipe and source content

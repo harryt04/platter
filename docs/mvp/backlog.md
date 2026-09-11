@@ -1094,7 +1094,7 @@ privacy-safe product analytics; 37: Harden product security and abuse controls;
 38: Validate performance and reliability targets; 39: Complete accessibility
 and responsive QA
 
-**Status:** in progress
+**Status:** implemented
 
 - [x] Browser tests demonstrate the full mobile and desktop journey: register,
       create independently shared lists, find/import/author recipes, select and
@@ -1103,7 +1103,7 @@ and responsive QA
       journey in `routes.spec.ts` covers desktop setup and public discovery,
       320px review and shopping, two browser contexts, offline queue replay,
       completion, and pinned multi-recipe history.
-- [ ] Multi-client acceptance tests cover same- and different-item edits,
+- [x] Multi-client acceptance tests cover same- and different-item edits,
       disconnect and reconnect, membership removal, and completion elsewhere.
 - [x] Every acceptance criterion in the PRD has a traceable automated test or a
       documented, repeatable manual verification with captured evidence in

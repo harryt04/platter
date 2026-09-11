@@ -366,6 +366,162 @@ test('completes the full recipe-to-shopping journey across desktop and mobile', 
   }
 })
 
+test('accepts multi-client edits, reconnect, completion elsewhere, and membership removal', async ({
+  page,
+  browser,
+}) => {
+  test.slow()
+  const suffix = `${Date.now()}-${process.pid}`
+  const listName = `Multi-client acceptance ${suffix}`
+  const memberEmail = `multi-client-member-${suffix}@localhost.test`
+
+  await signUp(page, suffix)
+  const listUrl = await createList(page, listName)
+  const listId = listUrl.match(/\/lists\/([^/]+)$/)?.[1]
+  expect(listId).toBeTruthy()
+
+  await page.goto(`${listUrl}/review`)
+  for (const line of ['2 bags rice', '1 can beans']) {
+    const addItem = page.getByRole('button', { name: 'Add item' })
+    await page.getByLabel('Add a grocery item').fill(line)
+    await expect(addItem).toBeEnabled()
+    await addItem.click()
+    await expect(
+      page.getByText(line.split(' ').at(-1)!, { exact: true }),
+    ).toBeVisible()
+  }
+
+  const invitationResponse = await page.request.post(
+    `/api/v1/lists/${listId}/invitations`,
+    { data: { email: memberEmail } },
+  )
+  expect(invitationResponse.status()).toBe(201)
+  const invitationBody = (await invitationResponse.json()) as {
+    invitation: { inviteUrl?: string }
+  }
+  expect(invitationBody.invitation.inviteUrl).toBeTruthy()
+
+  const memberContext = await browser.newContext({
+    viewport: { width: 1280, height: 900 },
+  })
+  const memberPage = await memberContext.newPage()
+  try {
+    await memberPage.goto('/sign-up')
+    await memberPage.getByLabel('Name').fill('Multi-client member')
+    await memberPage.getByLabel('Email').fill(memberEmail)
+    await memberPage.getByLabel('Password').fill('MultiClientMember!2026')
+    await memberPage.getByRole('button', { name: 'Create account' }).click()
+    await expect(memberPage).toHaveURL(/\/lists$/)
+
+    await memberPage.goto(invitationBody.invitation.inviteUrl!)
+    await memberPage.getByRole('button', { name: `Join ${listName}` }).click()
+    await expect(memberPage).toHaveURL(new RegExp(`/lists/${listId}$`))
+
+    const shopUrl = `${listUrl}/shop`
+    await page.goto(shopUrl)
+    await memberPage.goto(shopUrl)
+    await expect(page.getByText('Live updates on')).toBeVisible()
+    await expect(memberPage.getByText('Live updates on')).toBeVisible()
+
+    // The first edit is shared on one item, then reversed by the other client.
+    await page.getByRole('button', { name: 'Mark rice purchased' }).click()
+    await expect(
+      memberPage.getByRole('button', { name: 'Undo purchased for rice' }),
+    ).toBeVisible({ timeout: 5_000 })
+    await memberPage.reload()
+    await expect(
+      memberPage.getByRole('button', { name: 'Undo purchased for rice' }),
+    ).toBeVisible()
+    await memberPage
+      .getByRole('button', { name: 'Undo purchased for rice' })
+      .click()
+    await expect(
+      memberPage.getByRole('button', { name: 'Mark rice purchased' }),
+    ).toBeVisible({ timeout: 5_000 })
+    await page.reload()
+    await expect(
+      page.getByRole('button', { name: 'Mark rice purchased' }),
+    ).toBeVisible()
+
+    // A different item is edited by the owner while both clients are online.
+    await page.getByRole('button', { name: 'Mark beans purchased' }).click()
+    await expect(
+      memberPage.getByRole('button', { name: 'Undo purchased for beans' }),
+    ).toBeVisible({ timeout: 5_000 })
+
+    // Queue a same-run change while disconnected, and make an unrelated live
+    // change on the owner so reconnect must reconcile authoritative state.
+    await memberContext.setOffline(true)
+    await expect(
+      memberPage.getByText(
+        'Offline. Changes stay on this device until you reconnect.',
+        { exact: true },
+      ),
+    ).toBeVisible()
+    await memberPage
+      .getByRole('button', { name: 'Undo purchased for beans' })
+      .click()
+    await expect(
+      memberPage.getByText(
+        'Saved on this device. We’ll sync it when you’re back online.',
+        { exact: true },
+      ),
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Mark rice purchased' }).click()
+    await memberContext.setOffline(false)
+    await expect(
+      memberPage.getByText(
+        'Offline changes are synced. Showing the latest shared list.',
+        { exact: true },
+      ),
+    ).toBeVisible({ timeout: 15_000 })
+    await page.reload()
+    await expect(
+      page.getByRole('button', { name: 'Mark beans purchased' }),
+    ).toBeVisible()
+
+    // The editor completes the run; the owner must receive the replacement run.
+    await memberPage
+      .getByRole('button', { name: 'Complete shopping run' })
+      .click()
+    await memberPage
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Complete shopping run' })
+      .click()
+    await expect(
+      memberPage.getByText('Run completed. A fresh shopping run is ready.', {
+        exact: true,
+      }),
+    ).toBeVisible()
+    await expect(
+      page.getByText('This shopping run has no grocery items yet.'),
+    ).toBeVisible({ timeout: 10_000 })
+
+    const membersResponse = await page.request.get(
+      `/api/v1/lists/${listId}/members`,
+    )
+    expect(membersResponse.status()).toBe(200)
+    const membersBody = (await membersResponse.json()) as {
+      members: Array<{ userId: string; role: string }>
+    }
+    const member = membersBody.members.find(
+      (candidate) => candidate.role === 'editor',
+    )
+    expect(member).toBeTruthy()
+
+    const removalResponse = await page.request.delete(
+      `/api/v1/lists/${listId}/members/${encodeURIComponent(member!.userId)}`,
+    )
+    expect(removalResponse.status()).toBe(200)
+    await memberPage.goto(shopUrl)
+    await expect(
+      memberPage.getByRole('heading', { name: 'Page not found' }),
+    ).toBeVisible()
+  } finally {
+    await memberContext.close()
+  }
+})
+
 test.describe('authenticated list workflow', () => {
   test.skip(
     !process.env.E2E_USER_EMAIL || !process.env.E2E_USER_PASSWORD,

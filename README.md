@@ -241,7 +241,10 @@ The full journey browser check extends that evidence across a desktop setup and
 320px review/shopping viewport: it creates independent lists, discovers two
 public authored recipes, selects both at different people counts, reconciles an
 offline purchase from a second browser context alongside an online edit, then
-completes the run and resolves both pinned recipes from minimal history.
+completes the run and resolves both pinned recipes from minimal history. A
+focused multi-client acceptance journey also verifies same- and different-item
+edits, reconnect reconciliation, completion by the other shopper, and immediate
+loss of access after owner-driven membership removal.
 Suppressed, draft, and list-shared recipe versions remain available through
 authorized private management paths but are excluded from public detail reads,
 anonymous rendering, and public discovery.

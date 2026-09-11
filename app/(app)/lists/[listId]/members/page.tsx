@@ -2,7 +2,7 @@ import { requireSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { InvitationManagement } from '@/components/lists/invitation-management'
 import { MemberManagement } from '@/components/lists/member-management'
-import { findListForMember } from '@/lib/lists'
+import { findListForMember, listIdSchema } from '@/lib/lists'
 import {
   invitations,
   toInvitationSummary,
@@ -17,6 +17,7 @@ export default async function MembersPage({
   params: Promise<{ listId: string }>
 }) {
   const { listId } = await params
+  if (!listIdSchema.safeParse(listId).success) notFound()
   const session = await requireSession(`/lists/${listId}/members`)
   const list = await findListForMember(listId, session.user.id)
   if (!list) notFound()

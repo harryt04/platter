@@ -869,9 +869,9 @@ unauthorized access, abusive volume, malformed data, and unsafe content.
 recipes; 26: Submit a URL for secure import; 31: Process public-content
 complaints; 35: Delete an account safely
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] List IDs, recipe IDs, run IDs, history IDs, import IDs, and complaint IDs
+- [x] List IDs, recipe IDs, run IDs, history IDs, import IDs, and complaint IDs
       are treated as untrusted and checked against least-privilege policy on every
       page, API, realtime, and worker-triggering operation.
 - [x] Recipe detail, edit, save, and sharing page/API boundaries validate

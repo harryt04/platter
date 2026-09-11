@@ -4,7 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
 import { requireSession } from '@/lib/auth/authorization'
-import { findActiveShoppingRun, findListForMember } from '@/lib/lists'
+import {
+  findActiveShoppingRun,
+  findListForMember,
+  listIdSchema,
+} from '@/lib/lists'
 import { notFound } from 'next/navigation'
 import { RenameListForm } from '@/components/lists/rename-list-form'
 import { LeaveListButton } from '@/components/lists/leave-list-button'
@@ -27,6 +31,7 @@ export default async function ListPage({
   params: Promise<{ listId: string }>
 }) {
   const { listId } = await params
+  if (!listIdSchema.safeParse(listId).success) notFound()
   const session = await requireSession(`/lists/${listId}`)
   const list = await findListForMember(listId, session.user.id)
   if (!list || list.status === 'deleted') notFound()

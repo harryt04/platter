@@ -5,7 +5,7 @@ import { EmptyState } from '@/components/states/empty-state'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
 import { requireSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
-import { findListForMember } from '@/lib/lists'
+import { findListForMember, listIdSchema } from '@/lib/lists'
 import {
   decodeShoppingRunHistoryCursor,
   formatShoppingRunHistoryDate,
@@ -23,6 +23,7 @@ export default async function ListHistoryPage({
   searchParams?: Promise<SearchParams>
 }) {
   const { listId } = await params
+  if (!listIdSchema.safeParse(listId).success) notFound()
   const session = await requireSession(`/lists/${listId}/history`)
   const list = await findListForMember(listId, session.user.id)
   if (!list) notFound()

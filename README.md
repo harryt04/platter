@@ -42,6 +42,10 @@ entries before navigating to sign-in. The destructive path records one
 retry-stable, metadata-only audit entry with aggregate impact and cleanup
 counts, using a pseudonymous account fingerprint rather than retaining account
 identity or recipe content.
+All dynamic list pages and realtime room joins now reject malformed list IDs
+before authentication or storage access, matching the existing bounded ID
+checks across list APIs, recipe routes, shopping history, imports, and
+administrative complaint updates.
 Archived lists preserve read access to their shopping run while disabling
 shopping changes such as completion and amount resets. Owners and editors can
 now confirm an active run through an atomic transition that retains only

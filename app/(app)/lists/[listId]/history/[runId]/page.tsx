@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
 import { requireSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
-import { findListForMember } from '@/lib/lists'
+import { findListForMember, listIdSchema } from '@/lib/lists'
 import {
   findShoppingRunHistory,
   formatShoppingRunHistoryDate,
@@ -21,6 +21,7 @@ export default async function RunHistoryPage({
   params: Promise<{ listId: string; runId: string }>
 }) {
   const { listId, runId } = await params
+  if (!listIdSchema.safeParse(listId).success) notFound()
   if (!historyIdSchema.safeParse(runId).success) notFound()
   const session = await requireSession(`/lists/${listId}/history/${runId}`)
   const list = await findListForMember(listId, session.user.id)

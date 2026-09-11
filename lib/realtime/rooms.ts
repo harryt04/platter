@@ -1,5 +1,5 @@
 import type { Db } from 'mongodb'
-import { findListForMember } from '@/lib/lists'
+import { findListForMember, listIdSchema } from '@/lib/lists'
 import { createRealtimeEmitter } from '@/lib/realtime/events'
 
 export type RealtimeRoomSocket = {
@@ -76,6 +76,10 @@ export async function joinAuthorizedRealtimeRoom(
   readMembership: RealtimeMembershipReader = findListForMember,
 ) {
   if (typeof listId !== 'string') {
+    socket.emit('foundation:error', { code: 'LIST_ACCESS_DENIED' })
+    return false
+  }
+  if (!listIdSchema.safeParse(listId).success) {
     socket.emit('foundation:error', { code: 'LIST_ACCESS_DENIED' })
     return false
   }

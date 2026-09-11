@@ -8,6 +8,7 @@ import { requireSession } from '@/lib/auth/authorization'
 import {
   findActiveShoppingRun,
   findListForMember,
+  listIdSchema,
   listAcceptsShoppingOperations,
 } from '@/lib/lists'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
@@ -35,6 +36,7 @@ export default async function ReviewPage({
   params: Promise<{ listId: string }>
 }) {
   const { listId } = await params
+  if (!listIdSchema.safeParse(listId).success) notFound()
   const session = await requireSession(`/lists/${listId}/review`)
   const list = await findListForMember(listId, session.user.id)
   if (!list) notFound()

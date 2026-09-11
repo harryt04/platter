@@ -199,6 +199,25 @@ describe('foundation contracts', () => {
     )
   })
 
+  it('rejects malformed realtime list ids before checking membership', async () => {
+    const socket = {
+      join: vi.fn(),
+      emit: vi.fn(),
+    }
+    findListForMember.mockClear()
+    findListForMember.mockResolvedValue({ _id: 'list-1' })
+
+    await expect(
+      joinAuthorizedRealtimeRoom(socket, 'list-\u0000-1', 'active-user'),
+    ).resolves.toBe(false)
+
+    expect(findListForMember).not.toHaveBeenCalled()
+    expect(socket.join).not.toHaveBeenCalled()
+    expect(socket.emit).toHaveBeenCalledWith('foundation:error', {
+      code: 'LIST_ACCESS_DENIED',
+    })
+  })
+
   it('requires a current session cookie before a realtime operation', async () => {
     const socket = { handshake: { headers: {} } }
     const readSession = vi.fn()

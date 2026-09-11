@@ -13,6 +13,9 @@ const mocks = vi.hoisted(() => ({
   }),
   requireSession: vi.fn(),
   findListForMember: vi.fn(),
+  listIdSchema: {
+    safeParse: (value: string) => ({ success: value === 'list-1' }),
+  },
   getConnectedDatabase: vi.fn(),
   recipeVersions: {},
   findShoppingRunHistory: vi.fn(),
@@ -27,6 +30,7 @@ vi.mock('@/lib/auth/authorization', () => ({
 }))
 vi.mock('@/lib/lists', () => ({
   findListForMember: mocks.findListForMember,
+  listIdSchema: mocks.listIdSchema,
 }))
 vi.mock('@/lib/db/mongo-client', () => ({
   getConnectedDatabase: mocks.getConnectedDatabase,

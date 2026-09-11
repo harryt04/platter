@@ -9,6 +9,7 @@ import {
   recipeImports,
   submitRecipeImportSchema,
   recipeImportSummarySchema,
+  recipeImportSummaryResponseSchema,
   toRecipeImportSummary,
   type RecipeImportDocument,
 } from '@/lib/recipe-imports'
@@ -89,6 +90,14 @@ function isDuplicateKeyError(error: unknown) {
   )
 }
 
+function importResponse(document: RecipeImportDocument, status = 202) {
+  const response = recipeImportSummaryResponseSchema.safeParse({
+    import: toRecipeImportSummary(document),
+  })
+  if (!response.success) return importStatusUnavailable()
+  return Response.json(response.data, { status })
+}
+
 export async function GET() {
   const session = await getSession()
   if (!session) return authenticationRequired()
@@ -165,77 +174,72 @@ export async function POST(request: Request) {
     })
   }
 
-  const db = await getConnectedDatabase()
-  const collection = recipeImports(
-    db.collection<RecipeImportDocument>('recipe_imports'),
-  )
-  const existing = await collection.findOne({
-    userId: session.user.id,
-    idempotencyKey: parsedIdempotencyKey.data,
-  })
-  if (existing) {
-    if (existing.sourceUrl !== parsed.data.sourceUrl) {
-      return idempotencyConflict()
-    }
-    return Response.json(
-      { import: toRecipeImportSummary(existing) },
-      { status: 202 },
-    )
-  }
-
-  const document = createRecipeImportDocument(
-    session.user.id,
-    parsedIdempotencyKey.data,
-    parsed.data.sourceUrl,
-  )
   try {
-    await collection.insertOne(document)
-  } catch (error) {
-    if (!isDuplicateKeyError(error)) throw error
-    const raced = await collection.findOne({
+    const db = await getConnectedDatabase()
+    const collection = recipeImports(
+      db.collection<RecipeImportDocument>('recipe_imports'),
+    )
+    const existing = await collection.findOne({
       userId: session.user.id,
       idempotencyKey: parsedIdempotencyKey.data,
     })
-    if (!raced) throw error
-    if (raced.sourceUrl !== parsed.data.sourceUrl) {
-      return idempotencyConflict()
+    if (existing) {
+      if (existing.sourceUrl !== parsed.data.sourceUrl) {
+        return idempotencyConflict()
+      }
+      return importResponse(existing)
     }
-    return Response.json(
-      { import: toRecipeImportSummary(raced) },
-      { status: 202 },
-    )
-  }
 
-  try {
-    await enqueueRecipeImport(db, {
-      importId: document._id,
-      userId: document.userId,
-      idempotencyKey: document.idempotencyKey,
-      jobGeneration: document.jobGeneration,
-    })
-  } catch {
-    await db.collection<RecipeImportDocument>('recipe_imports').updateOne(
-      { _id: document._id, userId: session.user.id },
-      {
-        $set: {
-          status: 'failed',
-          failureCode: 'IMPORT_QUEUE_UNAVAILABLE',
-          updatedAt: isoDateTime(new Date()),
+    const document = createRecipeImportDocument(
+      session.user.id,
+      parsedIdempotencyKey.data,
+      parsed.data.sourceUrl,
+    )
+    try {
+      await collection.insertOne(document)
+    } catch (error) {
+      if (!isDuplicateKeyError(error)) throw error
+      const raced = await collection.findOne({
+        userId: session.user.id,
+        idempotencyKey: parsedIdempotencyKey.data,
+      })
+      if (!raced) throw error
+      if (raced.sourceUrl !== parsed.data.sourceUrl) {
+        return idempotencyConflict()
+      }
+      return importResponse(raced)
+    }
+
+    try {
+      await enqueueRecipeImport(db, {
+        importId: document._id,
+        userId: document.userId,
+        idempotencyKey: document.idempotencyKey,
+        jobGeneration: document.jobGeneration,
+      })
+    } catch {
+      await db.collection<RecipeImportDocument>('recipe_imports').updateOne(
+        { _id: document._id, userId: session.user.id },
+        {
+          $set: {
+            status: 'failed',
+            failureCode: 'IMPORT_QUEUE_UNAVAILABLE',
+            updatedAt: isoDateTime(new Date()),
+          },
         },
-      },
-    )
-    return problemResponse({
-      type: 'https://platter.dev/problems/import-queue-unavailable',
-      title: 'Import could not be queued',
-      status: 503,
-      detail:
-        'The URL was recorded, but the import worker is unavailable. Try again later.',
-      code: 'IMPORT_QUEUE_UNAVAILABLE',
-    })
-  }
+      )
+      return problemResponse({
+        type: 'https://platter.dev/problems/import-queue-unavailable',
+        title: 'Import could not be queued',
+        status: 503,
+        detail:
+          'The URL was recorded, but the import worker is unavailable. Try again later.',
+        code: 'IMPORT_QUEUE_UNAVAILABLE',
+      })
+    }
 
-  return Response.json(
-    { import: toRecipeImportSummary(document) },
-    { status: 202 },
-  )
+    return importResponse(document)
+  } catch {
+    return importStatusUnavailable()
+  }
 }

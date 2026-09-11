@@ -58,6 +58,9 @@ their independent boundaries.
 Authenticated import status list and detail reads also validate persisted
 summaries before returning them, and hide database or malformed-record failures
 behind the same retryable problem contract.
+Import submission and retry mutations now validate their response envelopes and
+hide storage or malformed replay data behind the same retryable problem
+contract.
 Account export creation and owner-scoped downloads validate persisted export
 envelopes and hide storage or malformed-record failures behind a stable
 retryable problem response.

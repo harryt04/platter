@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST } from '@/app/api/v1/imports/[importId]/retry/route'
 import { resetRateLimitsForTests } from '@/lib/security/rate-limit'
+import type { RecipeImportCandidate } from '@/lib/recipe-import-schema-org'
 
 const { getSession, getConnectedDatabase, enqueueRecipeImport } = vi.hoisted(
   () => ({
@@ -29,7 +30,7 @@ const baseImport = {
 type TestImport = Omit<typeof baseImport, 'status'> & {
   status: 'failed' | 'preview-ready'
   savedRecipeId?: string
-  preview?: { title: string; warnings: string[] }
+  preview?: RecipeImportCandidate
 }
 
 function setup(document: TestImport = baseImport) {
@@ -99,7 +100,13 @@ describe('POST /api/v1/imports/[importId]/retry', () => {
       status: 'preview-ready' as const,
       attemptCount: 1,
       savedRecipeId: 'saved-recipe-1',
-      preview: { title: 'Saved soup', warnings: [] },
+      preview: {
+        title: 'Saved soup',
+        ingredients: [],
+        instructions: [],
+        sourceUrl: 'https://example.com/recipe',
+        warnings: [],
+      },
     }
     const { collection } = setup(historical)
     const response = await POST(
@@ -117,6 +124,43 @@ describe('POST /api/v1/imports/[importId]/retry', () => {
       expect.objectContaining({ operation: 'reprocess' }),
     )
     expect((await response.json()).import.savedRecipeId).toBe('saved-recipe-1')
+  })
+
+  it('hides retry storage failures behind a retryable problem', async () => {
+    getConnectedDatabase.mockRejectedValueOnce(new Error('mongo unavailable'))
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/imports/import-id/retry', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'retry' }),
+      }),
+      { params: Promise.resolve({ importId: baseImport._id }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'IMPORT_STATUS_UNAVAILABLE',
+      status: 503,
+    })
+  })
+
+  it('hides malformed queued retry data behind a retryable problem', async () => {
+    const { queued } = setup()
+    queued.attemptCount = 'invalid' as never
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/imports/import-id/retry', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'retry' }),
+      }),
+      { params: Promise.resolve({ importId: baseImport._id }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'IMPORT_STATUS_UNAVAILABLE',
+      status: 503,
+    })
   })
 
   it('does not allow reprocessing a failed import with the wrong action', async () => {

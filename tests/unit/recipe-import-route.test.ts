@@ -339,6 +339,48 @@ describe('/api/v1/imports', () => {
     )
     expect(collection.updateOne).toHaveBeenCalledOnce()
   })
+
+  it('hides submission storage failures behind a retryable problem', async () => {
+    getConnectedDatabase.mockRejectedValueOnce(new Error('mongo unavailable'))
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/imports', {
+        method: 'POST',
+        headers: { 'idempotency-key': 'storage-failure-key' },
+        body: JSON.stringify({ sourceUrl: importDocument.sourceUrl }),
+      }),
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'IMPORT_STATUS_UNAVAILABLE',
+      status: 503,
+    })
+  })
+
+  it('hides malformed replayed submission data behind a retryable problem', async () => {
+    const collection = setup({
+      ...importDocument,
+      status: 'unexpected' as never,
+    })
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/imports', {
+        method: 'POST',
+        headers: { 'idempotency-key': importDocument.idempotencyKey },
+        body: JSON.stringify({ sourceUrl: importDocument.sourceUrl }),
+      }),
+    )
+
+    expect(response.status).toBe(503)
+    const body = await response.json()
+    expect(body).toMatchObject({
+      code: 'IMPORT_STATUS_UNAVAILABLE',
+      status: 503,
+    })
+    expect(JSON.stringify(body)).not.toContain('unexpected')
+    expect(collection.findOne).toHaveBeenCalledOnce()
+  })
 })
 
 describe('GET /api/v1/imports/[importId]', () => {

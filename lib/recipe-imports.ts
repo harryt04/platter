@@ -157,6 +157,11 @@ export const recipeImportSummarySchema = z.strictObject({
   savedRecipeId: opaqueIdSchema.optional(),
 })
 
+/** Shared response boundary for import queue mutations. */
+export const recipeImportSummaryResponseSchema = z.strictObject({
+  import: recipeImportSummarySchema,
+})
+
 export function recipeImports(collection: Collection<RecipeImportDocument>) {
   return collection
 }

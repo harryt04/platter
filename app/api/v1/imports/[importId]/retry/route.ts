@@ -8,6 +8,7 @@ import { enqueueRecipeImport } from '@/lib/jobs/queue'
 import {
   recipeImportIdSchema,
   recipeImportOwnerFilter,
+  recipeImportSummaryResponseSchema,
   toRecipeImportSummary,
   type RecipeImportDocument,
 } from '@/lib/recipe-imports'
@@ -83,6 +84,24 @@ function queueUnavailable() {
   })
 }
 
+function importStatusUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/import-status-unavailable',
+    title: 'Import status is temporarily unavailable',
+    status: 503,
+    detail: 'Import status could not be loaded. Try again shortly.',
+    code: 'IMPORT_STATUS_UNAVAILABLE',
+  })
+}
+
+function importResponse(document: RecipeImportDocument, status = 202) {
+  const response = recipeImportSummaryResponseSchema.safeParse({
+    import: toRecipeImportSummary(document),
+  })
+  if (!response.success) return importStatusUnavailable()
+  return Response.json(response.data, { status })
+}
+
 export async function POST(
   request: Request,
   context: { params: Promise<{ importId: string }> },
@@ -115,82 +134,77 @@ export async function POST(
   const parsed = retryRequestSchema.safeParse(body)
   if (!parsed.success) return invalidRequest()
 
-  const db = await getConnectedDatabase()
-  const imports = db.collection<RecipeImportDocument>('recipe_imports')
-  const existing = await imports.findOne(
-    recipeImportOwnerFilter(importId, session.user.id),
-  )
-  if (!existing) return notFound()
-
-  const eligibleStatuses: RecipeImportDocument['status'][] =
-    parsed.data.action === 'retry' ? ['failed'] : ['preview-ready']
-  if (!eligibleStatuses.includes(existing.status)) {
-    if (['queued', 'processing', 'retrying'].includes(existing.status)) {
-      return Response.json(
-        { import: toRecipeImportSummary(existing) },
-        { status: 202 },
-      )
-    }
-    return notRetryable()
-  }
-
-  const jobGeneration = randomUUID()
-  const queued = await imports.findOneAndUpdate(
-    {
-      ...recipeImportOwnerFilter(importId, session.user.id),
-      status: { $in: eligibleStatuses },
-    },
-    {
-      $set: {
-        status: 'queued',
-        attemptCount: 0,
-        jobGeneration,
-        updatedAt: isoDateTime(new Date()),
-      },
-      $unset: { failureCode: '' },
-    },
-    { returnDocument: 'after' },
-  )
-  if (!queued) {
-    const current = await imports.findOne(
+  try {
+    const db = await getConnectedDatabase()
+    const imports = db.collection<RecipeImportDocument>('recipe_imports')
+    const existing = await imports.findOne(
       recipeImportOwnerFilter(importId, session.user.id),
     )
-    if (
-      current &&
-      ['queued', 'processing', 'retrying'].includes(current.status)
-    ) {
-      return Response.json(
-        { import: toRecipeImportSummary(current) },
-        { status: 202 },
-      )
-    }
-    return notRetryable()
-  }
+    if (!existing) return notFound()
 
-  try {
-    await enqueueRecipeImport(db, {
-      importId: queued._id,
-      userId: queued.userId,
-      idempotencyKey: queued.idempotencyKey,
-      operation: parsed.data.action,
-      jobGeneration,
-    })
-  } catch {
-    await imports.updateOne(
-      { _id: queued._id, userId: session.user.id, jobGeneration },
+    const eligibleStatuses: RecipeImportDocument['status'][] =
+      parsed.data.action === 'retry' ? ['failed'] : ['preview-ready']
+    if (!eligibleStatuses.includes(existing.status)) {
+      if (['queued', 'processing', 'retrying'].includes(existing.status)) {
+        return importResponse(existing)
+      }
+      return notRetryable()
+    }
+
+    const jobGeneration = randomUUID()
+    const queued = await imports.findOneAndUpdate(
+      {
+        ...recipeImportOwnerFilter(importId, session.user.id),
+        status: { $in: eligibleStatuses },
+      },
       {
         $set: {
-          status: 'failed',
-          failureCode: 'IMPORT_QUEUE_UNAVAILABLE',
+          status: 'queued',
+          attemptCount: 0,
+          jobGeneration,
           updatedAt: isoDateTime(new Date()),
         },
+        $unset: { failureCode: '' },
       },
+      { returnDocument: 'after' },
     )
-    return queueUnavailable()
-  }
+    if (!queued) {
+      const current = await imports.findOne(
+        recipeImportOwnerFilter(importId, session.user.id),
+      )
+      if (
+        current &&
+        ['queued', 'processing', 'retrying'].includes(current.status)
+      ) {
+        return importResponse(current)
+      }
+      return notRetryable()
+    }
 
-  return Response.json(
-    { import: toRecipeImportSummary(queued) },
-    { status: 202 },
-  )
+    try {
+      await enqueueRecipeImport(db, {
+        importId: queued._id,
+        userId: queued.userId,
+        idempotencyKey: queued.idempotencyKey,
+        operation: parsed.data.action,
+        jobGeneration,
+      })
+    } catch {
+      await imports.updateOne(
+        { _id: queued._id, userId: session.user.id, jobGeneration },
+        {
+          $set: {
+            status: 'failed',
+            failureCode: 'IMPORT_QUEUE_UNAVAILABLE',
+            updatedAt: isoDateTime(new Date()),
+          },
+        },
+      )
+      return queueUnavailable()
+    }
+
+    return importResponse(queued)
+  } catch {
+    return importStatusUnavailable()
+  }
 }

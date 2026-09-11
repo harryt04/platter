@@ -1,5 +1,64 @@
 import { test, expect } from '@playwright/test'
 
+async function signUp(page: import('@playwright/test').Page, suffix: string) {
+  await page.goto('/sign-up')
+  await page.getByLabel('Name').fill(`Full journey ${suffix}`)
+  await page.getByLabel('Email').fill(`full-journey-${suffix}@localhost.test`)
+  await page.getByLabel('Password').fill('FullJourney!2026')
+  await page.getByRole('button', { name: 'Create account' }).click()
+  await expect(page).toHaveURL(/\/lists$/)
+}
+
+async function createList(page: import('@playwright/test').Page, name: string) {
+  await page.goto('/lists/new')
+  await page.getByRole('textbox', { name: 'List name' }).fill(name)
+  await page.getByRole('button', { name: 'Create list' }).click()
+  await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
+  return page.url()
+}
+
+async function authorAndPublishRecipe(
+  page: import('@playwright/test').Page,
+  recipeTitle: string,
+  ingredientName: string,
+) {
+  await page.goto('/recipes/new')
+  await page.getByRole('textbox', { name: 'Recipe title' }).fill(recipeTitle)
+  await page.getByRole('button', { name: 'Save draft' }).click()
+  await expect(page).toHaveURL(/\/recipes\/[^/]+\/edit$/)
+  const recipeId = page.url().match(/\/recipes\/([^/]+)\/edit$/)?.[1]
+  expect(recipeId).toBeTruthy()
+
+  await page.getByRole('spinbutton', { name: 'Typical people fed' }).fill('4')
+  await page.getByRole('button', { name: 'Add ingredient' }).click()
+  await page
+    .getByRole('textbox', { name: 'Original ingredient line' })
+    .fill(`2 ${ingredientName}`)
+  await page.getByRole('textbox', { name: 'Quantity' }).fill('2')
+  await page.getByRole('textbox', { name: 'Unit' }).fill('each')
+  await page
+    .getByRole('textbox', { name: 'Ingredient name' })
+    .fill(ingredientName)
+  await page.getByRole('button', { name: 'Save changes' }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: 'Save new version' })
+    .click()
+  await expect(page.getByText('Recipe sharing')).toBeVisible()
+
+  await page
+    .locator('label')
+    .filter({ hasText: 'Publish to the public catalog' })
+    .getByRole('checkbox')
+    .check()
+  await page.getByRole('button', { name: 'Save sharing' }).click()
+  await expect(
+    page.getByText('This recipe is published to the public catalog.'),
+  ).toBeVisible()
+
+  return recipeId!
+}
+
 let clientAddress = 1
 
 test.beforeEach(async ({ context }) => {
@@ -136,6 +195,175 @@ test('completes the manual recipe-to-shopping path without paid integrations', a
   await expect(
     page.getByRole('button', { name: 'Mark tomato purchased' }),
   ).toBeVisible()
+})
+
+test('completes the full recipe-to-shopping journey across desktop and mobile', async ({
+  page,
+  browser,
+}) => {
+  test.slow()
+  const suffix = `${Date.now()}-${process.pid}`
+  const primaryListName = `Full journey home ${suffix}`
+  const secondListName = `Full journey second list ${suffix}`
+  const firstRecipeTitle = `Full journey tomatoes ${suffix}`
+  const secondRecipeTitle = `Full journey onions ${suffix}`
+
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await signUp(page, suffix)
+  const primaryListUrl = await createList(page, primaryListName)
+  await createList(page, secondListName)
+
+  const firstRecipeId = await authorAndPublishRecipe(
+    page,
+    firstRecipeTitle,
+    'tomato',
+  )
+  const secondRecipeId = await authorAndPublishRecipe(
+    page,
+    secondRecipeTitle,
+    'onion',
+  )
+
+  await page.goto(`/discover?q=${encodeURIComponent(firstRecipeTitle)}`)
+  await expect(
+    page.getByRole('heading', {
+      name: `Recipes matching “${firstRecipeTitle}”`,
+    }),
+  ).toBeVisible()
+  await page.getByRole('link', { name: 'Open recipe' }).first().click()
+  await expect(page).toHaveURL(new RegExp(`/recipes/${firstRecipeId}$`))
+  const firstSelectionForm = page
+    .locator('form')
+    .filter({ hasText: 'Add to a shopping run' })
+  await firstSelectionForm
+    .getByLabel('List')
+    .selectOption({ label: primaryListName })
+  await firstSelectionForm.getByLabel('People').fill('2')
+  await firstSelectionForm
+    .getByRole('button', { name: 'Add to this week' })
+    .click()
+  await expect(page.getByText(/scale 0\.5/)).toBeVisible()
+
+  await page.goto(`/recipes/${secondRecipeId}`)
+  const secondSelectionForm = page
+    .locator('form')
+    .filter({ hasText: 'Add to a shopping run' })
+  await secondSelectionForm
+    .getByLabel('List')
+    .selectOption({ label: primaryListName })
+  await secondSelectionForm.getByLabel('People').fill('6')
+  await secondSelectionForm
+    .getByRole('button', { name: 'Add to this week' })
+    .click()
+  await expect(page.getByText(/scale 1\.5/)).toBeVisible()
+
+  await page.goto(primaryListUrl)
+  await expect(page.getByText(firstRecipeTitle)).toBeVisible()
+  await expect(page.getByText(secondRecipeTitle)).toBeVisible()
+  await page.getByRole('link', { name: 'Review at home' }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Review at home' }),
+  ).toBeVisible()
+  await expect(page.getByText('tomato', { exact: true })).toBeVisible()
+  await expect(page.getByText('onion', { exact: true })).toBeVisible()
+
+  await page.setViewportSize({ width: 320, height: 800 })
+  await page.getByRole('link', { name: 'Start shopping' }).click()
+  await expect(page).toHaveURL(/\/lists\/[^/]+\/shop$/)
+  await expect(
+    page.getByRole('heading', { name: 'Grocery items', exact: true }),
+  ).toBeVisible()
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true)
+
+  const collaboratorContext = await browser.newContext({
+    storageState: await page.context().storageState(),
+    viewport: { width: 1280, height: 900 },
+  })
+  const collaboratorPage = await collaboratorContext.newPage()
+  try {
+    await collaboratorPage.goto(page.url())
+    await expect(
+      collaboratorPage.getByRole('heading', {
+        name: 'Grocery items',
+        exact: true,
+      }),
+    ).toBeVisible()
+
+    const tomatoPurchased = collaboratorPage.getByRole('button', {
+      name: 'Mark tomato purchased',
+    })
+    const onionPurchased = page.getByRole('button', {
+      name: 'Mark onion purchased',
+    })
+    await collaboratorContext.setOffline(true)
+    await expect(
+      collaboratorPage.getByText(
+        'Offline. Changes stay on this device until you reconnect.',
+        { exact: true },
+      ),
+    ).toBeVisible()
+    await tomatoPurchased.click()
+    await expect(
+      collaboratorPage.getByText(
+        'Saved on this device. We’ll sync it when you’re back online.',
+        { exact: true },
+      ),
+    ).toBeVisible()
+
+    await onionPurchased.click()
+    await expect(
+      page.getByRole('button', { name: 'Undo purchased for onion' }),
+    ).toBeVisible()
+    await collaboratorContext.setOffline(false)
+    await expect(
+      collaboratorPage.getByText(
+        'Offline changes are synced. Showing the latest shared list.',
+        { exact: true },
+      ),
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(
+      collaboratorPage.getByRole('button', {
+        name: 'Undo purchased for tomato',
+      }),
+    ).toBeVisible()
+
+    // Refresh the initiating client so completion uses the latest shared
+    // revision after both shoppers' changes have been accepted.
+    await page.reload()
+    await page.getByRole('button', { name: 'Complete shopping run' }).click()
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Complete shopping run' })
+      .click()
+    await expect(
+      page.getByText('Run completed. A fresh shopping run is ready.', {
+        exact: true,
+      }),
+    ).toBeVisible()
+    await expect(
+      page.getByText('This shopping run has no grocery items yet.'),
+    ).toBeVisible()
+
+    await page.goto(`${primaryListUrl}/history`)
+    await expect(
+      page.getByRole('heading', { name: 'Completed runs' }),
+    ).toBeVisible()
+    await expect(page.locator('time')).toHaveCount(1)
+    await page.locator('time').first().click()
+    await expect(
+      page.getByRole('heading', { name: 'Completed shopping run' }),
+    ).toBeVisible()
+    await expect(page.getByText(firstRecipeTitle)).toBeVisible()
+    await expect(page.getByText(secondRecipeTitle)).toBeVisible()
+    await expect(page.getByText('Version 2 · 2 people')).toBeVisible()
+    await expect(page.getByText('Version 2 · 6 people')).toBeVisible()
+  } finally {
+    await collaboratorContext.close()
+  }
 })
 
 test.describe('authenticated list workflow', () => {

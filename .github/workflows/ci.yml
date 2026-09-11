@@ -58,6 +58,7 @@ jobs:
       - name: Generate ephemeral auth secret
         run: echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
       - run: npm run build
+      - run: npm run db:indexes
       - run: npx playwright install --with-deps
       - run: npm run test:e2e
         continue-on-error: true

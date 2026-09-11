@@ -237,6 +237,11 @@ browser suite also runs a non-skipped self-hosted journey that registers an
 account, authors and publishes a manual recipe, selects it at a different
 serving count, reviews its generated grocery requirement, and opens the
 shopping checklist without paid recipe, search, or analytics services.
+The full journey browser check extends that evidence across a desktop setup and
+320px review/shopping viewport: it creates independent lists, discovers two
+public authored recipes, selects both at different people counts, reconciles an
+offline purchase from a second browser context alongside an online edit, then
+completes the run and resolves both pinned recipes from minimal history.
 Suppressed, draft, and list-shared recipe versions remain available through
 authorized private management paths but are excluded from public detail reads,
 anonymous rendering, and public discovery.

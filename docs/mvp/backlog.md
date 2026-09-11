@@ -1096,10 +1096,13 @@ and responsive QA
 
 **Status:** in progress
 
-- [ ] Browser tests demonstrate the full mobile and desktop journey: register,
+- [x] Browser tests demonstrate the full mobile and desktop journey: register,
       create independently shared lists, find/import/author recipes, select and
       scale multiple recipes, review at home, shop collaboratively offline and
-      online, complete a run, and use minimal history.
+      online, complete a run, and use minimal history. The non-skipped full
+      journey in `routes.spec.ts` covers desktop setup and public discovery,
+      320px review and shopping, two browser contexts, offline queue replay,
+      completion, and pinned multi-recipe history.
 - [ ] Multi-client acceptance tests cover same- and different-item edits,
       disconnect and reconnect, membership removal, and completion elsewhere.
 - [x] Every acceptance criterion in the PRD has a traceable automated test or a

@@ -158,4 +158,25 @@ test.describe('shopping responsive and theme accessibility', () => {
     ).toBeVisible()
     await expectAccessible(page)
   })
+
+  test('@a11y supports arrow-key theme selection', async ({ page }) => {
+    await signIn(page)
+    await page.goto('/settings/appearance')
+
+    const system = page.locator('#theme-system')
+    const light = page.locator('#theme-light')
+    const dark = page.locator('#theme-dark')
+
+    await system.click()
+    await expect(system).toBeFocused()
+    await system.press('ArrowDown')
+    await expect(light).toBeFocused()
+    await expect(light).toBeChecked()
+    await light.press('ArrowDown')
+    await expect(dark).toBeChecked()
+    await dark.press('ArrowUp')
+    await expect(light).toBeChecked()
+
+    await system.check()
+  })
 })

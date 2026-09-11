@@ -8,6 +8,7 @@ export function AppearanceForm() {
   return (
     <div className="space-y-4">
       <RadioGroup
+        name="theme"
         value={theme}
         onValueChange={setTheme}
         aria-label="Theme preference"

@@ -1048,6 +1048,8 @@ recipes; 31: Process public-content complaints; 35: Delete an account safely
   - [x] Shared confirmation dialogs move focus into the dialog, keep Tab and
         Shift+Tab within its controls, and restore focus to the invoking control
         when dismissed.
+  - [x] Theme preference controls use one native radio group so Tab and arrow-key
+        navigation preserve a single selected System, Light, or Dark choice.
 - [ ] Automated checks report no serious or critical issues, and documented
       keyboard and screen-reader reviews cover the shopping journey.
 - [x] Remote changes, optimistic state, offline queues, reconciliation, and

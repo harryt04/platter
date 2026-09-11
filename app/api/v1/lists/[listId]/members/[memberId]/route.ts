@@ -1,7 +1,13 @@
 import { getSession, findListForRole } from '@/lib/auth/authorization'
 import { isoDateTime, type IsoDateTime } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
-import { listIdSchema, toPlatterList, type ListDocument } from '@/lib/lists'
+import {
+  listIdSchema,
+  listMemberRemovalResponseSchema,
+  listMemberUpdateResponseSchema,
+  toPlatterList,
+  type ListDocument,
+} from '@/lib/lists'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { z } from 'zod'
 import { safelyCreateUserNotification } from '@/lib/notifications'
@@ -76,6 +82,16 @@ function invalidJson() {
   })
 }
 
+function membersUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/list-members-unavailable',
+    title: 'List members unavailable',
+    status: 503,
+    detail: 'List membership could not be updated. Please try again.',
+    code: 'LIST_MEMBERS_UNAVAILABLE',
+  })
+}
+
 async function readOwnerList(listId: string, userId: string) {
   return findListForRole(listId, userId, ['owner'])
 }
@@ -113,7 +129,12 @@ function memberFilter(
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const session = await getSession()
+  let session: Awaited<ReturnType<typeof getSession>>
+  try {
+    session = await getSession()
+  } catch {
+    return membersUnavailable()
+  }
   if (!session) return authenticationRequired()
 
   const { listId, memberId: rawMemberId } = await context.params
@@ -122,7 +143,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!memberIdResult.success) return memberNotFound()
   const memberId = memberIdResult.data
 
-  const result = await readOwnerList(listId, session.user.id)
+  let result: Awaited<ReturnType<typeof readOwnerList>>
+  try {
+    result = await readOwnerList(listId, session.user.id)
+  } catch {
+    return membersUnavailable()
+  }
   if (!result) return listNotFound()
 
   let body: unknown
@@ -163,38 +189,53 @@ export async function PATCH(request: Request, context: RouteContext) {
       ? [...new Set([...result.list.ownerIds, memberId])]
       : result.list.ownerIds.filter((ownerId) => ownerId !== memberId)
 
-  const db = await getConnectedDatabase()
-  const updated = await db
-    .collection<ListDocument>('lists')
-    .findOneAndUpdate(
-      memberFilter(
-        listId,
-        session.user.id,
-        memberId,
-        target.role,
-        result.list.updatedAt,
-      ),
-      { $set: { members, ownerIds, updatedAt } },
-      { returnDocument: 'after' },
-    )
-  if (!updated) return memberNotFound()
+  try {
+    const db = await getConnectedDatabase()
+    const updated = await db
+      .collection<ListDocument>('lists')
+      .findOneAndUpdate(
+        memberFilter(
+          listId,
+          session.user.id,
+          memberId,
+          target.role,
+          result.list.updatedAt,
+        ),
+        { $set: { members, ownerIds, updatedAt } },
+        { returnDocument: 'after' },
+      )
+    if (!updated) return memberNotFound()
 
-  const member = updated.members.find(
-    (candidate) => candidate.userId === memberId,
-  )
-  if (!member) return memberNotFound()
-  await safelyCreateUserNotification(db, {
-    userId: memberId,
-    event: 'role-changed',
-    listId: updated._id,
-    listName: updated.name,
-    role: member.role,
-  })
-  return Response.json({ member, list: toPlatterList(updated) })
+    const member = updated.members.find(
+      (candidate) => candidate.userId === memberId,
+    )
+    if (!member) return memberNotFound()
+    const response = listMemberUpdateResponseSchema.safeParse({
+      member,
+      list: toPlatterList(updated),
+    })
+    if (!response.success) return membersUnavailable()
+
+    await safelyCreateUserNotification(db, {
+      userId: memberId,
+      event: 'role-changed',
+      listId: updated._id,
+      listName: updated.name,
+      role: member.role,
+    })
+    return Response.json(response.data)
+  } catch {
+    return membersUnavailable()
+  }
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  const session = await getSession()
+  let session: Awaited<ReturnType<typeof getSession>>
+  try {
+    session = await getSession()
+  } catch {
+    return membersUnavailable()
+  }
   if (!session) return authenticationRequired()
 
   const { listId, memberId: rawMemberId } = await context.params
@@ -203,18 +244,21 @@ export async function DELETE(_request: Request, context: RouteContext) {
   if (!memberIdResult.success) return memberNotFound()
   const memberId = memberIdResult.data
 
-  const result = await readOwnerList(listId, session.user.id)
+  let result: Awaited<ReturnType<typeof readOwnerList>>
+  try {
+    result = await readOwnerList(listId, session.user.id)
+  } catch {
+    return membersUnavailable()
+  }
   if (!result) return listNotFound()
   const target = result.list.members.find(
     (member) => member.userId === memberId,
   )
   if (!target || target.role !== 'editor') return memberNotFound()
 
-  const updated = await (
-    await getConnectedDatabase()
-  )
-    .collection<ListDocument>('lists')
-    .findOneAndUpdate(
+  try {
+    const db = await getConnectedDatabase()
+    const updated = await db.collection<ListDocument>('lists').findOneAndUpdate(
       memberFilter(
         listId,
         session.user.id,
@@ -228,21 +272,28 @@ export async function DELETE(_request: Request, context: RouteContext) {
       },
       { returnDocument: 'after' },
     )
-  if (!updated) return memberNotFound()
+    if (!updated) return memberNotFound()
 
-  const db = await getConnectedDatabase()
-  await safelyCreateUserNotification(db, {
-    userId: memberId,
-    event: 'removed',
-    listId: updated._id,
-    listName: updated.name,
-  })
-  try {
-    revokeRealtimeListAccess(db, updated._id, memberId)
+    const response = listMemberRemovalResponseSchema.safeParse({
+      list: toPlatterList(updated),
+    })
+    if (!response.success) return membersUnavailable()
+
+    await safelyCreateUserNotification(db, {
+      userId: memberId,
+      event: 'removed',
+      listId: updated._id,
+      listName: updated.name,
+    })
+    try {
+      revokeRealtimeListAccess(db, updated._id, memberId)
+    } catch {
+      // Membership removal is authoritative even if the best-effort realtime
+      // eviction cannot be published.
+    }
+
+    return Response.json(response.data)
   } catch {
-    // Membership removal is authoritative even if the best-effort realtime
-    // eviction cannot be published.
+    return membersUnavailable()
   }
-
-  return Response.json({ list: toPlatterList(updated) })
 }

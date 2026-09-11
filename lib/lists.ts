@@ -96,6 +96,17 @@ export const listResponseSchema = z.strictObject({
   list: platterListSchema,
 })
 
+/** Runtime boundary for owner member-role mutation responses. */
+export const listMemberUpdateResponseSchema = z.strictObject({
+  member: listMemberSchema,
+  list: platterListSchema,
+})
+
+/** Runtime boundary for owner member-removal responses. */
+export const listMemberRemovalResponseSchema = z.strictObject({
+  list: platterListSchema,
+})
+
 /** Runtime boundary for atomic list creation responses. */
 export const createListResponseSchema = z.strictObject({
   list: platterListSchema,

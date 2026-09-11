@@ -213,6 +213,54 @@ describe('member management routes', () => {
     )
   })
 
+  it('hides role-update storage failures behind a retryable problem', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    findListForRole.mockResolvedValue({
+      list,
+      member: list.members[0],
+    })
+    getConnectedDatabase.mockRejectedValue(new Error('database unavailable'))
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/lists/list-1/members/editor-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ role: 'owner' }),
+      }),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('LIST_MEMBERS_UNAVAILABLE')
+  })
+
+  it('does not expose malformed role-update results', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    findListForRole.mockResolvedValue({
+      list,
+      member: list.members[0],
+    })
+    const collection = {
+      findOneAndUpdate: vi.fn().mockResolvedValue({
+        ...list,
+        activeRunId: '',
+      }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/lists/list-1/members/editor-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ role: 'owner' }),
+      }),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('LIST_MEMBERS_UNAVAILABLE')
+  })
+
   it('does not allow the last owner to be demoted', async () => {
     getSession.mockResolvedValue({ user: { id: 'owner-1' } })
     findListForRole.mockResolvedValue({ list, member: list.members[0] })
@@ -288,6 +336,47 @@ describe('member management routes', () => {
 
     expect(response.status).toBe(200)
     expect((await response.json()).list.members).toHaveLength(1)
+  })
+
+  it('hides member-removal storage failures behind a retryable problem', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    findListForRole.mockResolvedValue({ list, member: list.members[0] })
+    getConnectedDatabase.mockRejectedValue(new Error('database unavailable'))
+
+    const response = await DELETE(
+      new Request('http://localhost/api/v1/lists/list-1/members/editor-1', {
+        method: 'DELETE',
+      }),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('LIST_MEMBERS_UNAVAILABLE')
+  })
+
+  it('does not expose malformed member-removal results', async () => {
+    getSession.mockResolvedValue({ user: { id: 'owner-1' } })
+    findListForRole.mockResolvedValue({ list, member: list.members[0] })
+    const collection = {
+      findOneAndUpdate: vi.fn().mockResolvedValue({
+        ...list,
+        members: [list.members[0]],
+        activeRunId: '',
+      }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await DELETE(
+      new Request('http://localhost/api/v1/lists/list-1/members/editor-1', {
+        method: 'DELETE',
+      }),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('LIST_MEMBERS_UNAVAILABLE')
   })
 
   it('does not remove an owner through the editor-removal endpoint', async () => {

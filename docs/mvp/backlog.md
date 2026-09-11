@@ -947,6 +947,9 @@ complaints; 35: Delete an account safely
   - [x] Owner-only list-member reads validate the member envelope and hide
         storage or malformed persisted member failures behind a stable
         retryable problem response.
+  - [x] Owner-only member role changes and editor removals validate returned
+        list/member envelopes and hide authentication, storage, or malformed
+        mutation results behind the same stable retryable problem.
   - [x] Purchased checklist mutations validate replayed and newly-created
         response envelopes and hide storage or malformed-record failures behind
         a stable retryable problem response.

@@ -61,6 +61,89 @@ const selection = (
 })
 
 describe('grocery generation', () => {
+  it('keeps shopping available when one persisted ingredient cannot be normalized', () => {
+    const malformedIngredient = {
+      originalText: { unexpected: true },
+      quantity: { min: '2' },
+      unit: null,
+      ingredientName: null,
+      optional: 'sometimes',
+    } as unknown as ReturnType<typeof ingredient>
+
+    expect(() =>
+      generateGroceryItems({
+        selections: [
+          selection('malformed', 'Dinner', '1', [
+            malformedIngredient,
+            ingredient({
+              originalText: '1 each apples',
+              quantity: '1',
+              unit: 'each',
+              ingredientName: 'apples',
+            }),
+          ]),
+        ],
+      }),
+    ).not.toThrow()
+
+    const items = generateGroceryItems({
+      selections: [
+        selection('malformed', 'Dinner', '1', [
+          malformedIngredient,
+          ingredient({
+            originalText: '1 each apples',
+            quantity: '1',
+            unit: 'each',
+            ingredientName: 'apples',
+          }),
+        ]),
+      ],
+    })
+
+    expect(items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ingredientName: 'unrecognized ingredient',
+          calculatedRequirement: null,
+          shoppingAmount: null,
+          contributions: [
+            expect.objectContaining({
+              originalText: 'Unrecognized ingredient',
+              parserConfidence: 'low',
+              calculatedQuantity: null,
+            }),
+          ],
+        }),
+        expect.objectContaining({
+          ingredientName: 'apples',
+          calculatedRequirement: { min: '1' },
+        }),
+      ]),
+    )
+  })
+
+  it('keeps a normalized ingredient readable when its persisted scale is unusable', () => {
+    const items = generateGroceryItems({
+      selections: [
+        selection('bad-scale', 'Dinner', 'not-a-number', [
+          ingredient({
+            originalText: '2 each apples',
+            quantity: '2',
+            unit: 'each',
+            ingredientName: 'apples',
+          }),
+        ]),
+      ],
+    })
+
+    expect(items[0]).toMatchObject({
+      ingredientName: 'apples',
+      calculatedRequirement: null,
+      shoppingAmount: null,
+      contributions: [expect.objectContaining({ calculatedQuantity: null })],
+    })
+  })
+
   it('assigns a documented default category to every generated item', () => {
     const items = generateGroceryItems({
       selections: [

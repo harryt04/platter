@@ -21,6 +21,7 @@ import {
   type GroceryCategory,
 } from '@/lib/recipes/grocery-categories'
 import type { GroceryCategoryOverrideDocument } from '@/lib/recipes/grocery-categories-overrides'
+import { sanitizePlainText } from '@/lib/contracts/text'
 
 const CalculationDecimal = Decimal.clone({ precision: 40 })
 
@@ -120,6 +121,46 @@ type PreparedIngredient = {
   calculatedQuantity: ParsedIngredientQuantity | null
 }
 
+const unknownIngredientUnit: ParsedIngredientUnit = {
+  name: 'unknown',
+  dimension: 'unknown',
+}
+
+function safeIngredientText(
+  value: unknown,
+  fallback = 'Unrecognized ingredient',
+) {
+  if (typeof value !== 'string') return fallback
+  return sanitizePlainText(value) || fallback
+}
+
+function optionalIngredientText(value: unknown) {
+  if (typeof value !== 'string') return undefined
+  const text = sanitizePlainText(value)
+  return text || undefined
+}
+
+function fallbackParsedIngredient(line: unknown): ParsedIngredientLine {
+  const text = safeIngredientText(line)
+  return {
+    originalText: text,
+    quantity: null,
+    unit: unknownIngredientUnit,
+    ingredientName: text,
+    parserConfidence: 'low',
+    optional: false,
+  }
+}
+
+/** Keep one malformed persisted line from taking the whole shopping view down. */
+function parseIngredientSafely(line: unknown) {
+  try {
+    return parseIngredientLine(typeof line === 'string' ? line : '')
+  } catch {
+    return fallbackParsedIngredient(line)
+  }
+}
+
 function prepareIngredient(
   ingredient: RecipeIngredient,
   scaleFactor?: DecimalString,
@@ -127,15 +168,18 @@ function prepareIngredient(
   // Structured fields are authoritative after an editor correction. Parsing
   // this assembled line retains ranges and derives the canonical unit/identity
   // without consulting the original, potentially stale source line.
-  const assembledLine = [
-    ingredient.quantity,
-    ingredient.unit,
-    ingredient.ingredientName,
-  ]
-    .filter((part) => part !== undefined && part.trim() !== '')
+  const ingredientName = safeIngredientText(ingredient.ingredientName)
+  const originalText = safeIngredientText(
+    ingredient.originalText,
+    ingredientName,
+  )
+  const assembledLine = [ingredient.quantity, ingredient.unit, ingredientName]
+    .filter(
+      (part): part is string => typeof part === 'string' && part.trim() !== '',
+    )
     .join(' ')
-  const parsed = parseIngredientLine(assembledLine)
-  const sourceParsed = parseIngredientLine(ingredient.originalText)
+  const parsed = parseIngredientSafely(assembledLine || originalText)
+  const sourceParsed = parseIngredientSafely(originalText)
   const packageSize =
     sourceParsed.packageSize &&
     sourceParsed.ingredientName === parsed.ingredientName &&
@@ -143,9 +187,14 @@ function prepareIngredient(
       ? sourceParsed.packageSize
       : undefined
   const normalizedIdentity =
-    ingredient.normalizedIdentity ?? parsed.normalizedIdentity
+    optionalIngredientText(ingredient.normalizedIdentity) ??
+    parsed.normalizedIdentity
   const parserConfidence =
-    ingredient.parserConfidence ?? parsed.parserConfidence
+    ingredient.parserConfidence === 'high' ||
+    ingredient.parserConfidence === 'medium' ||
+    ingredient.parserConfidence === 'low'
+      ? ingredient.parserConfidence
+      : parsed.parserConfidence
   const normalizedParsed = {
     ...parsed,
     ...(packageSize ? { packageSize } : {}),
@@ -153,12 +202,20 @@ function prepareIngredient(
     parserConfidence,
   }
 
+  let calculatedQuantity = parsed.quantity
+  if (parsed.quantity && scaleFactor) {
+    try {
+      calculatedQuantity = scaleIngredientQuantity(parsed.quantity, scaleFactor)
+    } catch {
+      // Keep the line readable, but never invent a shopping amount when a
+      // persisted scale or normalization value is unusable.
+      calculatedQuantity = null
+    }
+  }
+
   return {
     parsed: normalizedParsed,
-    calculatedQuantity:
-      parsed.quantity && scaleFactor
-        ? scaleIngredientQuantity(parsed.quantity, scaleFactor)
-        : parsed.quantity,
+    calculatedQuantity,
   }
 }
 
@@ -285,7 +342,10 @@ function contributionFromIngredient(
   return {
     id,
     source,
-    originalText: ingredient.originalText,
+    originalText: safeIngredientText(
+      ingredient.originalText,
+      prepared.parsed.originalText,
+    ),
     ingredientName: prepared.parsed.ingredientName,
     ...(prepared.parsed.normalizedIdentity
       ? { normalizedIdentity: prepared.parsed.normalizedIdentity }
@@ -298,7 +358,7 @@ function contributionFromIngredient(
     ...(prepared.parsed.preparationNote
       ? { preparationNote: prepared.parsed.preparationNote }
       : {}),
-    optional: ingredient.optional,
+    optional: ingredient.optional === true,
     calculatedQuantity: prepared.calculatedQuantity,
   }
 }

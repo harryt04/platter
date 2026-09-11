@@ -456,7 +456,10 @@ shopping amount field, while the precise calculated requirement remains visible
 and unchanged until they explicitly save an override.
 Every derived grocery item now receives a conservative documented default
 category such as Produce, Pantry, or Household; uncertain parser output and
-unrecognized ingredients remain in Other. Active runs group categories along a
+unrecognized ingredients remain in Other. Malformed persisted ingredient or
+scale data is isolated as a readable low-confidence item with no fabricated
+amount, so one normalization failure cannot take the rest of shopping down.
+Active runs group categories along a
 documented typical-store route and use normalized ingredient names plus stable
 item IDs for a predictable order within each category. Current members can
 move an item to a more useful category from either active-run view; the

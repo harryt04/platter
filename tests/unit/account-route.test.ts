@@ -42,6 +42,30 @@ describe('account routes', () => {
     })
   })
 
+  it('hides malformed persisted profile data behind a retryable problem', async () => {
+    getSession.mockResolvedValue({
+      user: { ...user, email: 'not-an-email' },
+    })
+
+    const response = await GET()
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'ACCOUNT_UNAVAILABLE',
+    })
+  })
+
+  it('hides authentication storage failures behind a retryable problem', async () => {
+    getSession.mockRejectedValue(new Error('auth storage unavailable'))
+
+    const response = await GET()
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'ACCOUNT_UNAVAILABLE',
+    })
+  })
+
   it('rejects malformed profile data without calling Better Auth', async () => {
     getSession.mockResolvedValue({ user })
 
@@ -82,5 +106,24 @@ describe('account routes', () => {
         body: { name: 'Jamie Lee', locale: 'de-DE' },
       }),
     )
+  })
+
+  it('hides malformed updated profile data behind a stable update failure', async () => {
+    getSession.mockResolvedValueOnce({ user }).mockResolvedValueOnce({
+      user: { ...user, email: 'not-an-email' },
+    })
+    updateUser.mockResolvedValue({ status: true })
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/account', {
+        method: 'PATCH',
+        body: JSON.stringify({ locale: 'de-DE' }),
+      }),
+    )
+
+    expect(response.status).toBe(500)
+    expect(await response.json()).toMatchObject({
+      code: 'PROFILE_UPDATE_FAILED',
+    })
   })
 })

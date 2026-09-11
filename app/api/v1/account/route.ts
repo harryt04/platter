@@ -2,7 +2,11 @@ import { headers } from 'next/headers'
 import { getSession } from '@/lib/auth/authorization'
 import { auth } from '@/lib/auth/auth'
 import { problemResponse } from '@/lib/contracts/problem'
-import { toProfileSummary, updateProfileSchema } from '@/lib/account'
+import {
+  accountResponseSchema,
+  toProfileSummary,
+  updateProfileSchema,
+} from '@/lib/account'
 
 function authenticationRequired() {
   return problemResponse({
@@ -14,15 +18,41 @@ function authenticationRequired() {
   })
 }
 
+function accountUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/account-unavailable',
+    title: 'Account temporarily unavailable',
+    status: 503,
+    detail: 'Your account details could not be loaded. Try again shortly.',
+    code: 'ACCOUNT_UNAVAILABLE',
+  })
+}
+
 export async function GET() {
-  const session = await getSession()
+  let session: Awaited<ReturnType<typeof getSession>>
+  try {
+    session = await getSession()
+  } catch {
+    return accountUnavailable()
+  }
   if (!session) return authenticationRequired()
 
-  return Response.json({ account: toProfileSummary(session.user) })
+  try {
+    return Response.json(
+      accountResponseSchema.parse({ account: toProfileSummary(session.user) }),
+    )
+  } catch {
+    return accountUnavailable()
+  }
 }
 
 export async function PATCH(request: Request) {
-  const session = await getSession()
+  let session: Awaited<ReturnType<typeof getSession>>
+  try {
+    session = await getSession()
+  } catch {
+    return accountUnavailable()
+  }
   if (!session) return authenticationRequired()
 
   let body: unknown
@@ -70,7 +100,19 @@ export async function PATCH(request: Request) {
     })
   }
 
-  const updatedSession = await getSession()
+  let updatedSession: Awaited<ReturnType<typeof getSession>>
+  try {
+    updatedSession = await getSession()
+  } catch {
+    return problemResponse({
+      type: 'https://platter.dev/problems/profile-update-failed',
+      title: 'Profile update failed',
+      status: 500,
+      detail: 'We couldn’t confirm your profile update. Try again.',
+      code: 'PROFILE_UPDATE_FAILED',
+    })
+  }
+
   if (!updatedSession || updatedSession.user.id !== session.user.id) {
     return problemResponse({
       type: 'https://platter.dev/problems/profile-update-failed',
@@ -81,5 +123,19 @@ export async function PATCH(request: Request) {
     })
   }
 
-  return Response.json({ account: toProfileSummary(updatedSession.user) })
+  try {
+    return Response.json(
+      accountResponseSchema.parse({
+        account: toProfileSummary(updatedSession.user),
+      }),
+    )
+  } catch {
+    return problemResponse({
+      type: 'https://platter.dev/problems/profile-update-failed',
+      title: 'Profile update failed',
+      status: 500,
+      detail: 'We couldn’t confirm your profile update. Try again.',
+      code: 'PROFILE_UPDATE_FAILED',
+    })
+  }
 }

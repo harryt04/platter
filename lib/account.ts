@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { sanitizePlainText } from '@/lib/contracts/text'
+import { opaqueIdSchema } from '@/lib/contracts/ids'
 
 export const defaultProfileLocale = 'en-US' as const
 
@@ -45,6 +46,20 @@ export type ProfileSummary = {
   email: string
   locale: string
 }
+
+export const profileSummarySchema = z.strictObject({
+  id: opaqueIdSchema,
+  name: z
+    .string()
+    .min(1, 'Display names cannot be empty.')
+    .max(100, 'Display names must be 100 characters or fewer.'),
+  email: z.string().email().max(320),
+  locale: profileLocaleSchema,
+})
+
+export const accountResponseSchema = z.strictObject({
+  account: profileSummarySchema,
+})
 
 export function toProfileSummary(user: {
   id: string

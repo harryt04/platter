@@ -232,6 +232,10 @@ rendering secret configuration values. The public catalog is explicitly shown
 as not ready for hosted enablement until the operator publishes the required
 policies and contacts; manual recipes and existing saved recipes remain
 independent of that readiness status.
+Operators can pause new public URL imports and source refreshes with
+`RECIPE_IMPORTS_ENABLED=false`; import history remains readable and manual
+recipes, existing saved recipes, and shopping continue to work. Individual
+adapters remain independently disableable with
 The import extraction stage now runs through a typed replaceable adapter
 contract: bounded fetched HTML can produce a normalized candidate, a partial
 candidate with warnings, or an isolated typed failure. Selection tries

@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest'
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { cleanup, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RecipeImportForm } from '@/components/recipes/recipe-import-form'
 
 vi.mock('next/navigation', () => ({
@@ -8,6 +8,8 @@ vi.mock('next/navigation', () => ({
 }))
 
 describe('RecipeImportForm', () => {
+  afterEach(cleanup)
+
   it('shows connected import guidance and durable statuses', () => {
     render(
       <RecipeImportForm
@@ -60,5 +62,32 @@ describe('RecipeImportForm', () => {
     expect(
       screen.getByRole('link', { name: 'Review extracted recipe' }),
     ).toHaveAttribute('href', '/import/b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7')
+  })
+
+  it('explains disabled imports and disables controls without hiding history', () => {
+    render(
+      <RecipeImportForm
+        importsEnabled={false}
+        initialImports={[
+          {
+            id: 'b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7' as never,
+            sourceUrl: 'https://example.com/recipe',
+            status: 'failed',
+            attemptCount: 1,
+            submittedAt: '2026-09-10T12:00:00.000Z' as never,
+            updatedAt: '2026-09-10T12:00:00.000Z' as never,
+          },
+        ]}
+      />,
+    )
+
+    expect(
+      screen.getByText(/public url imports are disabled/i),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Recipe URL')).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: /import recipe url/i }),
+    ).toBeDisabled()
+    expect(screen.getByText('https://example.com/recipe')).toBeInTheDocument()
   })
 })

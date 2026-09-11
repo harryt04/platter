@@ -774,7 +774,7 @@ the required policies and contacts.
 
 - [x] Instance settings summarize email, analytics, public-catalog, importer,
       moderation, and source-adapter status without exposing secret values.
-- [ ] An operator can disable public imports or specified adapters while manual
+- [x] An operator can disable public imports or specified adapters while manual
       recipes, existing saved recipes, and shopping continue to work.
 - [ ] Hosted public imports cannot be enabled until terms, privacy policy,
       content-removal contact, and repeat-infringer handling are explicitly

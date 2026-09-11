@@ -248,6 +248,7 @@ Create `.env.example` with names and safe local defaults where possible. Keep
 | `BETTER_AUTH_URL` | Better Auth base URL | Required; same local origin as the web app. |
 | `SMTP_ENABLED` | Password reset and invitation email delivery | Explicit opt-in; local Mailpit default is `true` in `.env.example`. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` | Password reset and invitation email delivery | Required when SMTP is enabled; local defaults target Mailpit. |
+| `RECIPE_IMPORTS_ENABLED` | Allow new public recipe URL imports and source refreshes | Optional; `true` by default. Set to `false` to keep manual recipes, existing saved recipes, and shopping available while disabling public import work. |
 | `RECIPE_IMPORT_DISABLED_ADAPTERS` | Comma-separated recipe import adapter IDs to disable | Optional; empty by default. Disabled adapters fail only their import job. |
 | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE` | Hosted SMTP settings | Optional locally. |
 | `REALTIME_PORT` | Socket.IO service port | Local default `3001`. |

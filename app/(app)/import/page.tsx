@@ -2,6 +2,7 @@ import { RecipeImportForm } from '@/components/recipes/recipe-import-form'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
 import { requireSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
+import { serverEnv } from '@/lib/env/server'
 import {
   toRecipeImportSummary,
   type RecipeImportDocument,
@@ -24,7 +25,10 @@ export default async function ImportPage() {
         eyebrow="Recipe import"
         title="Bring a recipe into Platter"
       />
-      <RecipeImportForm initialImports={imports.map(toRecipeImportSummary)} />
+      <RecipeImportForm
+        importsEnabled={serverEnv().RECIPE_IMPORTS_ENABLED}
+        initialImports={imports.map(toRecipeImportSummary)}
+      />
     </ContentContainer>
   )
 }

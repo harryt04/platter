@@ -103,6 +103,16 @@ export function createRecipeImportJobHandler(
     }
 
     try {
+      if (!serverEnv().RECIPE_IMPORTS_ENABLED) {
+        await collection.updateOne(processingFilter, {
+          $set: {
+            status: 'failed',
+            failureCode: 'PUBLIC_IMPORTS_DISABLED',
+            updatedAt: isoDateTime(new Date()),
+          },
+        })
+        return
+      }
       const fetched = await fetcher(document.sourceUrl)
       const adapted = selectRecipeImportAdapter(fetched, {
         disabledAdapterIds: parseDisabledRecipeImportAdapters(

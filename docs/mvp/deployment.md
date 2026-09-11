@@ -21,6 +21,12 @@ human-created OAuth credentials and approved redirect URIs.
 
 ## Recipe import adapters
 
+Set `RECIPE_IMPORTS_ENABLED=false` when the instance operator needs to pause
+new public URL imports or source refreshes. Import history remains readable,
+previously saved imported recipes remain available, and manual recipes and
+shopping do not depend on this setting. The API, UI, and worker all enforce
+the setting so queued work cannot fetch or publish after the pause.
+
 The worker passes only the bounded result of the SSRF-safe fetch stage to an
 import adapter. Adapters implement the typed contract in
 `lib/recipe-import-adapters.ts` and return a normalized candidate, a partial

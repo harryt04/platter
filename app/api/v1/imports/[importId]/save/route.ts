@@ -2,6 +2,7 @@ import { getSession } from '@/lib/auth/authorization'
 import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase, getMongoClient } from '@/lib/db/mongo-client'
 import { isoDateTime } from '@/lib/contracts/ids'
+import { serverEnv } from '@/lib/env/server'
 import {
   createDraftDocument,
   createDraftSchema,
@@ -52,6 +53,17 @@ function authenticationRequired() {
     status: 401,
     detail: 'Sign in to save an imported recipe draft.',
     code: 'AUTHENTICATION_REQUIRED',
+  })
+}
+
+function publicImportsDisabled() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/public-imports-disabled',
+    title: 'Public imports are disabled',
+    status: 503,
+    detail:
+      'This instance has disabled new public imported recipes. Existing saved recipes remain available.',
+    code: 'PUBLIC_IMPORTS_DISABLED',
   })
 }
 
@@ -216,6 +228,7 @@ export async function POST(
   if (source.savedRecipeId) {
     return Response.json({ recipeId: source.savedRecipeId }, { status: 200 })
   }
+  if (!serverEnv().RECIPE_IMPORTS_ENABLED) return publicImportsDisabled()
   if (source.status !== 'preview-ready' || !source.preview) return notReady()
 
   let body: unknown

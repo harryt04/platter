@@ -16,6 +16,7 @@ describe('InstanceStatusSummary', () => {
           POSTHOG_ENABLED: false,
           NEXT_PUBLIC_POSTHOG_KEY: undefined,
           NEXT_PUBLIC_POSTHOG_HOST: undefined,
+          RECIPE_IMPORTS_ENABLED: true,
           RECIPE_IMPORT_DISABLED_ADAPTERS: '',
         })}
       />,

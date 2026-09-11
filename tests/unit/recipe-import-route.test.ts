@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET, POST } from '@/app/api/v1/imports/route'
 import { GET as getStatus } from '@/app/api/v1/imports/[importId]/route'
+import { resetServerEnvForTests } from '@/lib/env/server'
 import { resetRateLimitsForTests } from '@/lib/security/rate-limit'
 
 const { getSession, getConnectedDatabase, enqueueRecipeImport } = vi.hoisted(
@@ -55,12 +56,33 @@ function setup(document = importDocument) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.unstubAllEnvs()
+  resetServerEnvForTests()
   resetRateLimitsForTests()
   getSession.mockResolvedValue({ user: { id: 'user-1' } })
   enqueueRecipeImport.mockResolvedValue(undefined)
 })
 
 describe('/api/v1/imports', () => {
+  it('rejects new submissions while leaving persistence untouched when imports are disabled', async () => {
+    vi.stubEnv('RECIPE_IMPORTS_ENABLED', 'false')
+    resetServerEnvForTests()
+    const collection = setup()
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/imports', {
+        method: 'POST',
+        headers: { 'idempotency-key': 'disabled-import-key' },
+        body: JSON.stringify({ sourceUrl: importDocument.sourceUrl }),
+      }),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('PUBLIC_IMPORTS_DISABLED')
+    expect(collection.insertOne).not.toHaveBeenCalled()
+    expect(enqueueRecipeImport).not.toHaveBeenCalled()
+  })
+
   it('requires authentication for submission and status listing', async () => {
     getSession.mockResolvedValue(null)
 

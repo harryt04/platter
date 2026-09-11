@@ -29,6 +29,7 @@ type InstancePolicyEnvironment = Pick<
   | 'POSTHOG_ENABLED'
   | 'NEXT_PUBLIC_POSTHOG_KEY'
   | 'NEXT_PUBLIC_POSTHOG_HOST'
+  | 'RECIPE_IMPORTS_ENABLED'
   | 'RECIPE_IMPORT_DISABLED_ADAPTERS'
 >
 
@@ -111,10 +112,13 @@ export function getInstancePolicySummary(
       {
         id: 'public-catalog',
         label: 'Public catalog',
-        status: 'incomplete',
-        statusLabel: 'Policy required',
-        detail:
-          'Hosted public imports are not ready to be enabled until terms, privacy, removal contact, and repeat-infringer handling are published.',
+        status: environment.RECIPE_IMPORTS_ENABLED ? 'incomplete' : 'disabled',
+        statusLabel: environment.RECIPE_IMPORTS_ENABLED
+          ? 'Policy required'
+          : 'Disabled',
+        detail: environment.RECIPE_IMPORTS_ENABLED
+          ? 'Hosted public imports are not ready to be enabled until terms, privacy, removal contact, and repeat-infringer handling are published.'
+          : 'New public URL imports are disabled; manual recipes, existing saved recipes, and shopping remain available.',
       },
       {
         id: 'importer',

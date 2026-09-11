@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth/authorization'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
+import { serverEnv } from '@/lib/env/server'
 import { enqueueRecipeImport } from '@/lib/jobs/queue'
 import {
   recipeImportIdSchema,
@@ -24,6 +25,17 @@ function authenticationRequired() {
     status: 401,
     detail: 'Sign in to retry a recipe import.',
     code: 'AUTHENTICATION_REQUIRED',
+  })
+}
+
+function publicImportsDisabled() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/public-imports-disabled',
+    title: 'Public imports are disabled',
+    status: 503,
+    detail:
+      'This instance has disabled new public URL imports. Existing saved recipes remain available.',
+    code: 'PUBLIC_IMPORTS_DISABLED',
   })
 }
 
@@ -74,6 +86,7 @@ export async function POST(
 ) {
   const session = await getSession()
   if (!session) return authenticationRequired()
+  if (!serverEnv().RECIPE_IMPORTS_ENABLED) return publicImportsDisabled()
 
   const limit = checkRateLimit(`recipe-import-retry:${session.user.id}`, {
     limit: 30,

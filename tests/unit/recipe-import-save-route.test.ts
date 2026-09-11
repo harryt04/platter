@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST } from '@/app/api/v1/imports/[importId]/save/route'
+import { resetServerEnvForTests } from '@/lib/env/server'
 
 const { getSession, getConnectedDatabase, getMongoClient } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -105,6 +106,8 @@ function request(body: unknown) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.unstubAllEnvs()
+  resetServerEnvForTests()
   getSession.mockResolvedValue({ user: { id: 'user-1' } })
 })
 
@@ -241,6 +244,23 @@ describe('POST /api/v1/imports/[importId]/save', () => {
   it('replays an already-saved import without creating another recipe', async () => {
     const savedRecipeId = 'c7f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b8'
     const { recipes, versions } = setup({ ...source, savedRecipeId })
+    const response = await POST(
+      request({ title: 'Ignored', ingredients: [], instructions: [] }),
+      { params: Promise.resolve({ importId }) },
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ recipeId: savedRecipeId })
+    expect(recipes.insertOne).not.toHaveBeenCalled()
+    expect(versions.insertOne).not.toHaveBeenCalled()
+  })
+
+  it('keeps an existing saved import readable while new public imports are disabled', async () => {
+    vi.stubEnv('RECIPE_IMPORTS_ENABLED', 'false')
+    resetServerEnvForTests()
+    const savedRecipeId = 'c7f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b8'
+    const { recipes, versions } = setup({ ...source, savedRecipeId })
+
     const response = await POST(
       request({ title: 'Ignored', ingredients: [], instructions: [] }),
       { params: Promise.resolve({ importId }) },

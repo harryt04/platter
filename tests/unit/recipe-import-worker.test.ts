@@ -95,6 +95,42 @@ describe('recipe import worker fetch stage', () => {
     )
   })
 
+  it('fails queued work without fetching when the operator disables imports', async () => {
+    vi.stubEnv('RECIPE_IMPORTS_ENABLED', 'false')
+    resetServerEnvForTests()
+    const collection = {
+      findOneAndUpdate: vi.fn().mockResolvedValue(document),
+      updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
+    }
+    const db = { collection: vi.fn().mockReturnValue(collection) }
+    const fetcher = vi.fn()
+
+    await createRecipeImportJobHandler(
+      db as never,
+      fetcher,
+    )({
+      attrs: {
+        data: {
+          importId: document._id,
+          userId: document.userId,
+          idempotencyKey: document.idempotencyKey,
+        },
+      },
+    })
+
+    expect(fetcher).not.toHaveBeenCalled()
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      { _id: document._id, userId: document.userId, status: 'processing' },
+      {
+        $set: {
+          status: 'failed',
+          failureCode: 'PUBLIC_IMPORTS_DISABLED',
+          updatedAt: expect.any(String),
+        },
+      },
+    )
+  })
+
   it('uses generic extraction when no structured recipe candidate is found', async () => {
     const collection = {
       findOneAndUpdate: vi.fn().mockResolvedValue(document),

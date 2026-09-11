@@ -8,6 +8,7 @@ const baseEnvironment = {
   POSTHOG_ENABLED: false,
   NEXT_PUBLIC_POSTHOG_KEY: undefined,
   NEXT_PUBLIC_POSTHOG_HOST: undefined,
+  RECIPE_IMPORTS_ENABLED: true,
   RECIPE_IMPORT_DISABLED_ADAPTERS: '',
 }
 
@@ -83,6 +84,24 @@ describe('instance policy summary', () => {
       expect.arrayContaining([
         expect.objectContaining({ id: 'email', status: 'incomplete' }),
         expect.objectContaining({ id: 'analytics', status: 'incomplete' }),
+      ]),
+    )
+  })
+
+  it('shows public imports as disabled without hiding unaffected workflows', () => {
+    const summary = getInstancePolicySummary({
+      ...baseEnvironment,
+      RECIPE_IMPORTS_ENABLED: false,
+    })
+
+    expect(summary.services).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'public-catalog',
+          status: 'disabled',
+          statusLabel: 'Disabled',
+          detail: expect.stringContaining('manual recipes'),
+        }),
       ]),
     )
   })

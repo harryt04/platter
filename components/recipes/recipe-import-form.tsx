@@ -62,8 +62,10 @@ function getServerOnlineStatus() {
 
 export function RecipeImportForm({
   initialImports,
+  importsEnabled = true,
 }: {
   initialImports: RecipeImportSummary[]
+  importsEnabled?: boolean
 }) {
   const router = useRouter()
   const [imports, setImports] = React.useState(initialImports)
@@ -204,7 +206,7 @@ export function RecipeImportForm({
                 Recipe URL
               </label>
               <Input
-                disabled={pending || !online}
+                disabled={pending || !online || !importsEnabled}
                 id="recipe-import-url"
                 onChange={(event) => setSourceUrl(event.target.value)}
                 placeholder="https://example.com/recipe"
@@ -223,8 +225,16 @@ export function RecipeImportForm({
                 queued offline.
               </p>
             )}
+            {!importsEnabled && (
+              <p className="text-muted-foreground text-sm" role="status">
+                Public URL imports are disabled by the instance operator. Manual
+                recipes, existing saved recipes, and shopping remain available.
+              </p>
+            )}
             <Button
-              disabled={pending || !online || !sourceUrl.trim()}
+              disabled={
+                pending || !online || !importsEnabled || !sourceUrl.trim()
+              }
               type="submit"
             >
               {pending ? 'Queueing import…' : 'Import recipe URL'}
@@ -284,7 +294,11 @@ export function RecipeImportForm({
                             : 'Review extracted recipe'}
                         </Link>
                         <Button
-                          disabled={pendingRecovery === item.id || !online}
+                          disabled={
+                            pendingRecovery === item.id ||
+                            !online ||
+                            !importsEnabled
+                          }
                           onClick={() => recoverImport(item, 'reprocess')}
                           size="sm"
                           type="button"
@@ -297,7 +311,11 @@ export function RecipeImportForm({
                     )}
                     {item.status === 'failed' && (
                       <Button
-                        disabled={pendingRecovery === item.id || !online}
+                        disabled={
+                          pendingRecovery === item.id ||
+                          !online ||
+                          !importsEnabled
+                        }
                         onClick={() => recoverImport(item, 'retry')}
                         size="sm"
                         type="button"

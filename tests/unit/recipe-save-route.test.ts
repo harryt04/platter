@@ -15,7 +15,9 @@ const publicRecipe = {
   title: 'Tomato soup',
   status: 'usable' as const,
   visibility: 'public' as const,
-  origin: 'authored' as const,
+  origin: 'authored' as 'authored' | 'imported',
+  importReviewStatus: 'not-required' as
+    'not-required' | 'pending' | 'approved' | 'rejected',
   ingredients: [],
   instructions: [],
   createdAt: '2026-09-10T12:00:00.000Z' as `${string}`,
@@ -137,6 +139,68 @@ describe('/api/v1/recipes/[recipeId]/save', () => {
     expect(collection.deleteOne).toHaveBeenCalledWith({
       userId: 'user-1',
       recipeId: 'recipe-1',
+    })
+  })
+
+  it('hides malformed public recipe targets behind a retryable problem', async () => {
+    const { collection } = setup({
+      ...publicRecipe,
+      status: 'usable',
+      visibility: 'public',
+      origin: 'imported',
+      importReviewStatus: 'pending',
+    })
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/recipes/recipe-1/save', {
+        method: 'POST',
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(await response.json()).toEqual({
+      type: 'https://platter.dev/problems/recipe-save-unavailable',
+      title: 'Recipe save temporarily unavailable',
+      status: 503,
+      detail:
+        'That saved recipe action could not be completed. Try again shortly.',
+      code: 'RECIPE_SAVE_UNAVAILABLE',
+    })
+    expect(collection.updateOne).not.toHaveBeenCalled()
+  })
+
+  it('hides storage failures for save and remove behind a retryable problem', async () => {
+    const { collection } = setup()
+    collection.findOne.mockRejectedValueOnce(new Error('database unavailable'))
+
+    const saveResponse = await POST(
+      new Request('http://localhost/api/v1/recipes/recipe-1/save', {
+        method: 'POST',
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    collection.deleteOne.mockRejectedValueOnce(
+      new Error('database unavailable'),
+    )
+    const removeResponse = await DELETE(
+      new Request('http://localhost/api/v1/recipes/recipe-1/save', {
+        method: 'DELETE',
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(saveResponse.status).toBe(503)
+    expect(removeResponse.status).toBe(503)
+    expect(await saveResponse.json()).toMatchObject({
+      code: 'RECIPE_SAVE_UNAVAILABLE',
+    })
+    expect(await removeResponse.json()).toMatchObject({
+      code: 'RECIPE_SAVE_UNAVAILABLE',
     })
   })
 })

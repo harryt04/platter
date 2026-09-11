@@ -880,6 +880,9 @@ complaints; 35: Delete an account safely
       schema at mutation, realtime, repeat, and history-detail boundaries.
 - [ ] All writes and external reads use shared schemas, stable problem responses,
       opaque IDs and cursors, and never expose stack traces or database errors.
+  - [x] Public recipe save and removal validate the minimal public target and
+        response envelope, and hide authentication, storage, or malformed-target
+        failures behind a stable retryable problem.
   - [x] List history reads validate minimal persisted history envelopes and hide
         authentication, storage, and malformed-record failures behind a stable
         retryable problem response.

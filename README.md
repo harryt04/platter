@@ -77,6 +77,9 @@ The personal recipe-library API now validates recipe envelopes and pagination
 results, passes the user's search text into the library query, and hides
 storage or malformed-record failures behind the same stable retryable problem
 contract.
+Public recipe save and removal now validate their minimal public target and
+response envelope, and hide authentication, storage, and malformed-target
+failures behind the same stable retryable problem contract.
 Shopping history reads validate their minimal persisted envelopes and hide
 authentication, storage, or malformed-record failures behind the same stable
 retryable problem contract.

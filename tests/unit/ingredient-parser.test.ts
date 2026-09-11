@@ -1,6 +1,7 @@
 import fc from 'fast-check'
 import Decimal from 'decimal.js'
 import { describe, expect, it } from 'vitest'
+import { sanitizePlainText } from '@/lib/contracts/text'
 import {
   convertIngredientQuantity,
   parseIngredientLine,
@@ -344,12 +345,7 @@ describe('ingredient line parser', () => {
       fc.property(fc.string(), (line) => {
         const parsed = parseIngredientLine(line)
 
-        expect(parsed.originalText).toBe(
-          line
-            .replace(/[\u0000-\u001F\u007F]/g, '')
-            .replace(/\s+/g, ' ')
-            .trim(),
-        )
+        expect(parsed.originalText).toBe(sanitizePlainText(line))
         expect(parsed.parserConfidence).toMatch(/^(high|medium|low)$/)
         if (parsed.quantity === null) {
           expect(parsed.unit).toEqual({ name: 'unknown', dimension: 'unknown' })

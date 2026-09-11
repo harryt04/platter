@@ -869,7 +869,7 @@ unauthorized access, abusive volume, malformed data, and unsafe content.
 recipes; 26: Submit a URL for secure import; 31: Process public-content
 complaints; 35: Delete an account safely
 
-**Status:** in progress
+**Status:** implemented
 
 - [x] List IDs, recipe IDs, run IDs, history IDs, import IDs, and complaint IDs
       are treated as untrusted and checked against least-privilege policy on every
@@ -878,7 +878,7 @@ complaints; 35: Delete an account safely
       bounded opaque recipe IDs before querying or mutating storage.
 - [x] Active shopping-run and completed-history IDs use a shared bounded opaque
       schema at mutation, realtime, repeat, and history-detail boundaries.
-- [ ] All writes and external reads use shared schemas, stable problem responses,
+- [x] All writes and external reads use shared schemas, stable problem responses,
       opaque IDs and cursors, and never expose stack traces or database errors.
   - [x] Public recipe save and removal validate the minimal public target and
         response envelope, and hide authentication, storage, or malformed-target
@@ -976,7 +976,7 @@ complaints; 35: Delete an account safely
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested
         stable retryable problem responses.
-- [ ] User-authored content is sanitized, imported active content is never
+- [x] User-authored content is sanitized, imported active content is never
       rendered, and secrets or private contacts do not enter logs or analytics.
   - [x] Plain-text write boundaries remove markup-shaped content from authored
         recipe, list, profile, grocery, complaint, and moderation text, while

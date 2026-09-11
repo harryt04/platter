@@ -29,7 +29,10 @@ recipes, and completed shopping runs. Sole-owner lists include per-list links
 to transfer ownership or delete the list, and an authenticated readiness check
 stays blocked until every ownership boundary is resolved. Mongo-backed
 integration coverage verifies owner scoping, export contents, locale
-preservation, expiry, and cross-account download rejection.
+preservation, expiry, and cross-account download rejection. After ownership is
+resolved, account deletion requires the account email and password, removes
+private authored recipes and personal artifacts, and preserves only anonymous
+unavailable version identities for active or completed-run references.
 Archived lists preserve read access to their shopping run while disabling
 shopping changes such as completion and amount resets. Owners and editors can
 now confirm an active run through an atomic transition that retains only

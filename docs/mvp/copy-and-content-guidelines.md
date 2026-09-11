@@ -56,6 +56,7 @@ Recipe calculation, merging, and synchronization are the product’s core promis
 | Shared destructive change | `Removing Tacos will remove 6 grocery contributions from the Family run.` |
 | Account export ready | `Your export is ready to download.` Keep the file private and state its expiry. |
 | Account export failure | `We couldn’t prepare your export. Try again.` |
+| Account deletion confirmation | `This cannot be undone. Your private authored recipes and account data will be removed. Existing list history keeps only a minimal unavailable recipe reference.` |
 
 Avoid vague confirmation such as `Updated`, `Success`, `Conflict detected`, or `Something changed` when Platter can name the object and consequence.
 

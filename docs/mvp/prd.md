@@ -116,6 +116,10 @@ No calendar assignment is required at any point.
 - Sensitive pages and APIs must validate the server-side session.
 - A user must be able to delete their account.
 - Account deletion must explain the fate of shared lists, manually authored recipes, and public imports before confirmation.
+- Account deletion removes private authored recipe documents and personal
+  account artifacts. A recipe version referenced by an active or completed run
+  is retained only as an anonymous unavailable identity snapshot so the pinned
+  reference remains resolvable; unreferenced versions are deleted.
 - Public recipe discovery may be browsed without authentication; saving, importing, editing, or using a list requires authentication.
 
 ### 9.2 Lists and sharing

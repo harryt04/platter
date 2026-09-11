@@ -1,7 +1,47 @@
-import type { Db } from 'mongodb'
-import { entityId, type EntityId } from '@/lib/contracts/ids'
+import type { Db, Filter } from 'mongodb'
+import { entityId, isoDateTime, type EntityId } from '@/lib/contracts/ids'
 import { listMembershipFilter, type ListDocument } from '@/lib/lists'
-import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
+import type {
+  RecipeDraftDocument,
+  RecipeVersionDocument,
+} from '@/lib/recipes/drafts'
+
+/** Stable non-user owner used for detached historical recipe snapshots. */
+export const deletedAccountOwnerId = 'deleted-account'
+
+const privateRecipeFilter: Filter<RecipeDraftDocument> = {
+  $and: [
+    {
+      $or: [{ origin: 'authored' }, { origin: { $exists: false } }],
+    },
+    {
+      $or: [{ visibility: 'private' }, { visibility: { $exists: false } }],
+    },
+  ],
+}
+
+const historicalVersionUnset = {
+  description: '',
+  typicalPeopleFed: '',
+  prepTimeMinutes: '',
+  cookingTimeMinutes: '',
+  totalTimeMinutes: '',
+  cuisine: '',
+  mealType: '',
+  householdNotes: '',
+  sourceName: '',
+  sourceUrl: '',
+  sourceAuthor: '',
+  attribution: '',
+  tags: '',
+  dietaryLabels: '',
+  image: '',
+  nutrition: '',
+  importProvenance: '',
+  derivedFrom: '',
+  ingredients: '',
+  instructions: '',
+} as const
 
 export type AccountDeletionOwnershipBlocker = {
   listId: EntityId
@@ -17,6 +57,144 @@ export type AccountDeletionImpact = {
   manuallyAuthoredRecipes: number
   publicImportedRecipes: number
   completedShoppingRuns: number
+}
+
+export type AccountDeletionCleanupResult = {
+  deletedPrivateRecipes: number
+  anonymizedHistoricalVersions: number
+  deletedUnreferencedVersions: number
+}
+
+type RecipeReference = Pick<
+  RecipeVersionDocument,
+  '_id' | 'recipeId' | 'versionNumber'
+>
+
+function collectVersionReferences(
+  records: Array<{ recipeSelections?: Array<RecipeReference> }>,
+  recipeIds: Set<string>,
+) {
+  const references = new Set<string>()
+  for (const record of records) {
+    for (const selection of record.recipeSelections ?? []) {
+      if (recipeIds.has(selection.recipeId)) references.add(selection._id)
+    }
+  }
+  return references
+}
+
+/**
+ * Apply the account-deletion policy to manually authored private recipes.
+ * Unreferenced recipe and version documents are removed. A version referenced
+ * by an active or completed run is retained only as an anonymous, non-usable
+ * identity snapshot so historical resolution does not silently point at a
+ * different recipe.
+ */
+export async function deletePrivateAccountContent(
+  db: Db,
+  userId: string,
+): Promise<AccountDeletionCleanupResult> {
+  const recipes = db.collection<RecipeDraftDocument>('recipes')
+  const privateRecipes = await recipes
+    .find({ ownerId: userId, ...privateRecipeFilter })
+    .project({ _id: 1 })
+    .toArray()
+  const recipeIds = privateRecipes.map(({ _id }) => _id)
+  if (recipeIds.length === 0) {
+    return {
+      deletedPrivateRecipes: 0,
+      anonymizedHistoricalVersions: 0,
+      deletedUnreferencedVersions: 0,
+    }
+  }
+
+  const [activeRuns, histories, versions] = await Promise.all([
+    db
+      .collection<{ recipeSelections?: Array<RecipeReference> }>(
+        'shopping_runs',
+      )
+      .find({ 'recipeSelections.recipeId': { $in: recipeIds } })
+      .project({ recipeSelections: 1 })
+      .toArray(),
+    db
+      .collection<{ recipeSelections?: Array<RecipeReference> }>(
+        'shopping_run_history',
+      )
+      .find({ 'recipeSelections.recipeId': { $in: recipeIds } })
+      .project({ recipeSelections: 1 })
+      .toArray(),
+    db
+      .collection<RecipeVersionDocument>('recipe_versions')
+      .find({ recipeId: { $in: recipeIds } })
+      .toArray(),
+  ])
+  const referencedVersionIds = collectVersionReferences(
+    [...activeRuns, ...histories],
+    new Set(recipeIds),
+  )
+  const versionCollection =
+    db.collection<RecipeVersionDocument>('recipe_versions')
+  const referencedVersions = versions.filter((version) =>
+    referencedVersionIds.has(version._id),
+  )
+
+  for (const version of referencedVersions) {
+    await versionCollection.updateOne(
+      { _id: version._id },
+      {
+        $set: {
+          ownerId: deletedAccountOwnerId,
+          title: 'Recipe unavailable',
+          status: 'draft',
+          visibility: 'private',
+          origin: 'authored',
+          importReviewStatus: 'not-required',
+        },
+        $unset: historicalVersionUnset,
+      },
+    )
+  }
+
+  await Promise.all([
+    versionCollection.deleteMany({
+      recipeId: { $in: recipeIds },
+      _id: { $nin: [...referencedVersionIds] },
+    }),
+    db.collection('recipe_shares').deleteMany({ recipeId: { $in: recipeIds } }),
+    db.collection('recipe_saves').deleteMany({ recipeId: { $in: recipeIds } }),
+    recipes.deleteMany({ _id: { $in: recipeIds }, ownerId: userId }),
+  ])
+
+  return {
+    deletedPrivateRecipes: recipeIds.length,
+    anonymizedHistoricalVersions: referencedVersions.length,
+    deletedUnreferencedVersions: versions.length - referencedVersions.length,
+  }
+}
+
+/** Remove account-owned membership and user-scoped artifacts after auth deletion. */
+export async function removeAccountMembershipAndPrivateArtifacts(
+  db: Db,
+  userId: string,
+) {
+  await Promise.all([
+    db.collection<ListDocument>('lists').updateMany(
+      { members: { $elemMatch: { userId, invitationState: 'active' } } },
+      {
+        $pull: { members: { userId }, ownerIds: userId },
+        $set: { updatedAt: isoDateTime(new Date()) },
+      },
+    ),
+    db.collection('list_invitations').deleteMany({ inviterId: userId }),
+    db.collection('notifications').deleteMany({ userId }),
+    db.collection('account_exports').deleteMany({ userId }),
+  ])
+  await db
+    .collection('shopping_run_history')
+    .updateMany(
+      { completedByUserId: userId },
+      { $set: { completedByUserId: deletedAccountOwnerId } },
+    )
 }
 
 export async function getAccountDeletionOwnershipBlockers(

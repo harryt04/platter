@@ -4,6 +4,12 @@ import { nextCookies } from 'better-auth/next-js'
 import { getDatabase } from '@/lib/db/mongo-client'
 import { serverEnv } from '@/lib/env/server'
 import { sendPasswordResetEmail } from '@/lib/auth/mailer'
+import {
+  deletePrivateAccountContent,
+  getAccountDeletionOwnershipBlockers,
+  removeAccountMembershipAndPrivateArtifacts,
+} from '@/lib/account-deletion'
+import { getConnectedDatabase } from '@/lib/db/mongo-client'
 
 const env = serverEnv()
 
@@ -23,6 +29,21 @@ export const auth = betterAuth({
     additionalFields: {
       role: { type: 'string', required: false, defaultValue: 'user' },
       locale: { type: 'string', required: false, defaultValue: 'en-US' },
+    },
+    deleteUser: {
+      enabled: true,
+      beforeDelete: async (user) => {
+        const db = await getConnectedDatabase()
+        const blockers = await getAccountDeletionOwnershipBlockers(db, user.id)
+        if (blockers.length > 0) {
+          throw new Error('ACCOUNT_DELETION_OWNERSHIP_BLOCKED')
+        }
+        await deletePrivateAccountContent(db, user.id)
+      },
+      afterDelete: async (user) => {
+        const db = await getConnectedDatabase()
+        await removeAccountMembershipAndPrivateArtifacts(db, user.id)
+      },
     },
   },
   plugins: [nextCookies()],

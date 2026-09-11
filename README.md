@@ -52,6 +52,9 @@ problem document with a `Retry-After` hint. Better Auth authentication and
 password-reset endpoints use enabled endpoint-specific limits; their provider
 429 responses are normalized to the same problem contract without exposing
 provider or credential details.
+MongoDB’s shared index setup covers weighted public discovery, approved public
+canonical-URL deduplication, list membership, one active run per list, and
+history lookup by list and completion date.
 Archived lists preserve read access to their shopping run while disabling
 shopping changes such as completion and amount resets. Owners and editors can
 now confirm an active run through an atomic transition that retains only

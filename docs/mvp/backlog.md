@@ -917,7 +917,7 @@ run completion across devices; 29: Add replaceable importer adapters
       at the 95th percentile and record synchronization failure rates.
 - [ ] Grocery generation produces byte-equivalent domain results for equivalent
       inputs across retry, process, and ordering variations.
-- [ ] Required indexes support public search, canonical URL deduplication, list
+- [x] Required indexes support public search, canonical URL deduplication, list
       membership, active-run lookup, and history by list and date.
 - [ ] A failed importer, parser, normalization step, search extension, analytics
       provider, or worker does not make saved recipes or shopping unavailable.

@@ -37,6 +37,19 @@ export async function ensureSharedIndexes(db: Db) {
     },
   )
   await db.collection('recipes').createIndex(
+    { 'importProvenance.canonicalUrl': 1 },
+    {
+      name: 'recipe_imported_public_canonical_url',
+      partialFilterExpression: {
+        status: 'usable',
+        visibility: 'public',
+        origin: 'imported',
+        importReviewStatus: 'approved',
+        'importProvenance.canonicalUrl': { $exists: true },
+      },
+    },
+  )
+  await db.collection('recipes').createIndex(
     { 'importProvenance.contentFingerprint': 1 },
     {
       name: 'recipe_imported_public_fingerprint',

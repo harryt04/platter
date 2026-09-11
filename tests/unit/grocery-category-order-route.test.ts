@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PATCH } from '@/app/api/v1/lists/[listId]/grocery-categories/order/route'
-import type { GroceryCategoryOrderMutationReceipt } from '@/lib/recipes/grocery-category-ordering'
+import type {
+  GroceryCategoryOrderMutationReceipt,
+  GroceryCategoryOrderMutationResponse,
+} from '@/lib/recipes/grocery-category-ordering'
 
 const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -126,6 +129,7 @@ describe('grocery category order route', () => {
       status: 200,
       response: {
         revision: 4,
+        detail: 'Moved dairy eggs before produce.',
         code: 'GROCERY_CATEGORY_ORDER_CHANGED',
       },
     })
@@ -155,5 +159,61 @@ describe('grocery category order route', () => {
 
     expect(response.status).toBe(409)
     expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('rejects malformed replay receipts without exposing persisted data', async () => {
+    const database = databaseFor()
+    database.run.groceryCategoryOrderMutationReceipts.push({
+      operationId: 'category-order-1',
+      clientId: 'client-1',
+      target: 'grocery-category:dairy-eggs:order',
+      kind: 'move',
+      status: 200,
+      response: {
+        revision: 'not-a-number',
+      } as unknown as GroceryCategoryOrderMutationResponse,
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await PATCH(
+      request({
+        category: 'dairy-eggs',
+        targetCategory: 'produce',
+        placement: 'before',
+        runId: 'run-1',
+        operationId: 'category-order-1',
+        clientId: 'client-1',
+        baseRevision: 3,
+      }),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'GROCERY_CATEGORY_ORDER_UNAVAILABLE',
+    })
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('contains storage failures behind a retryable problem', async () => {
+    getConnectedDatabase.mockRejectedValue(new Error('database unavailable'))
+
+    const response = await PATCH(
+      request({
+        category: 'dairy-eggs',
+        targetCategory: 'produce',
+        placement: 'before',
+        runId: 'run-1',
+        operationId: 'category-order-1',
+        clientId: 'client-1',
+        baseRevision: 3,
+      }),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'GROCERY_CATEGORY_ORDER_UNAVAILABLE',
+    })
   })
 })

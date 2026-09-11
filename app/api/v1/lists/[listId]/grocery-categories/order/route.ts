@@ -12,6 +12,7 @@ import {
 import {
   currentCategoryOrder,
   groceryCategoryOrderMutationReceiptFor,
+  groceryCategoryOrderMutationResponseSchema,
   groceryCategoryOrderRequestSchema,
 } from '@/lib/recipes/grocery-category-ordering'
 import { groupGroceryItemsByDefaultCategory } from '@/lib/recipes/grocery-categories'
@@ -28,6 +29,22 @@ function problem(code: string, title: string, detail: string, status: number) {
     detail,
     code,
   })
+}
+
+function categoryOrderUnavailable() {
+  return problem(
+    'GROCERY_CATEGORY_ORDER_UNAVAILABLE',
+    'Category order temporarily unavailable',
+    'The grocery category order is temporarily unavailable. Try again shortly.',
+    503,
+  )
+}
+
+function responseJson(value: unknown) {
+  const parsed = groceryCategoryOrderMutationResponseSchema.safeParse(value)
+  return parsed.success
+    ? Response.json(parsed.data)
+    : categoryOrderUnavailable()
 }
 
 async function currentCategories(
@@ -88,157 +105,169 @@ export async function PATCH(request: Request, context: RouteContext) {
       422,
     )
 
-  const db = await getConnectedDatabase()
-  const list = await db
-    .collection<ListDocument>('lists')
-    .findOne(listRoleFilter(listId, session.user.id))
-  if (!list)
-    return problem(
-      'LIST_NOT_FOUND',
-      'List not found',
-      'That list is not available to you.',
-      404,
-    )
-  if (list.status !== 'active')
-    return problem(
-      'LIST_NOT_ACTIVE',
-      'List is archived',
-      'Unarchive this list before reordering its groceries.',
-      409,
-    )
-
-  if (list.activeRunId !== parsed.data.runId) return completedRunProblem()
-
-  const runs = db.collection<ShoppingRunDocument>('shopping_runs')
-  const run = await runs.findOne({
-    _id: list.activeRunId,
-    listId,
-    state: 'active',
-  })
-  if (!run)
-    return problem(
-      'LIST_NOT_ACTIVE',
-      'Shopping run unavailable',
-      'This list does not have an active shopping run.',
-      409,
-    )
-
-  const target = `grocery-category:${parsed.data.category}:order`
   try {
-    const receipt = groceryCategoryOrderMutationReceiptFor(
-      run.groceryCategoryOrderMutationReceipts,
-      parsed.data,
-      target,
+    const db = await getConnectedDatabase()
+    const list = await db
+      .collection<ListDocument>('lists')
+      .findOne(listRoleFilter(listId, session.user.id))
+    if (!list)
+      return problem(
+        'LIST_NOT_FOUND',
+        'List not found',
+        'That list is not available to you.',
+        404,
+      )
+    if (list.status !== 'active')
+      return problem(
+        'LIST_NOT_ACTIVE',
+        'List is archived',
+        'Unarchive this list before reordering its groceries.',
+        409,
+      )
+
+    if (list.activeRunId !== parsed.data.runId) return completedRunProblem()
+
+    const runs = db.collection<ShoppingRunDocument>('shopping_runs')
+    const run = await runs.findOne({
+      _id: list.activeRunId,
+      listId,
+      state: 'active',
+    })
+    if (!run)
+      return problem(
+        'LIST_NOT_ACTIVE',
+        'Shopping run unavailable',
+        'This list does not have an active shopping run.',
+        409,
+      )
+
+    const target = `grocery-category:${parsed.data.category}:order`
+    try {
+      const receipt = groceryCategoryOrderMutationReceiptFor(
+        run.groceryCategoryOrderMutationReceipts,
+        parsed.data,
+        target,
+      )
+      if (receipt) return responseJson(receipt.response)
+    } catch {
+      return problem(
+        'OPERATION_ID_REUSED',
+        'Mutation could not be retried',
+        'Use a new operation id for this move.',
+        409,
+      )
+    }
+    if (
+      parsed.data.baseRevision !== undefined &&
+      parsed.data.baseRevision !== run.revision
     )
-    if (receipt) return Response.json(receipt.response)
-  } catch {
-    return problem(
-      'OPERATION_ID_REUSED',
-      'Mutation could not be retried',
-      'Use a new operation id for this move.',
-      409,
+      return problem(
+        'RUN_REVISION_CONFLICT',
+        'Shopping run changed',
+        'Reload the shopping run before reordering groceries.',
+        409,
+      )
+
+    const categories = await currentCategories(db, run)
+    if (
+      !categories.includes(parsed.data.category) ||
+      !categories.includes(parsed.data.targetCategory)
     )
-  }
-  if (
-    parsed.data.baseRevision !== undefined &&
-    parsed.data.baseRevision !== run.revision
-  )
+      return problem(
+        'GROCERY_CATEGORY_NOT_FOUND',
+        'Grocery category not found',
+        'That category is not in the current shopping run.',
+        404,
+      )
+
+    const ordering = currentCategoryOrder(run.categoryOrdering, categories)
+    const sourceIndex = ordering.indexOf(parsed.data.category)
+    const targetIndex = ordering.indexOf(parsed.data.targetCategory)
+    if (sourceIndex === targetIndex)
+      return responseJson({
+        revision: run.revision,
+        detail: 'That grocery category is already in place.',
+        code: 'GROCERY_CATEGORY_ORDER_UNCHANGED',
+      })
+    const nextOrdering = ordering.filter(
+      (category) => category !== parsed.data.category,
+    )
+    const adjustedTargetIndex = nextOrdering.indexOf(parsed.data.targetCategory)
+    nextOrdering.splice(
+      adjustedTargetIndex + (parsed.data.placement === 'after' ? 1 : 0),
+      0,
+      parsed.data.category,
+    )
+    const response = {
+      revision: run.revision + 1,
+      detail: `Moved ${parsed.data.category.replaceAll('-', ' ')} ${parsed.data.placement} ${parsed.data.targetCategory.replaceAll('-', ' ')}.`,
+      code: 'GROCERY_CATEGORY_ORDER_CHANGED' as const,
+    }
+    const updated = await runs.findOneAndUpdate(
+      { _id: run._id, listId, state: 'active', revision: run.revision },
+      {
+        $set: { categoryOrdering: nextOrdering },
+        $push: {
+          groceryCategoryOrderMutationReceipts: {
+            operationId: parsed.data.operationId,
+            clientId: parsed.data.clientId,
+            target,
+            kind: 'move' as const,
+            status: 200 as const,
+            response,
+          },
+        },
+        $inc: { revision: 1 },
+      },
+      { returnDocument: 'after' },
+    )
+    if (updated) {
+      await publishRunMutationEvent(db, {
+        type: 'grocery.category.moved',
+        listId,
+        runId: run._id,
+        revision: response.revision,
+        operationId: parsed.data.operationId,
+        actorId: session.user.id,
+      }).catch(() => undefined)
+      return responseJson(response)
+    }
+
+    const retryRun = await runs.findOne({
+      _id: list.activeRunId,
+      listId,
+      state: 'active',
+    })
+    try {
+      const receipt = groceryCategoryOrderMutationReceiptFor(
+        retryRun?.groceryCategoryOrderMutationReceipts,
+        parsed.data,
+        target,
+      )
+      if (receipt) return responseJson(receipt.response)
+    } catch {
+      return problem(
+        'OPERATION_ID_REUSED',
+        'Mutation could not be retried',
+        'Use a new operation id for this move.',
+        409,
+      )
+    }
     return problem(
       'RUN_REVISION_CONFLICT',
       'Shopping run changed',
       'Reload the shopping run before reordering groceries.',
       409,
     )
-
-  const categories = await currentCategories(db, run)
-  if (
-    !categories.includes(parsed.data.category) ||
-    !categories.includes(parsed.data.targetCategory)
-  )
-    return problem(
-      'GROCERY_CATEGORY_NOT_FOUND',
-      'Grocery category not found',
-      'That category is not in the current shopping run.',
-      404,
-    )
-
-  const ordering = currentCategoryOrder(run.categoryOrdering, categories)
-  const sourceIndex = ordering.indexOf(parsed.data.category)
-  const targetIndex = ordering.indexOf(parsed.data.targetCategory)
-  if (sourceIndex === targetIndex)
-    return Response.json({
-      revision: run.revision,
-      detail: 'That grocery category is already in place.',
-      code: 'GROCERY_CATEGORY_ORDER_UNCHANGED',
-    })
-  const nextOrdering = ordering.filter(
-    (category) => category !== parsed.data.category,
-  )
-  const adjustedTargetIndex = nextOrdering.indexOf(parsed.data.targetCategory)
-  nextOrdering.splice(
-    adjustedTargetIndex + (parsed.data.placement === 'after' ? 1 : 0),
-    0,
-    parsed.data.category,
-  )
-  const response = {
-    revision: run.revision + 1,
-    detail: `Moved ${parsed.data.category.replaceAll('-', ' ')} ${parsed.data.placement} ${parsed.data.targetCategory.replaceAll('-', ' ')}.`,
-    code: 'GROCERY_CATEGORY_ORDER_CHANGED',
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('already used')) {
+      return problem(
+        'OPERATION_ID_REUSED',
+        'Mutation could not be retried',
+        'Use a new operation id for this move.',
+        409,
+      )
+    }
+    return categoryOrderUnavailable()
   }
-  const updated = await runs.findOneAndUpdate(
-    { _id: run._id, listId, state: 'active', revision: run.revision },
-    {
-      $set: { categoryOrdering: nextOrdering },
-      $push: {
-        groceryCategoryOrderMutationReceipts: {
-          operationId: parsed.data.operationId,
-          clientId: parsed.data.clientId,
-          target,
-          kind: 'move' as const,
-          status: 200 as const,
-          response,
-        },
-      },
-      $inc: { revision: 1 },
-    },
-    { returnDocument: 'after' },
-  )
-  if (updated) {
-    await publishRunMutationEvent(db, {
-      type: 'grocery.category.moved',
-      listId,
-      runId: run._id,
-      revision: response.revision,
-      operationId: parsed.data.operationId,
-      actorId: session.user.id,
-    }).catch(() => undefined)
-    return Response.json(response)
-  }
-
-  const retryRun = await runs.findOne({
-    _id: list.activeRunId,
-    listId,
-    state: 'active',
-  })
-  try {
-    const receipt = groceryCategoryOrderMutationReceiptFor(
-      retryRun?.groceryCategoryOrderMutationReceipts,
-      parsed.data,
-      target,
-    )
-    if (receipt) return Response.json(receipt.response)
-  } catch {
-    return problem(
-      'OPERATION_ID_REUSED',
-      'Mutation could not be retried',
-      'Use a new operation id for this move.',
-      409,
-    )
-  }
-  return problem(
-    'RUN_REVISION_CONFLICT',
-    'Shopping run changed',
-    'Reload the shopping run before reordering groceries.',
-    409,
-  )
 }

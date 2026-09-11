@@ -97,6 +97,9 @@ retryable problem contract.
 Recipe selection creation, people changes, version repinning, duplication, and
 removal now validate new and replayed response envelopes and hide storage or
 malformed-replay failures behind that same stable retryable problem contract.
+Grocery category ordering now validates new and replayed response envelopes and
+hides storage or malformed-replay failures behind that same stable retryable
+problem contract.
 The personal recipe-library API now validates recipe envelopes and pagination
 results, passes the user's search text into the library query, and hides
 storage or malformed-record failures behind the same stable retryable problem

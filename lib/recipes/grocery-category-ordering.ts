@@ -19,13 +19,28 @@ export const groceryCategoryOrderRequestSchema = z.object({
   ...selectionMutationMetadataSchema.shape,
 })
 
+export const groceryCategoryOrderMutationResponseSchema = z
+  .object({
+    revision: z.number().int().nonnegative(),
+    detail: z.string().min(1).max(500),
+    code: z.enum([
+      'GROCERY_CATEGORY_ORDER_CHANGED',
+      'GROCERY_CATEGORY_ORDER_UNCHANGED',
+    ]),
+  })
+  .strict()
+
+export type GroceryCategoryOrderMutationResponse = z.infer<
+  typeof groceryCategoryOrderMutationResponseSchema
+>
+
 export type GroceryCategoryOrderMutationReceipt = {
   operationId: string
   clientId: string
   target: string
   kind: 'move'
   status: 200
-  response: Record<string, unknown>
+  response: GroceryCategoryOrderMutationResponse
 }
 
 export function groceryCategoryOrderMutationReceiptFor(

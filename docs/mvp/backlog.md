@@ -969,6 +969,9 @@ complaints; 35: Delete an account safely
         duplication, and removal validate new and replayed response envelopes
         and hide storage or malformed-replay failures behind a stable retryable
         problem response.
+  - [x] Grocery category ordering validates new and replayed response
+        envelopes and hides storage or malformed-replay failures behind a
+        stable retryable problem response.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

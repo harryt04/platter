@@ -68,6 +68,53 @@ describe('GET /api/v1/lists', () => {
 })
 
 describe('PATCH /api/v1/lists/[listId]', () => {
+  it('returns a stable retryable problem when list storage is unavailable', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/lists/list-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ name: 'Weeknight meals' }),
+      }),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({
+      type: 'https://platter.dev/problems/list-lifecycle-unavailable',
+      title: 'List temporarily unavailable',
+      status: 503,
+      detail: 'That list could not be updated. Try again shortly.',
+      code: 'LIST_LIFECYCLE_UNAVAILABLE',
+    })
+  })
+
+  it('does not expose malformed persisted lists from lifecycle updates', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(list),
+      findOneAndUpdate: vi.fn().mockResolvedValue({
+        ...list,
+        activeRunId: '',
+      }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await PATCH(
+      new Request('http://localhost/api/v1/lists/list-1', {
+        method: 'PATCH',
+        body: JSON.stringify({ name: 'Weeknight meals' }),
+      }),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('LIST_LIFECYCLE_UNAVAILABLE')
+  })
+
   it('rejects malformed list ids without querying another list', async () => {
     getSession.mockResolvedValue({ user: { id: 'user-1' } })
     const collection = { findOne: vi.fn() }
@@ -267,6 +314,21 @@ describe('PATCH /api/v1/lists/[listId]', () => {
       }),
       { returnDocument: 'after' },
     )
+  })
+
+  it('returns a stable retryable problem when deletion storage is unavailable', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await DELETE(
+      new Request('http://localhost/api/v1/lists/list-1', {
+        method: 'DELETE',
+      }),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('LIST_LIFECYCLE_UNAVAILABLE')
   })
 
   it('does not let an editor delete a list', async () => {

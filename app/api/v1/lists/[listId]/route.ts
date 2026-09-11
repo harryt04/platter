@@ -5,6 +5,7 @@ import { problemResponse } from '@/lib/contracts/problem'
 import {
   listOwnerFilter,
   listIdSchema,
+  listResponseSchema,
   type ListStatus,
   toPlatterList,
   updateListSchema,
@@ -48,17 +49,22 @@ function invalidJson() {
   })
 }
 
+function listLifecycleUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/list-lifecycle-unavailable',
+    title: 'List temporarily unavailable',
+    status: 503,
+    detail: 'That list could not be updated. Try again shortly.',
+    code: 'LIST_LIFECYCLE_UNAVAILABLE',
+  })
+}
+
 export async function PATCH(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session) return authenticationRequired('Sign in to rename a list.')
 
   const { listId } = await context.params
   if (!listIdSchema.safeParse(listId).success) return listNotFound()
-  const db = await getConnectedDatabase()
-  const filter = listOwnerFilter(listId, session.user.id)
-  const current = await db.collection<ListDocument>('lists').findOne(filter)
-  if (!current) return listNotFound()
-
   let body: unknown
   try {
     body = await request.json()
@@ -66,16 +72,51 @@ export async function PATCH(request: Request, context: RouteContext) {
     return invalidJson()
   }
 
-  if (typeof body === 'object' && body !== null && 'status' in body) {
-    const parsedStatus = updateListStatusSchema.safeParse(body)
-    if (!parsedStatus.success) {
+  try {
+    const db = await getConnectedDatabase()
+    const filter = listOwnerFilter(listId, session.user.id)
+    const current = await db.collection<ListDocument>('lists').findOne(filter)
+    if (!current) return listNotFound()
+
+    if (typeof body === 'object' && body !== null && 'status' in body) {
+      const parsedStatus = updateListStatusSchema.safeParse(body)
+      if (!parsedStatus.success) {
+        return problemResponse({
+          type: 'https://platter.dev/problems/validation-failed',
+          title: 'Check the list status',
+          status: 422,
+          detail: 'Choose whether the list is active or archived.',
+          code: 'VALIDATION_FAILED',
+          fields: { status: ['Choose active or archived.'] },
+        })
+      }
+
+      const updatedAt = isoDateTime(new Date())
+      const updated = await db
+        .collection<ListDocument>('lists')
+        .findOneAndUpdate(
+          filter,
+          { $set: { status: parsedStatus.data.status, updatedAt } },
+          { returnDocument: 'after' },
+        )
+      if (!updated) return listNotFound()
+
+      const response = listResponseSchema.safeParse({
+        list: toPlatterList(updated),
+      })
+      if (!response.success) throw new Error('Invalid list lifecycle response.')
+      return Response.json(response.data)
+    }
+
+    const parsed = updateListSchema.safeParse(body)
+    if (!parsed.success) {
       return problemResponse({
         type: 'https://platter.dev/problems/validation-failed',
-        title: 'Check the list status',
+        title: 'Check the list name',
         status: 422,
-        detail: 'Choose whether the list is active or archived.',
+        detail: 'A list needs a name.',
         code: 'VALIDATION_FAILED',
-        fields: { status: ['Choose active or archived.'] },
+        fields: { name: parsed.error.issues.map((issue) => issue.message) },
       })
     }
 
@@ -84,37 +125,19 @@ export async function PATCH(request: Request, context: RouteContext) {
       .collection<ListDocument>('lists')
       .findOneAndUpdate(
         filter,
-        { $set: { status: parsedStatus.data.status, updatedAt } },
+        { $set: { name: parsed.data.name, updatedAt } },
         { returnDocument: 'after' },
       )
     if (!updated) return listNotFound()
 
-    return Response.json({ list: toPlatterList(updated) })
-  }
-
-  const parsed = updateListSchema.safeParse(body)
-  if (!parsed.success) {
-    return problemResponse({
-      type: 'https://platter.dev/problems/validation-failed',
-      title: 'Check the list name',
-      status: 422,
-      detail: 'A list needs a name.',
-      code: 'VALIDATION_FAILED',
-      fields: { name: parsed.error.issues.map((issue) => issue.message) },
+    const response = listResponseSchema.safeParse({
+      list: toPlatterList(updated),
     })
+    if (!response.success) throw new Error('Invalid list lifecycle response.')
+    return Response.json(response.data)
+  } catch {
+    return listLifecycleUnavailable()
   }
-
-  const updatedAt = isoDateTime(new Date())
-  const updated = await db
-    .collection<ListDocument>('lists')
-    .findOneAndUpdate(
-      filter,
-      { $set: { name: parsed.data.name, updatedAt } },
-      { returnDocument: 'after' },
-    )
-  if (!updated) return listNotFound()
-
-  return Response.json({ list: toPlatterList(updated) })
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
@@ -123,20 +146,27 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   const { listId } = await context.params
   if (!listIdSchema.safeParse(listId).success) return listNotFound()
-  const deletedAt = isoDateTime(new Date())
-  const deleted = await (
-    await getConnectedDatabase()
-  )
-    .collection<ListDocument>('lists')
-    .findOneAndUpdate(
-      listOwnerFilter(listId, session.user.id),
-      {
-        $set: { status: 'deleted' satisfies ListStatus, updatedAt: deletedAt },
-      },
-      { returnDocument: 'after' },
+  try {
+    const deletedAt = isoDateTime(new Date())
+    const deleted = await (
+      await getConnectedDatabase()
     )
+      .collection<ListDocument>('lists')
+      .findOneAndUpdate(
+        listOwnerFilter(listId, session.user.id),
+        {
+          $set: {
+            status: 'deleted' satisfies ListStatus,
+            updatedAt: deletedAt,
+          },
+        },
+        { returnDocument: 'after' },
+      )
 
-  if (!deleted) return listNotFound()
+    if (!deleted) return listNotFound()
 
-  return new Response(null, { status: 204 })
+    return new Response(null, { status: 204 })
+  } catch {
+    return listLifecycleUnavailable()
+  }
 }

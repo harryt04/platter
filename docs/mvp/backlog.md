@@ -910,6 +910,9 @@ complaints; 35: Delete an account safely
   - [x] Authenticated list collection reads and creation writes validate
         client-facing envelopes and return stable retryable problems for
         storage or malformed persisted/output data.
+  - [x] Owner-only list lifecycle updates and deletes validate mutation
+        responses and hide storage or malformed-record failures behind a stable
+        retryable problem response.
   - [x] Account profile reads and updates validate the client-facing profile
         envelope and hide authentication or malformed persisted profile
         failures behind stable retryable problems.

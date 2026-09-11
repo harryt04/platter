@@ -81,6 +81,9 @@ receipts.
 Authenticated list collection reads and creation writes validate their
 client-facing envelopes and hide storage or malformed-record failures behind
 stable retryable problems.
+Owner-only list lifecycle updates and deletes now use the same validated
+response and retryable storage-failure boundary, without exposing malformed
+persisted list records or database details.
 The personal recipe-library API now validates recipe envelopes and pagination
 results, passes the user's search text into the library query, and hides
 storage or malformed-record failures behind the same stable retryable problem

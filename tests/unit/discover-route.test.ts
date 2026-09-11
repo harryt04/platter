@@ -29,7 +29,15 @@ describe('GET /api/v1/discover/recipes', () => {
   it('searches public recipes without requiring a session', async () => {
     getConnectedDatabase.mockResolvedValue({})
     searchRecipes.mockResolvedValue({
-      results: [{ id: 'recipe-1', title: 'Soup', visibility: 'public' }],
+      results: [
+        {
+          id: 'recipe-1',
+          title: 'Soup',
+          source: 'Platter community',
+          score: '1',
+          visibility: 'public',
+        },
+      ],
     })
 
     const response = await GET(
@@ -40,7 +48,15 @@ describe('GET /api/v1/discover/recipes', () => {
 
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({
-      results: [{ id: 'recipe-1', title: 'Soup', visibility: 'public' }],
+      results: [
+        {
+          id: 'recipe-1',
+          title: 'Soup',
+          source: 'Platter community',
+          score: '1',
+          visibility: 'public',
+        },
+      ],
     })
     expect(searchRecipes).toHaveBeenCalledWith({
       text: 'onions',
@@ -118,5 +134,28 @@ describe('GET /api/v1/discover/recipes', () => {
     expect(limited?.headers.get('retry-after')).toMatch(/^\d+$/)
     expect((await limited?.json()).code).toBe('RATE_LIMITED')
     expect(searchRecipes).toHaveBeenCalledTimes(120)
+  })
+
+  it('returns a stable problem when the provider returns an invalid response', async () => {
+    getConnectedDatabase.mockResolvedValue({})
+    searchRecipes.mockResolvedValue({
+      results: [{ id: 'recipe-1', title: 'Soup', visibility: 'public' }],
+    })
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/discover/recipes?q=soup'),
+    )
+
+    expect(response.status).toBe(502)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(await response.json()).toEqual({
+      type: 'https://platter.dev/problems/search-response-invalid',
+      title: 'Search unavailable',
+      status: 502,
+      detail: 'The public recipe search returned an invalid response.',
+      code: 'SEARCH_RESPONSE_INVALID',
+    })
   })
 })

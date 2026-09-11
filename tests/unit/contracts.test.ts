@@ -114,7 +114,12 @@ describe('lists', () => {
     expect(listAcceptsShoppingOperations({ status: 'deleted' })).toBe(false)
   })
 })
-import { decimalString, entityId, isoDateTime } from '@/lib/contracts/ids'
+import {
+  decimalString,
+  entityId,
+  isoDateTime,
+  opaqueCursorSchema,
+} from '@/lib/contracts/ids'
 import { problemSchema } from '@/lib/contracts/problem'
 import { listIdSchema } from '@/lib/lists'
 import {
@@ -149,6 +154,18 @@ describe('foundation contracts', () => {
       false,
     )
     expect(listIdSchema.safeParse('list-\u0000-1').success).toBe(false)
+  })
+
+  it('treats pagination cursors as bounded URL-safe opaque values', () => {
+    expect(
+      opaqueCursorSchema.safeParse('eyJpZCI6InJlY2lwZS0xIn0').success,
+    ).toBe(true)
+    expect(opaqueCursorSchema.safeParse('cursor with spaces').success).toBe(
+      false,
+    )
+    expect(
+      opaqueCursorSchema.safeParse(`cursor-${'x'.repeat(500)}`).success,
+    ).toBe(false)
   })
 
   it('stores only a hash of an unguessable invitation token with an expiry', () => {

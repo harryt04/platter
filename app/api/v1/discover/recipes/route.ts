@@ -1,8 +1,10 @@
 import { z } from 'zod'
+import { opaqueCursorSchema } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { decodeRecipeSearchCursor } from '@/lib/search/mongo-provider'
 import { createRecipeSearchProvider } from '@/lib/search/default-provider'
+import { recipeSearchResponseSchema } from '@/lib/search/provider'
 import {
   checkRateLimit,
   rateLimitProblemResponse,
@@ -28,7 +30,7 @@ const searchParamsSchema = z.object({
   cuisine: z.string().trim().max(100).optional(),
   tags: z.string().trim().max(500).optional(),
   dietaryLabels: z.string().trim().max(500).optional(),
-  cursor: z.string().max(500).optional(),
+  cursor: opaqueCursorSchema.optional(),
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
 })
 
@@ -90,5 +92,16 @@ export async function GET(request: Request) {
     },
   })
 
-  return Response.json(recipes)
+  const response = recipeSearchResponseSchema.safeParse(recipes)
+  if (!response.success) {
+    return problemResponse({
+      type: 'https://platter.dev/problems/search-response-invalid',
+      title: 'Search unavailable',
+      status: 502,
+      detail: 'The public recipe search returned an invalid response.',
+      code: 'SEARCH_RESPONSE_INVALID',
+    })
+  }
+
+  return Response.json(response.data)
 }

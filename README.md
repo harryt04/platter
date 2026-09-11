@@ -131,6 +131,9 @@ search page and API backed by Mongo text search across recipe titles,
 ingredients, source metadata, cuisines, tags, and dietary labels.
 Discovery filters compose with stable rank-and-ID cursor pagination, and the
 page preserves active filters while loading more results.
+Public discovery validates opaque cursors through the shared contract and
+returns a stable problem response if a search provider produces an invalid
+payload, without exposing provider or database details.
 Public discovery selects the built-in MongoDB search provider by default, so
 the core search flow remains self-hostable without a paid or proprietary
 search service. Mongo-backed integration fixtures also verify weighted field

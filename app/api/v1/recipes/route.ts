@@ -1,5 +1,6 @@
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { getSession } from '@/lib/auth/authorization'
+import { opaqueCursorSchema } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
 import {
   decodeRecipeLibraryCursor,
@@ -22,7 +23,7 @@ const librarySearchParamsSchema = z.object({
     .trim()
     .max(100, 'Search terms must be 100 characters or fewer.')
     .default(''),
-  cursor: z.string().max(500).optional(),
+  cursor: opaqueCursorSchema.optional(),
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
 })
 

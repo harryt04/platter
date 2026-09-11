@@ -15,6 +15,17 @@ export const opaqueIdSchema = z
     'Identifiers cannot contain control characters.',
   )
 
+/** Shared route boundary for opaque, URL-safe pagination cursors. */
+export const opaqueCursorSchema = z
+  .string({ error: 'Enter a pagination cursor.' })
+  .trim()
+  .min(1, 'Enter a pagination cursor.')
+  .max(500, 'Pagination cursors must be 500 characters or fewer.')
+  .regex(
+    /^[A-Za-z0-9_-]+$/,
+    'Pagination cursors must use URL-safe opaque values.',
+  )
+
 export const shoppingRunIdSchema = opaqueIdSchema
 
 export function entityId(value: string): EntityId {

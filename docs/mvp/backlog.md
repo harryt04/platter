@@ -794,7 +794,7 @@ a privacy-appropriate export of the data associated with them.
 **Blocked by:** 01: Create and manage lists; 08: Version recipes and control
 visibility; 09: Manage the personal recipe library
 
-**Status:** ready-for-agent
+**Status:** implemented
 
 - [x] A signed-in user can view and update supported profile fields, including
       display name and locale, with server validation.
@@ -806,7 +806,7 @@ visibility; 09: Manage the personal recipe library
       complaint contacts, and their creation and download are authorized.
 - [x] Account and export operations have clear progress, expiry, failure, and
       retry behavior with no sensitive data in analytics or logs.
-- [ ] Integration tests cover ownership, export contents, locale, expiry, and
+- [x] Integration tests cover ownership, export contents, locale, expiry, and
       attempts to retrieve another user's export.
 
 ## 35: Delete an account safely

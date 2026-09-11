@@ -23,7 +23,8 @@ list history. Export downloads use an owner-scoped opaque ID, never serialize
 other list members, omit import idempotency keys, and expire after 24 hours.
 The account panel shows locale-formatted expiry, reports preparation progress
 and failures, and offers a retry without sending export content to analytics or
-logs.
+logs. Mongo-backed integration coverage verifies owner scoping, export contents,
+locale preservation, expiry, and cross-account download rejection.
 Archived lists preserve read access to their shopping run while disabling
 shopping changes such as completion and amount resets. Owners and editors can
 now confirm an active run through an atomic transition that retains only

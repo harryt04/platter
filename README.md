@@ -526,3 +526,9 @@ SMTP, analytics, and future Google OAuth guidance.
 Integration tests refuse to write to a development database. For a host-side
 Mongo replica set, use a test database and direct connection, for example:
 `MONGODB_URI='mongodb://127.0.0.1:27017/?directConnection=true' MONGODB_DATABASE=platter_test npm run test:integration`.
+
+The integration foundation suite includes a synthetic performance guard for
+public discovery and normal list loads. It seeds 100 public recipes and 20
+lists, measures 20 requests per surface in batches of five concurrent
+requests, and requires each surface's 95th-percentile response to remain
+under two seconds while returning useful content.

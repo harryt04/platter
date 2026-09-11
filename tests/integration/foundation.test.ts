@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Db } from 'mongodb'
+import { GET as getDiscovery } from '@/app/api/v1/discover/recipes/route'
+import { GET as getLists } from '@/app/api/v1/lists/route'
 import { GET } from '@/app/api/v1/recipes/[recipeId]/route'
 import { isoDateTime } from '@/lib/contracts/ids'
 import { getConnectedDatabase, getMongoClient } from '@/lib/db/mongo-client'
@@ -50,8 +52,48 @@ const performanceRecipeIds = Array.from(
   { length: 100 },
   (_, index) => `${fixtureToken}-performance-${index}`,
 )
+const performanceListIds = Array.from(
+  { length: 20 },
+  (_, index) => `${fixtureToken}-performance-list-${index}`,
+)
+
+const performanceSampleCount = 20
+const performanceConcurrency = 5
+const performanceBudgetMs = 2_000
 
 const timestamp = isoDateTime('2026-09-10T12:00:00.000Z')
+
+function p95(values: number[]) {
+  const sorted = [...values].sort((left, right) => left - right)
+  return sorted[Math.ceil(sorted.length * 0.95) - 1] ?? Number.POSITIVE_INFINITY
+}
+
+async function measureConcurrent<T>(
+  request: () => Promise<T>,
+  assertUseful: (result: T) => void | Promise<void>,
+) {
+  const durations: number[] = []
+  for (
+    let offset = 0;
+    offset < performanceSampleCount;
+    offset += performanceConcurrency
+  ) {
+    await Promise.all(
+      Array.from({
+        length: Math.min(
+          performanceConcurrency,
+          performanceSampleCount - offset,
+        ),
+      }).map(async () => {
+        const startedAt = performance.now()
+        const result = await request()
+        await assertUseful(result)
+        durations.push(performance.now() - startedAt)
+      }),
+    )
+  }
+  return p95(durations)
+}
 
 function recipeDocument(
   id: string,
@@ -172,7 +214,7 @@ describe('recipe visibility and immutable versions', () => {
         versionNumber: 2,
       },
       publicSearchRecipe(rankingRecipeIds[0], {
-        title: `${rankingToken} title match`,
+        title: `${rankingToken} ${rankingToken} title match`,
         ingredients: [
           {
             originalText: '2 onions',
@@ -187,7 +229,7 @@ describe('recipe visibility and immutable versions', () => {
         title: 'Ingredient match',
         ingredients: [
           {
-            originalText: `2 ${rankingToken}`,
+            originalText: '2 onions',
             quantity: '2',
             unit: 'each',
             ingredientName: rankingToken,
@@ -233,6 +275,24 @@ describe('recipe visibility and immutable versions', () => {
       createdAt: timestamp,
       updatedAt: timestamp,
     })
+    await db.collection<ListDocument>('lists').insertMany(
+      performanceListIds.map((id) => ({
+        _id: id,
+        name: `${fixtureToken} performance list`,
+        ownerIds: [ownerId],
+        status: 'active' as const,
+        activeRunId: `${id}-run`,
+        members: [
+          {
+            userId: ownerId,
+            role: 'owner' as const,
+            invitationState: 'active' as const,
+          },
+        ],
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      })),
+    )
     await db.collection<RecipeShareDocument>('recipe_shares').insertOne({
       _id: `${fixtureToken}-share`,
       recipeId: sharedRecipeId,
@@ -258,6 +318,9 @@ describe('recipe visibility and immutable versions', () => {
       },
     })
     await db.collection<ListDocument>('lists').deleteOne({ _id: listId })
+    await db.collection<ListDocument>('lists').deleteMany({
+      _id: { $in: performanceListIds },
+    })
     await db
       .collection<RecipeShareDocument>('recipe_shares')
       .deleteOne({ _id: `${fixtureToken}-share` })
@@ -388,16 +451,35 @@ describe('recipe visibility and immutable versions', () => {
     expect(new Set(pagedIds).size).toBe(paginationRecipeIds.length)
   })
 
-  it('keeps a synthetic public discovery page under the two-second target', async () => {
-    const search = new MongoRecipeSearchProvider(db)
-    const startedAt = performance.now()
-    const response = await search.searchRecipes({
-      text: performanceToken,
-      pageSize: 50,
-    })
+  it('keeps public discovery and normal list loads under the p95 target', async () => {
+    getSession.mockResolvedValue({ user: { id: ownerId } })
 
-    expect(response.results).toHaveLength(50)
-    expect(response.nextCursor).toBeTruthy()
-    expect(performance.now() - startedAt).toBeLessThan(2_000)
+    const discoveryP95 = await measureConcurrent(
+      () =>
+        getDiscovery(
+          new Request(
+            `http://localhost/api/v1/discover/recipes?q=${performanceToken}&pageSize=50`,
+          ),
+        ),
+      async (response) => {
+        expect(response.status).toBe(200)
+        const body = await response.json()
+        expect(body.results).toHaveLength(50)
+      },
+    )
+
+    const listP95 = await measureConcurrent(
+      () => getLists(),
+      async (response) => {
+        expect(response.status).toBe(200)
+        const body = await response.json()
+        expect(body.lists.length).toBeGreaterThanOrEqual(
+          performanceListIds.length,
+        )
+      },
+    )
+
+    expect(discoveryP95).toBeLessThan(performanceBudgetMs)
+    expect(listP95).toBeLessThan(performanceBudgetMs)
   })
 })

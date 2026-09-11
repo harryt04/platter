@@ -804,7 +804,7 @@ visibility; 09: Manage the personal recipe library
       memberships, recipes, saved references, and other appropriate personal data.
 - [x] Exports exclude another member's private account data and restricted
       complaint contacts, and their creation and download are authorized.
-- [ ] Account and export operations have clear progress, expiry, failure, and
+- [x] Account and export operations have clear progress, expiry, failure, and
       retry behavior with no sensitive data in analytics or logs.
 - [ ] Integration tests cover ownership, export contents, locale, expiry, and
       attempts to retrieve another user's export.

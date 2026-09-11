@@ -22,7 +22,7 @@ export default async function AccountPage() {
         initialLocale={initialLocale}
         initialName={session.user.name}
       />
-      <AccountExportPanel />
+      <AccountExportPanel locale={initialLocale} />
     </ContentContainer>
   )
 }

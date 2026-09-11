@@ -65,3 +65,24 @@ export function toProfileSummary(user: {
       : defaultProfileLocale,
   }
 }
+
+/** Format a fixed UTC account-export deadline in the user's locale. */
+export function formatAccountExportExpiry(
+  expiresAt: string,
+  locale: string = defaultProfileLocale,
+) {
+  const date = new Date(expiresAt)
+  try {
+    return `${new Intl.DateTimeFormat(locale, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'UTC',
+    }).format(date)} UTC`
+  } catch {
+    return `${new Intl.DateTimeFormat(defaultProfileLocale, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'UTC',
+    }).format(date)} UTC`
+  }
+}

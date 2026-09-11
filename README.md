@@ -70,6 +70,9 @@ Administrator complaint queue and status updates also hide database and audit
 failures behind stable retryable problem responses without exposing backend
 details. Notification list and read-state routes validate persisted records and
 hide storage or malformed-record failures behind stable retryable problems.
+Authenticated list collection reads and creation writes validate their
+client-facing envelopes and hide storage or malformed-record failures behind
+stable retryable problems.
 MongoDB’s shared index setup covers weighted public discovery, approved public
 canonical-URL deduplication, list membership, one active run per list, and
 history lookup by list and completion date.

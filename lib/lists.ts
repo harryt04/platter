@@ -3,6 +3,8 @@ import { z } from 'zod'
 import {
   entityId,
   isoDateTime,
+  opaqueIdSchema,
+  shoppingRunIdSchema,
   type EntityId,
   type IsoDateTime,
 } from '@/lib/contracts/ids'
@@ -58,6 +60,42 @@ export const listIdSchema = z
     (value) => !/[\u0000-\u001F\u007F]/.test(value),
     'List ids cannot contain control characters.',
   )
+
+const listRoleSchema = z.enum(['owner', 'editor'])
+const listStatusSchema = z.enum(['active', 'archived', 'deleted'])
+const listMemberSchema = z.strictObject({
+  userId: opaqueIdSchema,
+  role: listRoleSchema,
+  invitationState: z.literal('active'),
+})
+
+/** Runtime boundary for the list data exposed to clients. */
+export const platterListSchema = z.strictObject({
+  id: listIdSchema,
+  name: z.string().min(1).max(100),
+  ownerIds: z.array(opaqueIdSchema).min(1),
+  status: listStatusSchema,
+  activeRunId: shoppingRunIdSchema,
+  members: z.array(listMemberSchema).min(1),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+})
+
+/** Runtime boundary for the authenticated list collection response. */
+export const listCollectionResponseSchema = z.strictObject({
+  lists: z.array(platterListSchema),
+})
+
+/** Runtime boundary for list mutation responses. */
+export const listResponseSchema = z.strictObject({
+  list: platterListSchema,
+})
+
+/** Runtime boundary for atomic list creation responses. */
+export const createListResponseSchema = z.strictObject({
+  list: platterListSchema,
+  activeRunId: shoppingRunIdSchema,
+})
 
 export const createListSchema = z.object({ name: listNameSchema })
 export const updateListSchema = z.object({ name: listNameSchema })

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { DELETE, PATCH } from '@/app/api/v1/lists/[listId]/route'
+import { GET } from '@/app/api/v1/lists/route'
 
 const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -25,6 +26,46 @@ const list = {
   createdAt: '2026-09-10T12:00:00.000Z' as `${string}`,
   updatedAt: '2026-09-10T12:00:00.000Z' as `${string}`,
 }
+
+describe('GET /api/v1/lists', () => {
+  it('returns a stable retryable problem when list storage is unavailable', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await GET()
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(await response.json()).toEqual({
+      type: 'https://platter.dev/problems/lists-unavailable',
+      title: 'Lists temporarily unavailable',
+      status: 503,
+      detail: 'Your lists could not be loaded. Try again shortly.',
+      code: 'LISTS_UNAVAILABLE',
+    })
+  })
+
+  it('does not expose malformed persisted list data', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    const collection = {
+      find: vi.fn().mockReturnValue({
+        sort: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue([{ ...list, name: '' }]),
+        }),
+      }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await GET()
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('LISTS_UNAVAILABLE')
+  })
+})
 
 describe('PATCH /api/v1/lists/[listId]', () => {
   it('rejects malformed list ids without querying another list', async () => {

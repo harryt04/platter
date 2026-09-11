@@ -1040,7 +1040,7 @@ violations.
 22: Support offline shopping and reconciliation; 25: Browse history and repeat
 recipes; 31: Process public-content complaints; 35: Delete an account safely
 
-**Status:** ready-for-agent
+**Status:** implemented
 
 - [x] Core flows work without horizontal scrolling at 320 CSS pixels and remain
       clear at supported desktop widths in light, dark, and System themes. The
@@ -1050,7 +1050,7 @@ recipes; 31: Process public-content complaints; 35: Delete an account safely
 - [x] Recipe draft ingredient and instruction controls have item-specific
       accessible names and restore focus to the moved or next remaining item
       after keyboard reorder and removal.
-- [ ] Navigation, dialogs, recipe fields, lists, merge correction, reordering,
+- [x] Navigation, dialogs, recipe fields, lists, merge correction, reordering,
       theme controls, review, and shopping are fully keyboard operable with
       visible focus and correct focus restoration.
   - [x] Shared confirmation dialogs move focus into the dialog, keep Tab and

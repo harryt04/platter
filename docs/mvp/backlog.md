@@ -828,7 +828,7 @@ repeat recipes; 28: Save and deduplicate public imports; 34: Manage account data
       resolvable.
 - [x] Public imports and their provenance follow the stated public-content policy
       rather than disappearing or changing ownership silently.
-- [ ] Authentication sessions, private caches, queued operations, and user-scoped
+- [x] Authentication sessions, private caches, queued operations, and user-scoped
       offline storage are revoked or removed after successful deletion.
 - [ ] The destructive operation is idempotent, auditable without retaining excess
       personal data, and covered across shared ownership and referenced recipes.

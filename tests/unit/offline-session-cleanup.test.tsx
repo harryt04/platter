@@ -1,9 +1,10 @@
 import 'fake-indexeddb/auto'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { entityId, isoDateTime } from '@/lib/contracts/ids'
 import {
   clearOfflineDatabase,
   clearOfflineSession,
+  clearPrivateCaches,
   getOfflineOperations,
   getOfflineShellSnapshot,
   getOfflineSnapshots,
@@ -64,5 +65,27 @@ describe('offline sign-out cleanup', () => {
     await expect(getOfflineShellSnapshot(userId)).resolves.toBeUndefined()
     await expect(getOfflineSnapshots(userId)).resolves.toEqual([])
     await expect(getOfflineOperations(userId)).resolves.toEqual([])
+  })
+
+  it('clears only reserved private caches while leaving public shell caches intact', async () => {
+    const deleteCache = vi.fn().mockResolvedValue(true)
+    vi.stubGlobal('caches', {
+      keys: vi
+        .fn()
+        .mockResolvedValue([
+          'platter-private-user-1-cache',
+          'platter-shell-v2',
+          'platter-private-user-1-more',
+          'platter-private-user-2-cache',
+        ]),
+      delete: deleteCache,
+    })
+
+    await clearPrivateCaches('user-1')
+
+    expect(deleteCache).toHaveBeenCalledTimes(2)
+    expect(deleteCache).toHaveBeenCalledWith('platter-private-user-1-cache')
+    expect(deleteCache).toHaveBeenCalledWith('platter-private-user-1-more')
+    vi.unstubAllGlobals()
   })
 })

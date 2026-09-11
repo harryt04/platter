@@ -27,6 +27,7 @@ import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { authClient } from '@/lib/auth/auth-client'
 import { clearOfflineSession } from '@/lib/offline/database'
+import { PlatterMark } from '@/components/brand/platter-mark'
 
 const groups = [
   {
@@ -51,11 +52,10 @@ export function AppSidebar({
       <SidebarHeader>
         <Link
           href="/lists"
+          aria-label="Platter home"
           className="font-display flex min-h-11 items-center gap-3 text-xl font-semibold"
         >
-          <span className="bg-primary text-primary-foreground flex h-9 w-9 items-center justify-center rounded-md font-sans text-lg">
-            P
-          </span>
+          <PlatterMark aria-hidden="true" className="h-9 w-9 rounded-md" />
           <span className="sidebar-label">Platter</span>
         </Link>
       </SidebarHeader>

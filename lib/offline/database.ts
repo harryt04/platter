@@ -78,6 +78,11 @@ export function openOfflineDatabase(userId: string) {
 }
 
 export const offlineUserStorageKey = 'platter-offline-user-id'
+export const privateCacheNamePrefix = 'platter-private-'
+
+function privateCachePrefixForUser(userId: string) {
+  return `${privateCacheNamePrefix}${encodeURIComponent(userId)}-`
+}
 
 export function rememberOfflineUser(userId: string) {
   if (typeof window === 'undefined') return
@@ -208,16 +213,41 @@ export async function clearOfflineDatabase(userId: string) {
   db.close()
 }
 
-export async function clearOfflineSession() {
-  const userId = getRememberedOfflineUser()
-  if (!userId) return
+/** Remove any Cache Storage entries reserved for authenticated data. */
+export async function clearPrivateCaches(userId?: string) {
+  if (typeof window === 'undefined' || !('caches' in window)) return
   try {
-    await clearOfflineDatabase(userId)
+    const cacheNames = await window.caches.keys()
+    const cachePrefix = userId
+      ? privateCachePrefixForUser(userId)
+      : privateCacheNamePrefix
+    await Promise.all(
+      cacheNames
+        .filter((name) => name.startsWith(cachePrefix))
+        .map((name) => window.caches.delete(name)),
+    )
+  } catch {
+    // Cache Storage may be unavailable in private browsing or older browsers.
+  }
+}
+
+/**
+ * Remove authenticated client state before leaving an account behind.
+ * Supplying the user ID avoids relying on a stale local-storage marker after
+ * account deletion; the marker remains only a fallback for ordinary sign-out.
+ */
+export async function clearOfflineSession(userId?: string) {
+  const rememberedUserId = getRememberedOfflineUser()
+  const targetUserId = userId ?? rememberedUserId
+  try {
+    if (targetUserId) await clearOfflineDatabase(targetUserId)
   } finally {
     try {
-      window.localStorage.removeItem(offlineUserStorageKey)
+      if (!userId || rememberedUserId === userId)
+        window.localStorage.removeItem(offlineUserStorageKey)
     } catch {
-      // The database is still removed even if local storage is unavailable.
+      // The database and cache are still removed when local storage is blocked.
     }
+    if (targetUserId) await clearPrivateCaches(targetUserId)
   }
 }

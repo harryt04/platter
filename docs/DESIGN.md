@@ -133,3 +133,4 @@ The shadcn sidebar documents the expected composition, icon-collapse, mobile beh
 | 2026-09-09 | Cobalt + Marigold color system | Punchy, contrasting, color-vision-conscious signals. |
 | 2026-09-09 | Official shadcn sidebar | Familiar, composable interaction model for an application shell. |
 | 2026-09-09 | System-first theme preference | Matches device expectations while preserving user control in settings. |
+| 2026-09-10 | Market Check brand mark | Makes the grocery checklist the primary identity while retaining a restrained fresh-food cue. |

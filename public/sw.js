@@ -1,5 +1,31 @@
 const CACHE = 'platter-shell-v2'
 const STATIC_CACHE = 'platter-static-v1'
+const PRIVATE_CACHE_PREFIX = 'platter-private-'
+
+function privateCachePrefixForUser(userId) {
+  return `${PRIVATE_CACHE_PREFIX}${encodeURIComponent(userId)}-`
+}
+
+function clearPrivateCaches(userId) {
+  const cachePrefix = userId
+    ? privateCachePrefixForUser(userId)
+    : PRIVATE_CACHE_PREFIX
+  return caches
+    .keys()
+    .then((names) =>
+      Promise.all(
+        names
+          .filter((name) => name.startsWith(cachePrefix))
+          .map((name) => caches.delete(name)),
+      ),
+    )
+}
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'platter.clear-private-caches')
+    event.waitUntil(clearPrivateCaches(event.data.userId))
+})
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches

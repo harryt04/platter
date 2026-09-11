@@ -419,8 +419,8 @@ contract without changing envelope fields.
 - Create a Dexie database factory scoped to the authenticated user. Define
   versioned tables for active-run snapshots and queued operations; product
   payloads must remain behind the typed mutation boundary.
-- On sign-out, close and delete the prior user's private database and clear
-  private caches before navigating to public content.
+- On sign-out or account deletion, close and delete the prior user's private
+  database and clear private caches before navigating to public content.
 - Expose `offline`, `pending`, `syncing`, `synced`, and `failed` states. Never
   label a local operation synchronized until the server accepts it.
 
@@ -492,9 +492,11 @@ typography, all button/form states, focus, badges, banners, skeletons, grocery
 rows, contribution detail, overrides, and both themes. Return `notFound()` for
 this route in production.
 
-Generate a temporary license-safe Platter monogram: Cobalt background, white
-`P`, and sufficient safe area for a maskable icon. Supply SVG source, favicon,
-Apple icon, and 192px and 512px PNG PWA assets. Mark it as replaceable branding.
+Generate a license-safe Platter Market Check mark: a Cobalt background, white
+grocery basket, blue completion check, Marigold fresh-food cue, and sufficient
+safe area for a maskable icon. Supply SVG source, favicon, Apple icon, and
+192px and 512px PNG PWA assets. Keep the mark reusable in the public header and
+collapsed application sidebar.
 
 **Complete when:** the gallery and application shell render correctly at 320px
 and desktop widths, in light and dark themes, with visible focus, no

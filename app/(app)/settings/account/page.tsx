@@ -26,7 +26,10 @@ export default async function AccountPage() {
       />
       <AccountExportPanel locale={initialLocale} />
       <AccountDeletionImpactPanel />
-      <AccountDeletionPanel email={session.user.email} />
+      <AccountDeletionPanel
+        email={session.user.email}
+        userId={session.user.id}
+      />
     </ContentContainer>
   )
 }

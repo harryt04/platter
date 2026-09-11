@@ -17,7 +17,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-export function AccountDeletionPanel({ email }: { email: string }) {
+export function AccountDeletionPanel({
+  email,
+  userId,
+}: {
+  email: string
+  userId: string
+}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [confirmation, setConfirmation] = useState('')
@@ -48,7 +54,7 @@ export function AccountDeletionPanel({ email }: { email: string }) {
       if (!response.ok) {
         throw new Error(result.detail ?? 'We couldn’t delete your account.')
       }
-      await clearOfflineSession().catch(() => undefined)
+      await clearOfflineSession(userId).catch(() => undefined)
       router.push('/sign-in?deleted=1')
     } catch (caught) {
       setError(

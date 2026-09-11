@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { PlatterMark } from '@/components/brand/platter-mark'
 
 export function PublicHeader() {
   return (
@@ -8,9 +9,7 @@ export function PublicHeader() {
         href="/discover"
         className="font-display flex items-center gap-2 text-xl font-semibold sm:gap-3"
       >
-        <span className="bg-primary text-primary-foreground flex h-9 w-9 items-center justify-center rounded-md font-sans text-lg">
-          P
-        </span>
+        <PlatterMark aria-hidden="true" className="h-9 w-9 rounded-md" />
         Platter
       </Link>
       <nav className="ml-auto flex items-center gap-1 sm:gap-2">

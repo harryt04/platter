@@ -1,6 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Platter Market Check</title>
-  <desc id="desc">A grocery basket with a completed checklist and a fresh leaf.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="104" fill="#0057D9"/>
   <path d="M137 222h238l-24 151a46 46 0 0 1-45 38H206a46 46 0 0 1-45-38l-24-151Z" fill="#FFFFFF"/>
   <path d="M186 224c7-68 33-103 70-103s63 35 70 103" fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-width="31"/>

@@ -779,7 +779,7 @@ the required policies and contacts.
 - [x] Hosted public imports cannot be enabled until terms, privacy policy,
       content-removal contact, and repeat-infringer handling are explicitly
       configured and published.
-- [ ] Optional DMCA-agent and notice/counter-notice information can be configured
+- [x] Optional DMCA-agent and notice/counter-notice information can be configured
       for operators who choose that U.S. safe-harbor process.
 - [ ] Optional integrations clearly disclose licensing, cost, and data-sharing
       implications and remain no-ops when unconfigured.

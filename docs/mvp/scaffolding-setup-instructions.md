@@ -254,6 +254,8 @@ Create `.env.example` with names and safe local defaults where possible. Keep
 | `PUBLIC_CATALOG_TERMS_URL`, `PUBLIC_CATALOG_PRIVACY_URL` | Published hosted terms and privacy-policy URLs | Required for production public imports. |
 | `PUBLIC_CATALOG_REMOVAL_CONTACT` | Public content-removal contact | Required for production public imports; do not use a private support credential. |
 | `PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL` | Published repeat-infringer handling URL | Required for production public imports. |
+| `PUBLIC_CATALOG_DMCA_AGENT_NAME`, `PUBLIC_CATALOG_DMCA_AGENT_CONTACT` | Optional public designated-agent name and contact | Configure together when the operator chooses to publish a DMCA agent. |
+| `PUBLIC_CATALOG_DMCA_NOTICE_URL`, `PUBLIC_CATALOG_DMCA_COUNTER_NOTICE_URL` | Optional public notice and counter-notice process URLs | Configure together with the agent fields; these settings are not required to enable imports. |
 | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE` | Hosted SMTP settings | Optional locally. |
 | `REALTIME_PORT` | Socket.IO service port | Local default `3001`. |
 | `NEXT_PUBLIC_REALTIME_URL` | Browser-visible realtime origin | Local default `http://localhost:3001`. |

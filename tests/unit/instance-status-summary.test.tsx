@@ -24,12 +24,17 @@ describe('InstanceStatusSummary', () => {
           PUBLIC_CATALOG_PRIVACY_URL: undefined,
           PUBLIC_CATALOG_REMOVAL_CONTACT: undefined,
           PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL: undefined,
+          PUBLIC_CATALOG_DMCA_AGENT_NAME: undefined,
+          PUBLIC_CATALOG_DMCA_AGENT_CONTACT: undefined,
+          PUBLIC_CATALOG_DMCA_NOTICE_URL: undefined,
+          PUBLIC_CATALOG_DMCA_COUNTER_NOTICE_URL: undefined,
         })}
       />,
     )
 
     expect(screen.getByText('Email delivery')).toBeInTheDocument()
     expect(screen.getByText('Public catalog')).toBeInTheDocument()
+    expect(screen.getByText('Optional DMCA process')).toBeInTheDocument()
     expect(screen.getByText('Policy required')).toBeInTheDocument()
     expect(
       screen.queryByText(/Secret values are never shown here/i),

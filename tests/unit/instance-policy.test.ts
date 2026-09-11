@@ -16,6 +16,10 @@ const baseEnvironment = {
   PUBLIC_CATALOG_PRIVACY_URL: undefined,
   PUBLIC_CATALOG_REMOVAL_CONTACT: undefined,
   PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL: undefined,
+  PUBLIC_CATALOG_DMCA_AGENT_NAME: undefined,
+  PUBLIC_CATALOG_DMCA_AGENT_CONTACT: undefined,
+  PUBLIC_CATALOG_DMCA_NOTICE_URL: undefined,
+  PUBLIC_CATALOG_DMCA_COUNTER_NOTICE_URL: undefined,
 }
 
 describe('instance policy summary', () => {
@@ -129,6 +133,42 @@ describe('instance policy summary', () => {
           id: 'public-catalog',
           status: 'enabled',
           statusLabel: 'Enabled',
+        }),
+      ]),
+    )
+  })
+
+  it('reports optional DMCA settings as incomplete until all public fields exist', () => {
+    expect(
+      getInstancePolicySummary({
+        ...baseEnvironment,
+        PUBLIC_CATALOG_DMCA_AGENT_NAME: 'Platter Rights Agent',
+      }).services,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'dmca',
+          status: 'incomplete',
+          statusLabel: 'Incomplete',
+        }),
+      ]),
+    )
+
+    expect(
+      getInstancePolicySummary({
+        ...baseEnvironment,
+        PUBLIC_CATALOG_DMCA_AGENT_NAME: 'Platter Rights Agent',
+        PUBLIC_CATALOG_DMCA_AGENT_CONTACT: 'rights@example.test',
+        PUBLIC_CATALOG_DMCA_NOTICE_URL: 'https://platter.example/dmca/notice',
+        PUBLIC_CATALOG_DMCA_COUNTER_NOTICE_URL:
+          'https://platter.example/dmca/counter-notice',
+      }).services,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'dmca',
+          status: 'enabled',
+          statusLabel: 'Configured',
         }),
       ]),
     )

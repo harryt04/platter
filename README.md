@@ -244,6 +244,11 @@ set `PUBLIC_CATALOG_POLICIES_PUBLISHED=true` and provide the four corresponding
 [`docs/mvp/deployment.md`](docs/mvp/deployment.md). Local development and
 automated tests can still exercise imports without representing hosted policy
 publication.
+An optional DMCA process can be published by configuring all four
+`PUBLIC_CATALOG_DMCA_*` settings documented in
+[`docs/mvp/deployment.md`](docs/mvp/deployment.md); the public copyright page
+will show the designated agent and notice/counter-notice links. Partial DMCA
+configuration is reported as incomplete but does not block imports.
 The import extraction stage now runs through a typed replaceable adapter
 contract: bounded fetched HTML can produce a normalized candidate, a partial
 candidate with warnings, or an isolated typed failure. Selection tries

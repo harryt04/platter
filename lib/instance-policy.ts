@@ -8,6 +8,7 @@ export type InstanceServiceSummary = {
     | 'email'
     | 'analytics'
     | 'public-catalog'
+    | 'dmca'
     | 'importer'
     | 'moderation'
     | 'source-adapters'
@@ -29,6 +30,10 @@ type PublicCatalogPolicyEnvironment = Pick<
   | 'PUBLIC_CATALOG_PRIVACY_URL'
   | 'PUBLIC_CATALOG_REMOVAL_CONTACT'
   | 'PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL'
+  | 'PUBLIC_CATALOG_DMCA_AGENT_NAME'
+  | 'PUBLIC_CATALOG_DMCA_AGENT_CONTACT'
+  | 'PUBLIC_CATALOG_DMCA_NOTICE_URL'
+  | 'PUBLIC_CATALOG_DMCA_COUNTER_NOTICE_URL'
 >
 
 type InstancePolicyEnvironment = Pick<
@@ -55,6 +60,17 @@ export function publicCatalogPolicyIsReady(
     environment.PUBLIC_CATALOG_PRIVACY_URL &&
     environment.PUBLIC_CATALOG_REMOVAL_CONTACT &&
     environment.PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL,
+  )
+}
+
+export function publicCatalogDmcaPolicyIsReady(
+  environment: PublicCatalogPolicyEnvironment,
+) {
+  return Boolean(
+    environment.PUBLIC_CATALOG_DMCA_AGENT_NAME &&
+    environment.PUBLIC_CATALOG_DMCA_AGENT_CONTACT &&
+    environment.PUBLIC_CATALOG_DMCA_NOTICE_URL &&
+    environment.PUBLIC_CATALOG_DMCA_COUNTER_NOTICE_URL,
   )
 }
 
@@ -120,6 +136,41 @@ function configuredAnalyticsStatus(env: InstancePolicyEnvironment) {
   }
 }
 
+function configuredDmcaStatus(env: InstancePolicyEnvironment) {
+  const configuredFields = [
+    env.PUBLIC_CATALOG_DMCA_AGENT_NAME,
+    env.PUBLIC_CATALOG_DMCA_AGENT_CONTACT,
+    env.PUBLIC_CATALOG_DMCA_NOTICE_URL,
+    env.PUBLIC_CATALOG_DMCA_COUNTER_NOTICE_URL,
+  ]
+  const configured = configuredFields.filter(Boolean).length
+
+  if (configured === 0) {
+    return {
+      status: 'disabled' as const,
+      statusLabel: 'Not configured',
+      detail:
+        'Optional DMCA agent and notice or counter-notice information is not configured.',
+    }
+  }
+
+  if (!publicCatalogDmcaPolicyIsReady(env)) {
+    return {
+      status: 'incomplete' as const,
+      statusLabel: 'Incomplete',
+      detail:
+        'Complete the optional agent, contact, notice, and counter-notice settings together.',
+    }
+  }
+
+  return {
+    status: 'enabled' as const,
+    statusLabel: 'Configured',
+    detail:
+      'The configured public page can identify the designated agent and notice process.',
+  }
+}
+
 export function getInstancePolicySummary(
   environment: InstancePolicyEnvironment = serverEnv(),
 ): InstancePolicySummary {
@@ -133,6 +184,7 @@ export function getInstancePolicySummary(
   )
   const email = configuredEmailStatus(environment)
   const analytics = configuredAnalyticsStatus(environment)
+  const dmca = configuredDmcaStatus(environment)
   const policyReady = publicCatalogPolicyIsReady(environment)
   const hosted = environment.NODE_ENV === 'production'
 
@@ -170,6 +222,11 @@ export function getInstancePolicySummary(
             : hosted
               ? 'Required hosted policies are published; new public URL imports are available.'
               : 'Public URL imports are available for local development; hosted enablement still requires the published policy configuration.',
+      },
+      {
+        id: 'dmca',
+        label: 'Optional DMCA process',
+        ...dmca,
       },
       {
         id: 'importer',

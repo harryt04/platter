@@ -6,8 +6,13 @@ import {
   PageHeader,
   PageSection,
 } from '@/components/shell/page-header'
+import { serverEnv } from '@/lib/env/server'
+import { publicCatalogDmcaPolicyIsReady } from '@/lib/instance-policy'
 
 export default function CopyrightPage() {
+  const environment = serverEnv()
+  const dmcaConfigured = publicCatalogDmcaPolicyIsReady(environment)
+
   return (
     <ContentContainer>
       <PageHeader
@@ -70,6 +75,50 @@ export default function CopyrightPage() {
           </CardContent>
         </Card>
       </div>
+
+      <PageSection title="Optional designated-agent process">
+        <Card>
+          <CardContent className="text-muted-foreground space-y-3 p-6 text-sm">
+            {dmcaConfigured ? (
+              <>
+                <p>
+                  The operator has published optional designated-agent
+                  information for this instance:{' '}
+                  {environment.PUBLIC_CATALOG_DMCA_AGENT_NAME}
+                  {' · '}
+                  {environment.PUBLIC_CATALOG_DMCA_AGENT_CONTACT}.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Button asChild variant="outline">
+                    <a
+                      href={environment.PUBLIC_CATALOG_DMCA_NOTICE_URL}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      Notice process
+                    </a>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <a
+                      href={environment.PUBLIC_CATALOG_DMCA_COUNTER_NOTICE_URL}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      Counter-notice process
+                    </a>
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p>
+                This instance has not configured optional designated-agent or
+                notice and counter-notice information. Contact the operator
+                through the removal process above.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </PageSection>
 
       <PageSection title="What happens next">
         <Card>

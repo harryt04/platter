@@ -38,6 +38,16 @@ new public imports disabled while manual recipes, existing saved recipes, and
 shopping continue to work. Local development and automated tests may exercise
 the import workflow without claiming that hosted policies are published.
 
+Operators who choose to publish an optional DMCA safe-harbor process can also
+set `PUBLIC_CATALOG_DMCA_AGENT_NAME`,
+`PUBLIC_CATALOG_DMCA_AGENT_CONTACT`, `PUBLIC_CATALOG_DMCA_NOTICE_URL`, and
+`PUBLIC_CATALOG_DMCA_COUNTER_NOTICE_URL`. Configure all four together: the
+public copyright page then shows the designated agent and links to both
+processes, while the administrator instance summary reports partial
+configuration without exposing secret values. These settings are optional and
+do not gate public imports; operators remain responsible for determining which
+processes apply to their deployment.
+
 The worker passes only the bounded result of the SSRF-safe fetch stage to an
 import adapter. Adapters implement the typed contract in
 `lib/recipe-import-adapters.ts` and return a normalized candidate, a partial

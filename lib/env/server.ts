@@ -51,6 +51,22 @@ const serverSchema = z.object({
     (value) => (value === '' ? undefined : value),
     z.string().url().optional(),
   ),
+  PUBLIC_CATALOG_DMCA_AGENT_NAME: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().trim().min(3).max(160).optional(),
+  ),
+  PUBLIC_CATALOG_DMCA_AGENT_CONTACT: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().trim().min(3).max(320).optional(),
+  ),
+  PUBLIC_CATALOG_DMCA_NOTICE_URL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().url().optional(),
+  ),
+  PUBLIC_CATALOG_DMCA_COUNTER_NOTICE_URL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().url().optional(),
+  ),
   SMTP_USER: optionalString,
   SMTP_PASSWORD: optionalString,
   SMTP_SECURE: z.coerce.boolean().default(false),

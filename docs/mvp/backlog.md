@@ -1014,8 +1014,11 @@ recipes; 31: Process public-content complaints; 35: Delete an account safely
 
 **Status:** ready-for-agent
 
-- [ ] Core flows work without horizontal scrolling at 320 CSS pixels and remain
-      clear at supported desktop widths in light, dark, and System themes.
+- [x] Core flows work without horizontal scrolling at 320 CSS pixels and remain
+      clear at supported desktop widths in light, dark, and System themes. The
+      authenticated shopping checklist has Playwright coverage at 320px in
+      both resolved System themes plus explicit Light and Dark preferences,
+      including axe checks, keyboard activation, and 44px touch-target checks.
 - [ ] Navigation, dialogs, recipe fields, lists, merge correction, reordering,
       theme controls, review, and shopping are fully keyboard operable with
       visible focus and correct focus restoration.

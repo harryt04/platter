@@ -27,9 +27,15 @@ export function Button({
     size === 'icon' && 'w-11 px-0',
     className,
   )
-  if (asChild && React.isValidElement<{ className?: string }>(children))
+  if (asChild && React.isValidElement<Record<string, unknown>>(children))
     return React.cloneElement(children, {
-      className: cn(classes, children.props.className),
+      ...props,
+      className: cn(
+        classes,
+        typeof children.props.className === 'string'
+          ? children.props.className
+          : undefined,
+      ),
     })
   return (
     <button className={classes} {...props}>

@@ -74,7 +74,7 @@ export function AppSidebar({
                     }
                     asChild
                   >
-                    <Link href={item.href}>
+                    <Link href={item.href} aria-label={item.label}>
                       <item.icon size={18} />
                       <span className="sidebar-label">{item.label}</span>
                     </Link>
@@ -93,7 +93,7 @@ export function AppSidebar({
                   active={pathname.startsWith(`/lists/${list.id}`)}
                   asChild
                 >
-                  <Link href={`/lists/${list.id}`}>
+                  <Link href={`/lists/${list.id}`} aria-label={list.name}>
                     <ChefHat size={18} />
                     <span className="sidebar-label">{list.name}</span>
                   </Link>
@@ -102,7 +102,7 @@ export function AppSidebar({
             ))}
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link href="/lists/new">
+                <Link href="/lists/new" aria-label="New list">
                   <Plus size={18} />
                   <span className="sidebar-label">New list</span>
                 </Link>
@@ -133,6 +133,7 @@ export function AppSidebar({
           </Button>
         </div>
         <button
+          aria-label="Sign out"
           className="text-muted-foreground hover:text-foreground mt-2 min-h-11 w-full text-left text-xs"
           onClick={async () => {
             await clearOfflineSession().catch(() => undefined)

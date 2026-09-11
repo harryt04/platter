@@ -50,7 +50,7 @@ The primary signal is **Cobalt** and the contrasting secondary signal is **Marig
 
 | Role | Light | Dark | Use |
 | --- | --- | --- | --- |
-| Primary | `#0057D9` | `#3B82F6` | primary action, active navigation, links, focus ring |
+| Primary | `#0057D9` | `#60A5FA` | primary action, active navigation, links, focus ring |
 | Primary foreground | `#FFFFFF` | `#0B1220` | text on primary fills |
 | Secondary | `#F6A700` | `#F6A700` | rare attention/momentum signal, secondary action, small visual anchor |
 | Secondary foreground | `#1E293B` | `#1E293B` | text on marigold; never use white text |

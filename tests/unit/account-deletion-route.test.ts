@@ -30,6 +30,9 @@ describe('account deletion impact route', () => {
     getAccountDeletionImpact.mockResolvedValue({
       ownedLists: 2,
       soleOwnerLists: ['Family'],
+      soleOwnerListDetails: [
+        { listId: 'list-1', listName: 'Family', activeMemberCount: 1 },
+      ],
       memberships: 3,
       manuallyAuthoredRecipes: 4,
       publicImportedRecipes: 1,
@@ -43,6 +46,9 @@ describe('account deletion impact route', () => {
       impact: {
         ownedLists: 2,
         soleOwnerLists: ['Family'],
+        soleOwnerListDetails: [
+          { listId: 'list-1', listName: 'Family', activeMemberCount: 1 },
+        ],
         memberships: 3,
         manuallyAuthoredRecipes: 4,
         publicImportedRecipes: 1,

@@ -11,6 +11,9 @@ afterEach(() => {
 const impact = {
   ownedLists: 2,
   soleOwnerLists: ['Family'],
+  soleOwnerListDetails: [
+    { listId: 'list-1', listName: 'Family', activeMemberCount: 1 },
+  ],
   memberships: 3,
   manuallyAuthoredRecipes: 4,
   publicImportedRecipes: 1,
@@ -32,6 +35,13 @@ describe('AccountDeletionImpactPanel', () => {
     expect(screen.getByText('Manually authored recipes')).toBeInTheDocument()
     expect(screen.getByText('Public imported recipes')).toBeInTheDocument()
     expect(screen.getByText(/only owner of “Family”/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Transfer ownership' }),
+    ).toHaveAttribute('href', '/lists/list-1/members')
+    expect(screen.getByRole('link', { name: 'Delete list' })).toHaveAttribute(
+      'href',
+      '/lists/list-1',
+    )
     expect(
       screen.getByText(/No deletion starts from this summary/i),
     ).toBeInTheDocument()

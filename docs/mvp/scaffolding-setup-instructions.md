@@ -563,7 +563,7 @@ claims that a control already works.
 | `/lists/[listId]/history/[runId]` | Completion date and selected immutable recipe versions only. |
 | `/settings` | Settings index. |
 | `/settings/appearance` | Working System/Light/Dark selection. |
-| `/settings/account` | Account details and future deletion-impact placeholder. |
+| `/settings/account` | Account details, export controls, and ownership-aware deletion impact. |
 
 ### Administrative routes
 

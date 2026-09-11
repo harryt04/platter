@@ -821,7 +821,7 @@ repeat recipes; 28: Save and deduplicate public imports; 34: Manage account data
 
 - [x] Before confirmation, the user sees a concrete impact summary for owned
       lists, memberships, manually authored recipes, public imports, and history.
-- [ ] A last owner must transfer ownership or explicitly delete each affected
+- [x] A last owner must transfer ownership or explicitly delete each affected
       list before account deletion can proceed.
 - [ ] Private content is deleted or anonymized according to documented policy,
       while immutable minimal snapshots keep legitimate completed-run references

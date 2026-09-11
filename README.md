@@ -25,8 +25,9 @@ The account panel shows locale-formatted expiry, reports preparation progress
 and failures, and offers a retry without sending export content to analytics or
 logs. Account settings also load a server-scoped, count-only deletion impact
 summary covering owned lists, memberships, authored recipes, public imported
-recipes, and completed shopping runs; sole-owner list names are shown so a
-future confirmation can explain the ownership boundary. Mongo-backed
+recipes, and completed shopping runs. Sole-owner lists include per-list links
+to transfer ownership or delete the list, and an authenticated readiness check
+stays blocked until every ownership boundary is resolved. Mongo-backed
 integration coverage verifies owner scoping, export contents, locale
 preservation, expiry, and cross-account download rejection.
 Archived lists preserve read access to their shopping run while disabling

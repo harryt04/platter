@@ -1,11 +1,29 @@
 import { describe, expect, it, vi } from 'vitest'
-import { getAccountDeletionImpact } from '@/lib/account-deletion'
+import {
+  getAccountDeletionImpact,
+  getAccountDeletionOwnershipBlockers,
+} from '@/lib/account-deletion'
 
 describe('getAccountDeletionImpact', () => {
   it('counts only the current user’s active memberships and owned content', async () => {
     const lists = [
-      { _id: 'list-1', name: 'Family', ownerIds: ['user-1'] },
-      { _id: 'list-2', name: 'Friends', ownerIds: ['user-1', 'user-2'] },
+      {
+        _id: 'list-1',
+        name: 'Family',
+        ownerIds: ['user-1'],
+        members: [
+          { userId: 'user-1', role: 'owner', invitationState: 'active' },
+        ],
+      },
+      {
+        _id: 'list-2',
+        name: 'Friends',
+        ownerIds: ['user-1', 'user-2'],
+        members: [
+          { userId: 'user-1', role: 'owner', invitationState: 'active' },
+          { userId: 'user-2', role: 'owner', invitationState: 'active' },
+        ],
+      },
     ]
     const countDocuments = vi
       .fn()
@@ -30,6 +48,9 @@ describe('getAccountDeletionImpact', () => {
     await expect(getAccountDeletionImpact(db, 'user-1')).resolves.toEqual({
       ownedLists: 2,
       soleOwnerLists: ['Family'],
+      soleOwnerListDetails: [
+        { listId: 'list-1', listName: 'Family', activeMemberCount: 1 },
+      ],
       memberships: 2,
       manuallyAuthoredRecipes: 2,
       publicImportedRecipes: 3,
@@ -51,5 +72,51 @@ describe('getAccountDeletionImpact', () => {
     expect(countDocuments).toHaveBeenNthCalledWith(3, {
       listId: { $in: ['list-1', 'list-2'] },
     })
+  })
+
+  it('returns only active lists where the user is the sole owner', async () => {
+    const lists = [
+      {
+        _id: 'list-1',
+        name: 'Family',
+        ownerIds: ['user-1'],
+        members: [
+          { userId: 'user-1', role: 'owner', invitationState: 'active' },
+          { userId: 'user-2', role: 'editor', invitationState: 'active' },
+        ],
+      },
+      {
+        _id: 'list-2',
+        name: 'Shared',
+        ownerIds: ['user-1', 'user-2'],
+        members: [
+          { userId: 'user-1', role: 'owner', invitationState: 'active' },
+          { userId: 'user-2', role: 'owner', invitationState: 'active' },
+        ],
+      },
+      {
+        _id: 'list-3',
+        name: 'Archived',
+        ownerIds: ['user-1'],
+        members: [
+          { userId: 'user-1', role: 'owner', invitationState: 'active' },
+        ],
+      },
+    ]
+    const db = {
+      collection: vi.fn().mockReturnValue({
+        find: () => ({
+          project: () => ({
+            sort: () => ({ toArray: async () => lists.slice(0, 2) }),
+          }),
+        }),
+      }),
+    } as never
+
+    await expect(
+      getAccountDeletionOwnershipBlockers(db, 'user-1'),
+    ).resolves.toEqual([
+      { listId: 'list-1', listName: 'Family', activeMemberCount: 2 },
+    ])
   })
 })

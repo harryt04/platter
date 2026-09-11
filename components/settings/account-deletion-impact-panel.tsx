@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -124,14 +125,45 @@ export function AccountDeletionImpactPanel() {
               value={impact.completedShoppingRuns}
             />
             {impact.soleOwnerLists.length > 0 && (
-              <p className="text-muted-foreground mt-4 text-sm">
-                You are the only owner of{' '}
-                {impact.soleOwnerLists.length === 1
-                  ? `“${impact.soleOwnerLists[0]}”`
-                  : `${impact.soleOwnerLists.length} lists`}
-                . Ownership must be transferred or each list must be deleted
-                before account deletion can proceed.
-              </p>
+              <div className="border-warning/40 bg-warning/10 mt-4 space-y-3 rounded-[var(--radius-card)] border p-4">
+                <p className="text-sm">
+                  You are the only owner of{' '}
+                  {impact.soleOwnerLists.length === 1
+                    ? `“${impact.soleOwnerLists[0]}”`
+                    : `${impact.soleOwnerLists.length} lists`}
+                  . Transfer ownership or delete each list before account
+                  deletion can proceed.
+                </p>
+                <ul
+                  className="space-y-3"
+                  aria-label="Lists needing ownership changes"
+                >
+                  {impact.soleOwnerListDetails.map((list) => (
+                    <li
+                      className="flex flex-col gap-2 border-t pt-3 sm:flex-row sm:items-center sm:justify-between"
+                      key={list.listId}
+                    >
+                      <span className="text-sm font-medium">
+                        {list.listName}
+                      </span>
+                      <span className="flex flex-wrap gap-2">
+                        <Link
+                          className="text-primary inline-flex min-h-11 items-center text-sm underline underline-offset-4"
+                          href={`/lists/${encodeURIComponent(list.listId)}/members`}
+                        >
+                          Transfer ownership
+                        </Link>
+                        <Link
+                          className="text-primary inline-flex min-h-11 items-center text-sm underline underline-offset-4"
+                          href={`/lists/${encodeURIComponent(list.listId)}`}
+                        >
+                          Delete list
+                        </Link>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </dl>
         ) : null}

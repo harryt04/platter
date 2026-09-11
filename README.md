@@ -17,6 +17,10 @@ in-product notifications for invitations and member role or removal changes,
 with authenticated deep links and independent read state.
 The notification contract is membership-only: purchased checks and routine
 grocery edits have no supported notification event or delivery path.
+Account settings now let signed-in users prepare a private JSON export of
+their profile, memberships, authored recipes, saved references, imports, and
+list history. Export downloads use an owner-scoped opaque ID, never serialize
+other list members, omit import idempotency keys, and expire after 24 hours.
 Archived lists preserve read access to their shopping run while disabling
 shopping changes such as completion and amount resets. Owners and editors can
 now confirm an active run through an atomic transition that retains only

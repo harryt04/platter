@@ -54,6 +54,8 @@ Recipe calculation, merging, and synchronization are the product’s core promis
 | Offline operation | `Saved on this device. We’ll sync it when you’re back online.` |
 | Reconciliation | `This item changed while you were offline. Showing the latest shared version.` |
 | Shared destructive change | `Removing Tacos will remove 6 grocery contributions from the Family run.` |
+| Account export ready | `Your export is ready to download.` Keep the file private and state its expiry. |
+| Account export failure | `We couldn’t prepare your export. Try again.` |
 
 Avoid vague confirmation such as `Updated`, `Success`, `Conflict detected`, or `Something changed` when Platter can name the object and consequence.
 

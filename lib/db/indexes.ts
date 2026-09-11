@@ -69,6 +69,9 @@ export async function ensureSharedIndexes(db: Db) {
     .collection('list_invitations')
     .createIndex({ listId: 1, status: 1, expiresAt: 1 })
   await db.collection('notifications').createIndex({ userId: 1, createdAt: -1 })
+  await db
+    .collection('account_exports')
+    .createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 })
   await db.collection('complaints').createIndex({ createdAt: -1 })
   await db.collection('complaints').createIndex({ status: 1, receivedAt: -1 })
   await db.collection('complaint_access_audit').createIndex({ occurredAt: -1 })

@@ -800,9 +800,9 @@ visibility; 09: Manage the personal recipe library
       display name and locale, with server validation.
 - [x] Locale affects user-facing date and supported unit presentation without
       changing deterministic stored calculation values.
-- [ ] A user can request and securely retrieve an export of their account,
+- [x] A user can request and securely retrieve an export of their account,
       memberships, recipes, saved references, and other appropriate personal data.
-- [ ] Exports exclude another member's private account data and restricted
+- [x] Exports exclude another member's private account data and restricted
       complaint contacts, and their creation and download are authorized.
 - [ ] Account and export operations have clear progress, expiry, failure, and
       retry behavior with no sensitive data in analytics or logs.

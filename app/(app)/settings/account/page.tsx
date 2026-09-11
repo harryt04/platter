@@ -2,6 +2,7 @@ import { AccountProfileForm } from '@/components/settings/account-profile-form'
 import { requireSession } from '@/lib/auth/authorization'
 import { defaultProfileLocale, profileLocaleOptions } from '@/lib/account'
 import { ContentContainer, PageHeader } from '@/components/shell/page-header'
+import { AccountExportPanel } from '@/components/settings/account-export-panel'
 
 export default async function AccountPage() {
   const session = await requireSession('/settings/account')
@@ -21,6 +22,7 @@ export default async function AccountPage() {
         initialLocale={initialLocale}
         initialName={session.user.name}
       />
+      <AccountExportPanel />
     </ContentContainer>
   )
 }

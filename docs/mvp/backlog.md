@@ -1105,9 +1105,12 @@ and responsive QA
 - [x] Every acceptance criterion in the PRD has a traceable automated test or a
       documented, repeatable manual verification with captured evidence in
       [the acceptance traceability matrix](acceptance-traceability.md).
-- [ ] The application remains installable and the entire core workflow works
+- [x] The application remains installable and the entire core workflow works
       with self-hosted MongoDB and no paid recipe, search, analytics, or other
-      proprietary API.
+      proprietary API. The non-skipped `routes.spec.ts` browser journey
+      registers a user, authors and publishes a manual recipe, selects it at a
+      different serving count, reviews the generated grocery requirement, and
+      opens the shopping checklist without optional paid integrations.
 - [x] Data model, importer adapter contract, grocery calculations,
       synchronization protocol, privacy boundaries, indexes, migrations, and
       deployment assumptions are current and linked from contributor docs in

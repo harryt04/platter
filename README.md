@@ -232,7 +232,11 @@ on the detail page. Unknown image rights are shown explicitly as “Unknown — 
 displayed publicly”; public pages never infer reuse permission from Schema.org
 metadata or public source accessibility. Anonymous readers receive an
 explicit sign-in handoff on the detail page before saving or adding a recipe to
-a list, with the recipe URL preserved through authentication.
+a list, with the recipe URL preserved through authentication. The Chromium
+browser suite also runs a non-skipped self-hosted journey that registers an
+account, authors and publishes a manual recipe, selects it at a different
+serving count, reviews its generated grocery requirement, and opens the
+shopping checklist without paid recipe, search, or analytics services.
 Suppressed, draft, and list-shared recipe versions remain available through
 authorized private management paths but are excluded from public detail reads,
 anonymous rendering, and public discovery.

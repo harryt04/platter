@@ -57,6 +57,87 @@ test('public visitors are sent to sign in before opening a checklist', async ({
   ).toBeVisible()
 })
 
+test('completes the manual recipe-to-shopping path without paid integrations', async ({
+  page,
+}) => {
+  const suffix = Date.now()
+  const listName = `Self-hosted list ${suffix}`
+  const recipeTitle = `Self-hosted recipe ${suffix}`
+
+  await page.goto('/sign-up')
+  await page.getByLabel('Name').fill('Self-hosted journey')
+  await page
+    .getByLabel('Email')
+    .fill(`self-hosted-journey-${suffix}@localhost.test`)
+  await page.getByLabel('Password').fill('SelfHostedJourney!2026')
+  await page.getByRole('button', { name: 'Create account' }).click()
+  await expect(page).toHaveURL(/\/lists$/)
+
+  await page.goto('/lists/new')
+  await page.getByRole('textbox', { name: 'List name' }).fill(listName)
+  await page.getByRole('button', { name: 'Create list' }).click()
+  await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
+  const listUrl = page.url()
+
+  await page.goto('/recipes/new')
+  await page.getByRole('textbox', { name: 'Recipe title' }).fill(recipeTitle)
+  await page.getByRole('button', { name: 'Save draft' }).click()
+  await expect(page).toHaveURL(/\/recipes\/[^/]+\/edit$/)
+  const recipeId = page.url().match(/\/recipes\/([^/]+)\/edit$/)?.[1]
+  expect(recipeId).toBeTruthy()
+
+  await page.getByRole('spinbutton', { name: 'Typical people fed' }).fill('4')
+  await page.getByRole('button', { name: 'Add ingredient' }).click()
+  await page
+    .getByRole('textbox', { name: 'Original ingredient line' })
+    .fill('2 tomatoes')
+  await page.getByRole('textbox', { name: 'Quantity' }).fill('2')
+  await page.getByRole('textbox', { name: 'Unit' }).fill('each')
+  await page.getByRole('textbox', { name: 'Ingredient name' }).fill('tomato')
+  await page.getByRole('button', { name: 'Save changes' }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: 'Save new version' })
+    .click()
+  await expect(page.getByText('Recipe sharing')).toBeVisible()
+
+  await page
+    .locator('label')
+    .filter({ hasText: 'Publish to the public catalog' })
+    .getByRole('checkbox')
+    .check()
+  await page.getByRole('button', { name: 'Save sharing' }).click()
+  await expect(
+    page.getByText('This recipe is published to the public catalog.'),
+  ).toBeVisible()
+
+  await page.goto(`/recipes/${recipeId}`)
+  await expect(page.getByRole('heading', { name: recipeTitle })).toBeVisible()
+  await page.getByLabel('People').fill('2')
+  await page.getByRole('button', { name: 'Add to this week' }).click()
+  await expect(page.getByText(/scale 0\.5/)).toBeVisible()
+
+  await page.goto(listUrl)
+  await expect(page.getByText(recipeTitle)).toBeVisible()
+  await page.getByRole('link', { name: 'Review at home' }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Review at home' }),
+  ).toBeVisible()
+  await expect(page.getByText('tomato', { exact: true })).toBeVisible()
+  await expect(
+    page.getByText(/Calculated requirement: 1 each/).first(),
+  ).toBeVisible()
+
+  await page.getByRole('link', { name: 'Start shopping' }).click()
+  await expect(page).toHaveURL(/\/lists\/[^/]+\/shop$/)
+  await expect(
+    page.getByRole('heading', { name: 'Grocery items', exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Mark tomato purchased' }),
+  ).toBeVisible()
+})
+
 test.describe('authenticated list workflow', () => {
   test.skip(
     !process.env.E2E_USER_EMAIL || !process.env.E2E_USER_PASSWORD,

@@ -1047,7 +1047,7 @@ recipes; 31: Process public-content complaints; 35: Delete an account safely
         when dismissed.
 - [ ] Automated checks report no serious or critical issues, and documented
       keyboard and screen-reader reviews cover the shopping journey.
-- [ ] Remote changes, optimistic state, offline queues, reconciliation, and
+- [x] Remote changes, optimistic state, offline queues, reconciliation, and
       completion are announced usefully without excessive live-region output.
 - [ ] Status never depends on color alone, normal text and controls meet WCAG
       2.2 AA contrast, and motion respects reduced-motion preferences.

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { io } from 'socket.io-client'
 import { clientEnv } from '@/lib/env/client'
@@ -107,6 +107,11 @@ export function RealtimeRunSync({
     nextRunId: string
   } | null>(null)
 
+  const announce = useCallback((message: string) => {
+    announcementId.current += 1
+    setAnnouncement({ id: announcementId.current, message })
+  }, [])
+
   useEffect(() => {
     latestRevision.current = revision
     if (refreshPending.current) {
@@ -124,9 +129,22 @@ export function RealtimeRunSync({
       setState('connected')
       socket.emit('foundation:join', listId)
     }
-    const handleDisconnect = () => setState('disconnected')
-    const handleConnectError = () => setState('unavailable')
-    const handleFoundationError = () => setState('unavailable')
+    const handleDisconnect = () => {
+      setState('disconnected')
+      announce('Live updates paused. Reconnecting.')
+    }
+    const handleConnectError = () => {
+      setState('unavailable')
+      announce(
+        'Live updates are unavailable. Changes can still save normally while we reconnect.',
+      )
+    }
+    const handleFoundationError = () => {
+      setState('unavailable')
+      announce(
+        'Live updates are unavailable. Changes can still save normally while we reconnect.',
+      )
+    }
     const handleCompletion = (payload: unknown) => {
       const parsed = realtimeRunCompletionEventSchema.safeParse(payload)
       if (!parsed.success) return
@@ -139,6 +157,11 @@ export function RealtimeRunSync({
         completedByUserId: event.completedByUserId,
         nextRunId: event.nextRunId,
       })
+      announce(
+        event.completedByUserId === currentUserId
+          ? 'The shopping run is complete. A fresh shopping run is ready.'
+          : 'Another shopper completed this run. A fresh shopping run is ready.',
+      )
       setState('syncing')
       router.refresh()
     }
@@ -156,11 +179,7 @@ export function RealtimeRunSync({
             announcementTimer.current = null
             const changeTypes = pendingRemoteChanges.current.splice(0)
             if (changeTypes.length === 0) return
-            announcementId.current += 1
-            setAnnouncement({
-              id: announcementId.current,
-              message: formatRemoteChangeAnnouncement(changeTypes),
-            })
+            announce(formatRemoteChangeAnnouncement(changeTypes))
           }, 600)
         }
       }
@@ -198,19 +217,19 @@ export function RealtimeRunSync({
       }
       pendingRemoteChanges.current = []
     }
-  }, [currentUserId, listId, router, runId])
+  }, [announce, currentUserId, listId, router, runId])
 
   return (
     <>
       <p
-        aria-live="polite"
+        aria-live="off"
         className="text-muted-foreground text-xs"
         role="status"
       >
         {connectionCopy(state)}
       </p>
       {completion && completion.nextRunId !== runId && (
-        <p className="text-warning text-xs" role="status">
+        <p aria-live="off" className="text-warning text-xs" role="status">
           Member {completion.completedByUserId} completed this run. A fresh
           shopping run is ready.
         </p>

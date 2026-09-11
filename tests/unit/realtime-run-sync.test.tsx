@@ -106,6 +106,11 @@ describe('RealtimeRunSync', () => {
     expect(
       screen.getByText(/Member member-2 completed this run/),
     ).toHaveTextContent('A fresh shopping run is ready.')
+    expect(
+      screen.getByText(
+        'Another shopper completed this run. A fresh shopping run is ready.',
+      ),
+    ).toHaveAttribute('aria-live', 'polite')
   })
 
   it('settles on the replacement run after a completion refresh', () => {
@@ -142,7 +147,7 @@ describe('RealtimeRunSync', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent('Live updates on')
     expect(
-      screen.queryByText(/A fresh shopping run is ready/),
+      screen.queryByRole('status', { name: /A fresh shopping run is ready/ }),
     ).not.toBeInTheDocument()
     expect(refresh).toHaveBeenCalledOnce()
   })

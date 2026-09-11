@@ -85,6 +85,9 @@ failures behind the same stable retryable problem contract.
 Recipe detail reads and private draft edits or deletes now validate the full
 recipe envelope and hide authentication, storage, or malformed-record failures
 behind that same stable retryable problem contract.
+Owner-only recipe-sharing reads and updates now validate their response
+envelopes and hide authentication, storage, or malformed-record failures behind
+the same stable retryable problem contract.
 Shopping history reads validate their minimal persisted envelopes and hide
 authentication, storage, or malformed-record failures behind the same stable
 retryable problem contract.

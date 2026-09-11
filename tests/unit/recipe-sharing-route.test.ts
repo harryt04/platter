@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { PUT } from '@/app/api/v1/recipes/[recipeId]/shares/route'
+import { GET, PUT } from '@/app/api/v1/recipes/[recipeId]/shares/route'
 
 const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -68,6 +68,27 @@ function setup({
 }
 
 describe('PUT /api/v1/recipes/[recipeId]/shares', () => {
+  it('hides sharing storage failures behind a stable retryable problem', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await PUT(
+      new Request('http://localhost/api/v1/recipes/recipe-1/shares', {
+        method: 'PUT',
+        body: JSON.stringify({ listIds: [] }),
+      }),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    const body = await response.json()
+    expect(body.code).toBe('RECIPE_SHARING_UNAVAILABLE')
+    expect(JSON.stringify(body)).not.toContain('database offline')
+  })
+
   it('rejects malformed recipe ids before querying storage', async () => {
     const collection = setup()
 
@@ -188,5 +209,46 @@ describe('PUT /api/v1/recipes/[recipeId]/shares', () => {
       recipeId: 'recipe-1',
       listId: { $nin: [] },
     })
+  })
+})
+
+describe('GET /api/v1/recipes/[recipeId]/shares', () => {
+  it('hides sharing storage failures behind a stable retryable problem', async () => {
+    getSession.mockResolvedValue({ user: { id: 'user-1' } })
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/recipes/recipe-1/shares'),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    const body = await response.json()
+    expect(body.code).toBe('RECIPE_SHARING_UNAVAILABLE')
+    expect(JSON.stringify(body)).not.toContain('database offline')
+  })
+
+  it('rejects malformed list records without exposing persisted data', async () => {
+    setup({
+      lists: [
+        {
+          _id: 'list-1',
+          name: '',
+          status: 'active',
+          members: [],
+        },
+      ],
+    })
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/recipes/recipe-1/shares'),
+      { params: Promise.resolve({ recipeId: 'recipe-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('RECIPE_SHARING_UNAVAILABLE')
   })
 })

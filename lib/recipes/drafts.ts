@@ -156,6 +156,25 @@ export const recipeShareUpdateSchema = z.object({
   publishPublic: z.boolean().default(false),
 })
 
+/** Runtime boundary for the owner-only recipe-sharing editor response. */
+export const recipeSharingResponseSchema = z.strictObject({
+  visibility: recipeVisibilitySchema,
+  lists: z.array(
+    z.strictObject({
+      id: opaqueIdSchema,
+      name: z.string().min(1).max(100),
+      status: z.enum(['active', 'archived', 'deleted']),
+      shared: z.boolean(),
+    }),
+  ),
+})
+
+/** Runtime boundary for an owner-only recipe-sharing mutation response. */
+export const recipeShareMutationResponseSchema = z.strictObject({
+  visibility: recipeVisibilitySchema,
+  listIds: z.array(opaqueIdSchema).max(50),
+})
+
 export type RecipeOrigin = z.infer<typeof recipeOriginSchema>
 export type RecipeImportReviewStatus = z.infer<
   typeof recipeImportReviewStatusSchema

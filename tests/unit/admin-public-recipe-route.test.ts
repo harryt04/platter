@@ -146,4 +146,27 @@ describe('GET /api/v1/admin/public-recipes', () => {
     ).toBe(422)
     expect(getConnectedDatabase).not.toHaveBeenCalled()
   })
+
+  it('hides administrator search backend failures behind a retryable problem', async () => {
+    getConnectedDatabase.mockRejectedValue(
+      new Error('database credentials leaked'),
+    )
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/admin/public-recipes?q=soup'),
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(await response.json()).toEqual({
+      type: 'https://platter.dev/problems/admin-public-recipe-search-unavailable',
+      title: 'Public-content search temporarily unavailable',
+      status: 503,
+      detail:
+        'The administrator public-content search is temporarily unavailable. Try again shortly.',
+      code: 'ADMIN_PUBLIC_RECIPE_SEARCH_UNAVAILABLE',
+    })
+  })
 })

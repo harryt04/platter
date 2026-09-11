@@ -273,7 +273,8 @@ Administrators can review those records on the suppression-management page and
 explicitly restore one active target. Restoration is transactional and creates a
 second audit record; a recipe is reopened only when no other active suppression
 still matches it, and the moderation route has no list-membership or shopping
-authority.
+authority. Administrator public-content search also converts database failures
+into a retryable problem response without exposing backend details.
 Signed-in users can now view and update their display name and supported locale
 from Account settings. Profile updates are validated on the server, sanitize
 control characters, and keep the authentication email read-only. History dates

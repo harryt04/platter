@@ -36,6 +36,17 @@ function validationFailed() {
   })
 }
 
+function searchUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/admin-public-recipe-search-unavailable',
+    title: 'Public-content search temporarily unavailable',
+    status: 503,
+    detail:
+      'The administrator public-content search is temporarily unavailable. Try again shortly.',
+    code: 'ADMIN_PUBLIC_RECIPE_SEARCH_UNAVAILABLE',
+  })
+}
+
 export async function GET(request: Request) {
   const session = await getSession()
   if (!session) return authenticationRequired()
@@ -49,9 +60,14 @@ export async function GET(request: Request) {
   })
   if (!parsed.success) return validationFailed()
 
-  const recipes = await findAdminPublicRecipes(
-    await getConnectedDatabase(),
-    parsed.data,
-  )
+  let recipes
+  try {
+    recipes = await findAdminPublicRecipes(
+      await getConnectedDatabase(),
+      parsed.data,
+    )
+  } catch {
+    return searchUnavailable()
+  }
   return Response.json({ recipes })
 }

@@ -882,6 +882,8 @@ complaints; 35: Delete an account safely
       opaque IDs and cursors, and never expose stack traces or database errors.
   - [x] Public discovery pagination uses the shared opaque-cursor schema, and
         provider output is runtime-validated before it crosses the API boundary.
+  - [x] Administrator public-content search failures return a stable retryable
+        problem response without exposing database or stack-trace details.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

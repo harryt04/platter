@@ -926,6 +926,8 @@ run completion across devices; 29: Add replaceable importer adapters
       membership, active-run lookup, and history by list and date.
 - [ ] A failed importer, parser, normalization step, search extension, analytics
       provider, or worker does not make saved recipes or shopping unavailable.
+  - [x] Public discovery converts database or search-provider failures into a
+        stable retryable problem response without exposing backend details.
 - [ ] Cached shell interaction and optimistic checklist feedback are tested on a
       documented mid-range mobile profile, with budgets recorded for regressions.
 

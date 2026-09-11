@@ -158,4 +158,26 @@ describe('GET /api/v1/discover/recipes', () => {
       code: 'SEARCH_RESPONSE_INVALID',
     })
   })
+
+  it('isolates provider failures behind a retryable problem response', async () => {
+    getConnectedDatabase.mockResolvedValue({})
+    searchRecipes.mockRejectedValue(new Error('search backend unavailable'))
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/discover/recipes?q=soup'),
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(await response.json()).toEqual({
+      type: 'https://platter.dev/problems/search-unavailable',
+      title: 'Search temporarily unavailable',
+      status: 503,
+      detail:
+        'Public recipe discovery is temporarily unavailable. Try again shortly.',
+      code: 'SEARCH_UNAVAILABLE',
+    })
+  })
 })

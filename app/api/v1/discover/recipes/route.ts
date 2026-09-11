@@ -4,7 +4,10 @@ import { problemResponse } from '@/lib/contracts/problem'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { decodeRecipeSearchCursor } from '@/lib/search/mongo-provider'
 import { createRecipeSearchProvider } from '@/lib/search/default-provider'
-import { recipeSearchResponseSchema } from '@/lib/search/provider'
+import {
+  recipeSearchResponseSchema,
+  type RecipeSearchResponse,
+} from '@/lib/search/provider'
 import {
   checkRateLimit,
   rateLimitProblemResponse,
@@ -72,25 +75,37 @@ export async function GET(request: Request) {
   )
     return validationFailed()
 
-  const db = await getConnectedDatabase()
-  const recipes = await createRecipeSearchProvider(db).searchRecipes({
-    text: parsed.data.q,
-    cursor: parsed.data.cursor,
-    pageSize: parsed.data.pageSize,
-    filters: {
-      ...(parsed.data.cuisine ? { cuisine: parsed.data.cuisine } : {}),
-      ...(parsed.data.tags
-        ? { tags: parsed.data.tags.split(',').map((tag) => tag.trim()) }
-        : {}),
-      ...(parsed.data.dietaryLabels
-        ? {
-            dietaryLabels: parsed.data.dietaryLabels
-              .split(',')
-              .map((label) => label.trim()),
-          }
-        : {}),
-    },
-  })
+  let recipes: RecipeSearchResponse
+  try {
+    const db = await getConnectedDatabase()
+    recipes = await createRecipeSearchProvider(db).searchRecipes({
+      text: parsed.data.q,
+      cursor: parsed.data.cursor,
+      pageSize: parsed.data.pageSize,
+      filters: {
+        ...(parsed.data.cuisine ? { cuisine: parsed.data.cuisine } : {}),
+        ...(parsed.data.tags
+          ? { tags: parsed.data.tags.split(',').map((tag) => tag.trim()) }
+          : {}),
+        ...(parsed.data.dietaryLabels
+          ? {
+              dietaryLabels: parsed.data.dietaryLabels
+                .split(',')
+                .map((label) => label.trim()),
+            }
+          : {}),
+      },
+    })
+  } catch {
+    return problemResponse({
+      type: 'https://platter.dev/problems/search-unavailable',
+      title: 'Search temporarily unavailable',
+      status: 503,
+      detail:
+        'Public recipe discovery is temporarily unavailable. Try again shortly.',
+      code: 'SEARCH_UNAVAILABLE',
+    })
+  }
 
   const response = recipeSearchResponseSchema.safeParse(recipes)
   if (!response.success) {

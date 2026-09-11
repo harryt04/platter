@@ -52,6 +52,9 @@ problem document with a `Retry-After` hint. Better Auth authentication and
 password-reset endpoints use enabled endpoint-specific limits; their provider
 429 responses are normalized to the same problem contract without exposing
 provider or credential details.
+Database or search-provider failures on discovery now return a stable retryable
+503 without exposing backend details; saved recipes and shopping remain on
+their independent boundaries.
 MongoDB’s shared index setup covers weighted public discovery, approved public
 canonical-URL deduplication, list membership, one active run per list, and
 history lookup by list and completion date.

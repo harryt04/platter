@@ -48,7 +48,10 @@ checks across list APIs, recipe routes, shopping history, imports, and
 administrative complaint updates.
 Public recipe discovery is throttled per client address, and rate-limited
 search, import, report, export, and import-recovery responses share a stable
-problem document with a `Retry-After` hint.
+problem document with a `Retry-After` hint. Better Auth authentication and
+password-reset endpoints use enabled endpoint-specific limits; their provider
+429 responses are normalized to the same problem contract without exposing
+provider or credential details.
 Archived lists preserve read access to their shopping run while disabling
 shopping changes such as completion and amount resets. Owners and editors can
 now confirm an active run through an atomic transition that retains only

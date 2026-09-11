@@ -29,6 +29,13 @@ export const auth = betterAuth({
       await sendPasswordResetEmail(user.email, url)
     },
   },
+  rateLimit: {
+    enabled: true,
+    storage: 'memory',
+    customRules: {
+      '/reset-password': { window: 60, max: 5 },
+    },
+  },
   user: {
     additionalFields: {
       role: { type: 'string', required: false, defaultValue: 'user' },

@@ -24,6 +24,13 @@ Optional integrations and hosted policy publication default to disabled when
 unset; invalid boolean values fail startup rather than being silently treated
 as enabled.
 
+Better Auth authentication and password-reset endpoints use in-memory
+endpoint-specific rate limits and return a stable problem response with a
+`Retry-After` header when limited. The default memory storage is process-local;
+deployments running multiple web processes should place a shared rate-limiting
+boundary at the reverse proxy or replace the Better Auth storage seam with a
+shared implementation.
+
 The administrator instance settings disclose the licensing, cost, and data
 sharing implications of each optional integration. SMTP sends invitation and
 password-reset recipients and message content to the configured provider;

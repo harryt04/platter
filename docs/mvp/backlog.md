@@ -880,11 +880,10 @@ complaints; 35: Delete an account safely
       schema at mutation, realtime, repeat, and history-detail boundaries.
 - [ ] All writes and external reads use shared schemas, stable problem responses,
       opaque IDs and cursors, and never expose stack traces or database errors.
-- [ ] Authentication, invitations, imports, public search, and public reports
+- [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested
-        stable retryable problem responses; authentication and the remaining
-        abuse surfaces are still tracked by the parent criterion.
+        stable retryable problem responses.
 - [ ] User-authored content is sanitized, imported active content is never
       rendered, and secrets or private contacts do not enter logs or analytics.
 - [ ] Administrative access to private user content is exceptional, policy-bound,

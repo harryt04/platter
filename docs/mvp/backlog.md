@@ -783,7 +783,7 @@ the required policies and contacts.
       for operators who choose that U.S. safe-harbor process.
 - [x] Optional integrations clearly disclose licensing, cost, and data-sharing
       implications and remain no-ops when unconfigured.
-- [ ] Configuration validation and browser tests cover safe defaults, incomplete
+- [x] Configuration validation and browser tests cover safe defaults, incomplete
       policy gating, and self-hosted operation without paid services.
 
 ## 34: Manage account data

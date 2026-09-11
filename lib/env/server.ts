@@ -5,6 +5,13 @@ const optionalString = z.preprocess(
   (value) => (value === '' ? undefined : value),
   z.string().optional(),
 )
+const environmentBoolean = (defaultValue: boolean) =>
+  z.preprocess((value) => {
+    if (value === '' || value === undefined) return undefined
+    if (value === 'true') return true
+    if (value === 'false') return false
+    return value
+  }, z.boolean().default(defaultValue))
 const serverSchema = z.object({
   APP_URL: z.string().url().default('http://localhost:3000'),
   NODE_ENV: z
@@ -19,22 +26,14 @@ const serverSchema = z.object({
     z.string().min(16).optional(),
   ),
   BETTER_AUTH_URL: z.string().url().default('http://localhost:3000'),
-  SMTP_ENABLED: z.coerce.boolean().default(false),
+  SMTP_ENABLED: environmentBoolean(false),
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
   SMTP_FROM: z.string().default('noreply@example.test'),
   INVITATION_TTL_HOURS: z.coerce.number().int().min(1).max(720).default(168),
-  RECIPE_IMPORTS_ENABLED: z.preprocess((value) => {
-    if (value === 'true') return true
-    if (value === 'false') return false
-    return value
-  }, z.coerce.boolean().default(true)),
+  RECIPE_IMPORTS_ENABLED: environmentBoolean(true),
   RECIPE_IMPORT_DISABLED_ADAPTERS: z.string().default(''),
-  PUBLIC_CATALOG_POLICIES_PUBLISHED: z.preprocess((value) => {
-    if (value === 'true') return true
-    if (value === 'false') return false
-    return value
-  }, z.coerce.boolean().default(false)),
+  PUBLIC_CATALOG_POLICIES_PUBLISHED: environmentBoolean(false),
   PUBLIC_CATALOG_TERMS_URL: z.preprocess(
     (value) => (value === '' ? undefined : value),
     z.string().url().optional(),
@@ -69,11 +68,11 @@ const serverSchema = z.object({
   ),
   SMTP_USER: optionalString,
   SMTP_PASSWORD: optionalString,
-  SMTP_SECURE: z.coerce.boolean().default(false),
+  SMTP_SECURE: environmentBoolean(false),
   REALTIME_PORT: z.coerce.number().int().positive().default(3001),
   NEXT_PUBLIC_REALTIME_URL: z.string().url().default('http://localhost:3001'),
   ALLOWED_ORIGINS: z.string().default('http://localhost:3000'),
-  POSTHOG_ENABLED: z.coerce.boolean().default(false),
+  POSTHOG_ENABLED: environmentBoolean(false),
   NEXT_PUBLIC_POSTHOG_KEY: optionalString,
   NEXT_PUBLIC_POSTHOG_HOST: z.preprocess(
     (value) => (value === '' ? undefined : value),
@@ -108,7 +107,14 @@ export function serverEnv(): ServerEnv {
   if (cached) return cached
 
   loadLocalEnvFiles()
-  const parsed = serverSchema.safeParse(process.env)
+  cached = parseServerEnvironment(process.env)
+  return cached
+}
+
+export function parseServerEnvironment(
+  environment: NodeJS.ProcessEnv,
+): ServerEnv {
+  const parsed = serverSchema.safeParse(environment)
   if (!parsed.success) {
     throw new Error(`Invalid server environment: ${parsed.error.message}`)
   }
@@ -118,8 +124,7 @@ export function serverEnv(): ServerEnv {
   ) {
     throw new Error('Missing required environment variable: BETTER_AUTH_SECRET')
   }
-  cached = parsed.data
-  return cached
+  return parsed.data
 }
 
 export function resetServerEnvForTests() {

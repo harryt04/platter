@@ -19,6 +19,11 @@ PostHog settings are present; the adapter never sends recipe or grocery
 content. Google sign-in is reserved for a later release and requires
 human-created OAuth credentials and approved redirect URIs.
 
+Boolean environment settings accept only the literal values `true` and `false`.
+Optional integrations and hosted policy publication default to disabled when
+unset; invalid boolean values fail startup rather than being silently treated
+as enabled.
+
 The administrator instance settings disclose the licensing, cost, and data
 sharing implications of each optional integration. SMTP sends invitation and
 password-reset recipients and message content to the configured provider;

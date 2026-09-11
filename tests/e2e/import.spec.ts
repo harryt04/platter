@@ -63,4 +63,35 @@ test.describe('recipe imports', () => {
     ).toBeVisible()
     await expect(page.getByLabel('Recipe URL')).toBeDisabled()
   })
+
+  test('keeps self-hosted defaults usable without paid integrations', async ({
+    page,
+  }) => {
+    test.skip(
+      !process.env.E2E_USER_EMAIL ||
+        !process.env.E2E_USER_PASSWORD ||
+        process.env.E2E_SELF_HOSTED_MODE !== 'true' ||
+        !importsRequested ||
+        hasPublishedHostedPolicy,
+      'Set E2E_SELF_HOSTED_MODE=true and run against a non-production self-hosted instance with the default optional integrations disabled.',
+    )
+
+    await page.goto('/sign-in')
+    await page.getByLabel('Email').fill(process.env.E2E_USER_EMAIL!)
+    await page.getByLabel('Password').fill(process.env.E2E_USER_PASSWORD!)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await expect(page).toHaveURL(/\/lists$/)
+
+    await page.goto('/import')
+    await expect(page.getByLabel('Recipe URL')).toBeEnabled()
+    await page
+      .getByLabel('Recipe URL')
+      .fill('https://example.com/self-hosted-default')
+    await expect(
+      page.getByRole('button', { name: 'Import recipe URL' }),
+    ).toBeEnabled()
+    await expect(
+      page.getByText(/paid recipe API|paid integrations/i),
+    ).toHaveCount(0)
+  })
 })

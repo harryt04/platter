@@ -3,6 +3,7 @@ import type { Db } from 'mongodb'
 import {
   isoDateTime,
   opaqueIdSchema,
+  opaqueCursorSchema,
   type IsoDateTime,
 } from '@/lib/contracts/ids'
 import {
@@ -42,8 +43,38 @@ export const historyIdSchema = opaqueIdSchema
 const historyCursorSchema = z.object({
   localDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   completedAt: z.string().datetime(),
-  id: z.string().min(1),
+  id: historyIdSchema,
 })
+
+const completedRecipeSelectionSchema = z
+  .object({
+    _id: opaqueIdSchema,
+    recipeId: opaqueIdSchema,
+    versionId: opaqueIdSchema,
+    versionNumber: z.number().int().positive(),
+    desiredPeople: z.number().int().positive().max(1000),
+  })
+  .strict()
+
+/** Runtime boundary for minimal history documents read from MongoDB. */
+export const shoppingRunHistoryDocumentSchema = z
+  .object({
+    _id: historyIdSchema,
+    listId: opaqueIdSchema,
+    completedAt: z.string().datetime(),
+    localDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    completedByUserId: opaqueIdSchema,
+    recipeSelections: z.array(completedRecipeSelectionSchema).max(1000),
+  })
+  .strict()
+
+/** Runtime boundary for the list history API response. */
+export const shoppingRunHistoryPageResponseSchema = z
+  .object({
+    history: z.array(shoppingRunHistoryDocumentSchema).max(1000),
+    nextCursor: opaqueCursorSchema.optional(),
+  })
+  .strict()
 
 export function encodeShoppingRunHistoryCursor(cursor: {
   localDate: string

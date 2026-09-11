@@ -17,18 +17,24 @@ vi.mock('@/lib/lists', () => ({
   },
 }))
 vi.mock('@/lib/db/mongo-client', () => ({ getConnectedDatabase }))
-vi.mock('@/lib/shopping-run-history', () => ({
-  decodeShoppingRunHistoryCursor: vi.fn((value: string) =>
-    value === 'valid'
-      ? {
-          localDate: '2026-09-10',
-          completedAt: '2026-09-10T18:00:00.000Z',
-          id: 'history-1',
-        }
-      : null,
-  ),
-  searchShoppingRunHistory: searchHistory,
-}))
+vi.mock('@/lib/shopping-run-history', async () => {
+  const actual = await vi.importActual<
+    typeof import('@/lib/shopping-run-history')
+  >('@/lib/shopping-run-history')
+  return {
+    ...actual,
+    decodeShoppingRunHistoryCursor: vi.fn((value: string) =>
+      value === 'valid'
+        ? {
+            localDate: '2026-09-10',
+            completedAt: '2026-09-10T18:00:00.000Z',
+            id: 'history-1',
+          }
+        : null,
+    ),
+    searchShoppingRunHistory: searchHistory,
+  }
+})
 
 function context(listId = 'list-1') {
   return { params: Promise.resolve({ listId }) }
@@ -102,5 +108,49 @@ describe('GET /api/v1/lists/[listId]/history', () => {
       cursor: 'valid',
       pageSize: 10,
     })
+  })
+
+  it('hides storage failures behind a stable retryable problem', async () => {
+    searchHistory.mockRejectedValueOnce(new Error('database offline'))
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/lists/list-1/history'),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(await response.json()).toEqual({
+      type: 'https://platter.dev/problems/shopping-history-unavailable',
+      title: 'Shopping history temporarily unavailable',
+      status: 503,
+      detail: 'Shopping history could not be loaded. Try again shortly.',
+      code: 'SHOPPING_HISTORY_UNAVAILABLE',
+    })
+  })
+
+  it('does not expose malformed persisted history documents', async () => {
+    searchHistory.mockResolvedValueOnce({
+      entries: [
+        {
+          _id: 'history-1',
+          listId: 'list-1',
+          completedAt: 'not-a-date',
+          localDate: '2026-09-10',
+          completedByUserId: 'user-1',
+          recipeSelections: [],
+        },
+      ],
+    })
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/lists/list-1/history'),
+      context(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('SHOPPING_HISTORY_UNAVAILABLE')
   })
 })

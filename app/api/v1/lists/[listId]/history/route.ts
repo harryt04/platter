@@ -6,6 +6,7 @@ import { problemResponse } from '@/lib/contracts/problem'
 import {
   decodeShoppingRunHistoryCursor,
   searchShoppingRunHistory,
+  shoppingRunHistoryPageResponseSchema,
 } from '@/lib/shopping-run-history'
 import { z } from 'zod'
 
@@ -36,8 +37,23 @@ function listNotFound() {
   })
 }
 
+function historyUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/shopping-history-unavailable',
+    title: 'Shopping history temporarily unavailable',
+    status: 503,
+    detail: 'Shopping history could not be loaded. Try again shortly.',
+    code: 'SHOPPING_HISTORY_UNAVAILABLE',
+  })
+}
+
 export async function GET(request: Request, context: RouteContext) {
-  const session = await getSession()
+  let session: Awaited<ReturnType<typeof getSession>>
+  try {
+    session = await getSession()
+  } catch {
+    return historyUnavailable()
+  }
   if (!session) {
     return problemResponse({
       type: 'https://platter.dev/problems/authentication-required',
@@ -63,13 +79,20 @@ export async function GET(request: Request, context: RouteContext) {
     return validationFailed()
   }
 
-  const list = await findListForMember(listId, session.user.id)
-  if (!list) return listNotFound()
+  try {
+    const list = await findListForMember(listId, session.user.id)
+    if (!list) return listNotFound()
 
-  const db = await getConnectedDatabase()
-  const page = await searchShoppingRunHistory(db, list._id, parsed.data)
-  return Response.json({
-    history: page.entries,
-    ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
-  })
+    const db = await getConnectedDatabase()
+    const page = await searchShoppingRunHistory(db, list._id, parsed.data)
+    const response = shoppingRunHistoryPageResponseSchema.safeParse({
+      history: page.entries,
+      ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
+    })
+    if (!response.success) return historyUnavailable()
+
+    return Response.json(response.data)
+  } catch {
+    return historyUnavailable()
+  }
 }

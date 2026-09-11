@@ -73,6 +73,9 @@ hide storage or malformed-record failures behind stable retryable problems.
 Authenticated list collection reads and creation writes validate their
 client-facing envelopes and hide storage or malformed-record failures behind
 stable retryable problems.
+Shopping history reads validate their minimal persisted envelopes and hide
+authentication, storage, or malformed-record failures behind the same stable
+retryable problem contract.
 MongoDB’s shared index setup covers weighted public discovery, approved public
 canonical-URL deduplication, list membership, one active run per list, and
 history lookup by list and completion date.

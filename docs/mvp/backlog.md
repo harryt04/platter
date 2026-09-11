@@ -876,6 +876,8 @@ complaints; 35: Delete an account safely
       page, API, realtime, and worker-triggering operation.
 - [x] Recipe detail, edit, save, and sharing page/API boundaries validate
       bounded opaque recipe IDs before querying or mutating storage.
+- [x] Active shopping-run and completed-history IDs use a shared bounded opaque
+      schema at mutation, realtime, repeat, and history-detail boundaries.
 - [ ] All writes and external reads use shared schemas, stable problem responses,
       opaque IDs and cursors, and never expose stack traces or database errors.
 - [ ] Authentication, invitations, imports, public search, and public reports

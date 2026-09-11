@@ -1,6 +1,10 @@
 import { z } from 'zod'
 import type { Db } from 'mongodb'
-import { isoDateTime, type IsoDateTime } from '@/lib/contracts/ids'
+import {
+  isoDateTime,
+  opaqueIdSchema,
+  type IsoDateTime,
+} from '@/lib/contracts/ids'
 import {
   createRecipeSelectionDocument,
   type RecipeSelectionDocument,
@@ -33,12 +37,7 @@ export type ShoppingRunHistorySearch = {
   pageSize?: number
 }
 
-const historyIdSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(200)
-  .refine((value) => !/[\u0000-\u001F\u007F]/.test(value))
+export const historyIdSchema = opaqueIdSchema
 
 const historyCursorSchema = z.object({
   localDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),

@@ -3,15 +3,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RunHistoryPage from '@/app/(app)/lists/[listId]/history/[runId]/page'
 
 vi.mock('next/navigation', () => ({
+  notFound: mocks.notFound,
   useRouter: () => ({ refresh: vi.fn() }),
 }))
 
 const mocks = vi.hoisted(() => ({
+  notFound: vi.fn(() => {
+    throw new Error('NOT_FOUND')
+  }),
   requireSession: vi.fn(),
   findListForMember: vi.fn(),
   getConnectedDatabase: vi.fn(),
   recipeVersions: {},
   findShoppingRunHistory: vi.fn(),
+  historyIdSchema: {
+    safeParse: (value: string) => ({ success: value === 'history-1' }),
+  },
   resolvePinnedRecipeVersions: vi.fn(),
 }))
 
@@ -27,6 +34,7 @@ vi.mock('@/lib/db/mongo-client', () => ({
 vi.mock('@/lib/shopping-run-history', () => ({
   findShoppingRunHistory: mocks.findShoppingRunHistory,
   formatShoppingRunHistoryDate: () => 'Sep 10, 2026',
+  historyIdSchema: mocks.historyIdSchema,
 }))
 vi.mock('@/lib/recipes/versions', () => ({
   resolvePinnedRecipeVersions: mocks.resolvePinnedRecipeVersions,
@@ -73,6 +81,21 @@ beforeEach(() => {
 })
 
 describe('completed shopping run history detail', () => {
+  it('rejects malformed history ids before authentication or storage access', async () => {
+    await expect(
+      RunHistoryPage({
+        params: Promise.resolve({
+          listId: 'list-1',
+          runId: 'bad\u0000history',
+        }),
+      }),
+    ).rejects.toThrow('NOT_FOUND')
+
+    expect(mocks.notFound).toHaveBeenCalledOnce()
+    expect(mocks.requireSession).not.toHaveBeenCalled()
+    expect(mocks.findShoppingRunHistory).not.toHaveBeenCalled()
+  })
+
   it('shows the retained completion facts without rendering a final checklist', async () => {
     render(
       await RunHistoryPage({

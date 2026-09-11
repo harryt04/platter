@@ -20,11 +20,12 @@ import {
   getServerAnalytics,
   getShoppingRunCompletionProperties,
 } from '@/lib/analytics'
+import { shoppingRunIdSchema } from '@/lib/contracts/ids'
 
 type RouteContext = { params: Promise<{ listId: string }> }
 
 const completionRequestSchema = z.object({
-  runId: z.string().trim().min(1).max(200),
+  runId: shoppingRunIdSchema,
   operationId: z.string().trim().min(1).max(200),
   clientId: z.string().trim().min(1).max(200),
   baseRevision: z.number().int().nonnegative().optional(),

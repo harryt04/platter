@@ -130,6 +130,27 @@ beforeEach(() => {
 })
 
 describe('POST /api/v1/lists/[listId]/history/[runId]/repeat', () => {
+  it('rejects malformed history ids before querying storage', async () => {
+    const database = databaseFor()
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await POST(
+      request({
+        operationId: 'repeat-invalid-history',
+        clientId: 'client-1',
+      }),
+      {
+        params: Promise.resolve({
+          listId: 'list-1',
+          runId: 'bad\u0000history',
+        }),
+      },
+    )
+
+    expect(response.status).toBe(404)
+    expect(getConnectedDatabase).not.toHaveBeenCalled()
+  })
+
   it('adds the pinned historical version with its original people count', async () => {
     const database = databaseFor()
     getConnectedDatabase.mockResolvedValue(database.db)

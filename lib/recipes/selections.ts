@@ -3,6 +3,7 @@ import { z } from 'zod'
 import {
   decimalString,
   isoDateTime,
+  shoppingRunIdSchema,
   type DecimalString,
   type IsoDateTime,
 } from '@/lib/contracts/ids'
@@ -11,15 +12,7 @@ import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
 const CalculationDecimal = Decimal.clone({ precision: 40 })
 
 export const selectionMutationMetadataSchema = z.object({
-  runId: z
-    .string({ error: 'Enter a shopping run id.' })
-    .trim()
-    .min(1, 'Enter a shopping run id.')
-    .max(200, 'Shopping run ids must be 200 characters or fewer.')
-    .refine(
-      (value) => !/[\u0000-\u001F\u007F]/.test(value),
-      'Shopping run ids cannot contain control characters.',
-    ),
+  runId: shoppingRunIdSchema,
   operationId: z
     .string({ error: 'Enter an operation id.' })
     .trim()

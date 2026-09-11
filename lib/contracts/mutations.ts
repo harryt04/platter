@@ -1,5 +1,10 @@
 import { z } from 'zod'
-import type { DecimalString, EntityId, IsoDateTime } from './ids'
+import {
+  shoppingRunIdSchema,
+  type DecimalString,
+  type EntityId,
+  type IsoDateTime,
+} from './ids'
 
 export interface MutationMetadata {
   runId?: string
@@ -109,7 +114,7 @@ export const realtimeRunMutationEventSchema = z
   .object({
     type: z.enum(realtimeRunMutationEventTypes),
     listId: z.string().min(1),
-    runId: z.string().min(1),
+    runId: shoppingRunIdSchema,
     revision: z.number().int().nonnegative(),
     operationId: z.string().min(1),
     actorId: z.string().min(1),
@@ -121,8 +126,8 @@ export const realtimeRunCompletionEventSchema = z
   .object({
     type: z.literal('run.completed'),
     listId: z.string().min(1),
-    runId: z.string().min(1),
-    nextRunId: z.string().min(1),
+    runId: shoppingRunIdSchema,
+    nextRunId: shoppingRunIdSchema,
     operationId: z.string().min(1),
     completedByUserId: z.string().min(1),
     occurredAt: z.string().datetime(),

@@ -21,16 +21,17 @@ import {
 } from '@/lib/recipes/selections'
 import {
   createRepeatedRecipeSelection,
+  historyIdSchema,
   type ShoppingRunHistoryDocument,
 } from '@/lib/shopping-run-history'
 import { publishRunMutationEvent } from '@/lib/realtime/events'
-import { isoDateTime } from '@/lib/contracts/ids'
+import { isoDateTime, shoppingRunIdSchema } from '@/lib/contracts/ids'
 import { z } from 'zod'
 
 type RouteContext = { params: Promise<{ listId: string; runId: string }> }
 
 const repeatRequestSchema = z.object({
-  runId: z.string().trim().min(1).max(200).optional(),
+  runId: shoppingRunIdSchema.optional(),
   operationId: z.string().trim().min(1).max(200),
   clientId: z.string().trim().min(1).max(200),
   baseRevision: z.number().int().nonnegative().optional(),
@@ -149,6 +150,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   const { listId, runId: historyId } = await context.params
   if (!listIdSchema.safeParse(listId).success) return listNotFound()
+  if (!historyIdSchema.safeParse(historyId).success) return historyNotFound()
 
   let body: unknown
   try {

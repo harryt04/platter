@@ -187,6 +187,19 @@ beforeEach(() => {
 })
 
 describe('POST /api/v1/lists/[listId]/complete', () => {
+  it('rejects malformed active-run ids before querying storage', async () => {
+    const response = await POST(
+      request({
+        ...metadata('invalid-run'),
+        runId: 'bad\u0000run',
+      }),
+      routeContext(),
+    )
+
+    expect(response.status).toBe(422)
+    expect(getConnectedDatabase).not.toHaveBeenCalled()
+  })
+
   it('atomically retains minimal recipe history and creates a fresh empty run', async () => {
     const database = databaseFor()
     getConnectedDatabase.mockResolvedValue(database.db)

@@ -9,6 +9,7 @@ import { findListForMember } from '@/lib/lists'
 import {
   findShoppingRunHistory,
   formatShoppingRunHistoryDate,
+  historyIdSchema,
 } from '@/lib/shopping-run-history'
 import { resolvePinnedRecipeVersions } from '@/lib/recipes/versions'
 import type { RecipeVersionDocument } from '@/lib/recipes/drafts'
@@ -20,6 +21,7 @@ export default async function RunHistoryPage({
   params: Promise<{ listId: string; runId: string }>
 }) {
   const { listId, runId } = await params
+  if (!historyIdSchema.safeParse(runId).success) notFound()
   const session = await requireSession(`/lists/${listId}/history/${runId}`)
   const list = await findListForMember(listId, session.user.id)
   if (!list) notFound()

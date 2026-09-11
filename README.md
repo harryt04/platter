@@ -226,6 +226,12 @@ authority.
 New imports and historical reprocessing check all of those source identities
 before exposing a preview, while preview saves repeat the check inside their
 transaction so a suppression cannot race with public publication.
+Administrator instance settings now summarize email delivery, analytics,
+public-catalog policy, importer, moderation, and source-adapter status without
+rendering secret configuration values. The public catalog is explicitly shown
+as not ready for hosted enablement until the operator publishes the required
+policies and contacts; manual recipes and existing saved recipes remain
+independent of that readiness status.
 The import extraction stage now runs through a typed replaceable adapter
 contract: bounded fetched HTML can produce a normalized candidate, a partial
 candidate with warnings, or an isolated typed failure. Selection tries

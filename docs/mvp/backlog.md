@@ -772,7 +772,7 @@ the required policies and contacts.
 
 **Status:** ready-for-agent
 
-- [ ] Instance settings summarize email, analytics, public-catalog, importer,
+- [x] Instance settings summarize email, analytics, public-catalog, importer,
       moderation, and source-adapter status without exposing secret values.
 - [ ] An operator can disable public imports or specified adapters while manual
       recipes, existing saved recipes, and shopping continue to work.

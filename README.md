@@ -73,6 +73,10 @@ hide storage or malformed-record failures behind stable retryable problems.
 Authenticated list collection reads and creation writes validate their
 client-facing envelopes and hide storage or malformed-record failures behind
 stable retryable problems.
+The personal recipe-library API now validates recipe envelopes and pagination
+results, passes the user's search text into the library query, and hides
+storage or malformed-record failures behind the same stable retryable problem
+contract.
 Shopping history reads validate their minimal persisted envelopes and hide
 authentication, storage, or malformed-record failures behind the same stable
 retryable problem contract.

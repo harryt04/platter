@@ -910,6 +910,10 @@ complaints; 35: Delete an account safely
   - [x] Account profile reads and updates validate the client-facing profile
         envelope and hide authentication or malformed persisted profile
         failures behind stable retryable problems.
+  - [x] Personal recipe-library reads and draft creation validate recipe
+        envelopes, pass search text through the shared library contract, and
+        hide storage or malformed-record failures behind stable retryable
+        problems.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

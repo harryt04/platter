@@ -3,6 +3,7 @@ import { z } from 'zod'
 import {
   entityId,
   isoDateTime,
+  opaqueIdSchema,
   type EntityId,
   type IsoDateTime,
 } from '@/lib/contracts/ids'
@@ -301,6 +302,70 @@ export type RecipeImportProvenanceDocument = {
 }
 
 export type RecipeImportProvenance = RecipeImportProvenanceDocument
+
+const recipeImportProvenanceResponseSchema = z
+  .strictObject({
+    submittedUrl: z.string().url().max(2048),
+    canonicalUrl: z.string().url().max(2048),
+    sourceDomain: z.string().min(1).max(253),
+    sourceTitle: z.string().max(200).optional(),
+    sourceAuthor: z.string().max(200).optional(),
+    importer: z.enum(['schema-org-json-ld', 'generic-html']),
+    importedAt: z.string().datetime(),
+    acquiredAt: z.string().datetime(),
+    acquisitionMethod: z.literal('server-fetch'),
+    contentFingerprint: z.string().min(1).max(256),
+    versionRelationship: z.enum(['source-original', 'source-update']),
+    relatedRecipeId: opaqueIdSchema.optional(),
+    relatedVersionId: opaqueIdSchema.optional(),
+    relatedVersionNumber: z.number().int().positive().optional(),
+    rightsStatus: z.enum(['unknown', 'licensed', 'permission-granted']),
+    sourceAvailability: z.enum(['available', 'unavailable']).optional(),
+    sourceCheckedAt: z.string().datetime().optional(),
+  })
+  .optional()
+
+/** Runtime boundary for recipe envelopes returned by authenticated APIs. */
+export const recipeDraftResponseSchema = z.strictObject({
+  id: opaqueIdSchema,
+  recipeId: opaqueIdSchema,
+  versionId: opaqueIdSchema,
+  versionNumber: z.number().int().positive(),
+  ownerId: opaqueIdSchema,
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  status: z.enum(['draft', 'usable']),
+  origin: recipeOriginSchema,
+  importReviewStatus: recipeImportReviewStatusSchema,
+  visibility: recipeVisibilitySchema,
+  derivedFrom: z
+    .strictObject({
+      recipeId: opaqueIdSchema,
+      versionId: opaqueIdSchema,
+      versionNumber: z.number().int().positive(),
+    })
+    .optional(),
+  typicalPeopleFed: typicalPeopleFedSchema.optional(),
+  prepTimeMinutes: recipeTimeSchema('Prep time').optional(),
+  cookingTimeMinutes: recipeTimeSchema('Cooking time').optional(),
+  totalTimeMinutes: recipeTimeSchema('Total time').optional(),
+  cuisine: z.string().max(100).optional(),
+  mealType: z.string().max(100).optional(),
+  householdNotes: z.string().max(2000).optional(),
+  sourceName: z.string().max(200).optional(),
+  sourceUrl: z.string().url().max(2048).optional(),
+  sourceAuthor: z.string().max(200).optional(),
+  attribution: z.string().max(1000).optional(),
+  tags: z.array(z.string().min(1).max(50)).max(20).optional(),
+  dietaryLabels: z.array(z.string().min(1).max(50)).max(20).optional(),
+  image: recipeImageProvenanceSchema.strict().optional(),
+  nutrition: recipeNutritionSchema.strict().optional(),
+  importProvenance: recipeImportProvenanceResponseSchema,
+  ingredients: z.array(recipeIngredientSchema.strict()).max(100),
+  instructions: z.array(recipeInstructionSchema).max(100),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+})
 
 export const createDraftSchema = z.object({ title: recipeTitleSchema })
 export const updateDraftSchema = z

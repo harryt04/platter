@@ -4,6 +4,8 @@ import { opaqueCursorSchema } from '@/lib/contracts/ids'
 import { problemResponse } from '@/lib/contracts/problem'
 import {
   decodeRecipeLibraryCursor,
+  recipeDraftCreationResponseSchema,
+  recipeLibraryPageResponseSchema,
   searchRecipeLibrary,
 } from '@/lib/recipes/library'
 import {
@@ -27,8 +29,33 @@ const librarySearchParamsSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
 })
 
+function libraryUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/recipe-library-unavailable',
+    title: 'Recipe library temporarily unavailable',
+    status: 503,
+    detail: 'Your recipe library could not be loaded. Try again shortly.',
+    code: 'RECIPE_LIBRARY_UNAVAILABLE',
+  })
+}
+
+function recipeCreationUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/recipe-creation-failed',
+    title: 'Recipe creation temporarily unavailable',
+    status: 503,
+    detail: 'Your recipe draft could not be created. Try again shortly.',
+    code: 'RECIPE_CREATION_FAILED',
+  })
+}
+
 export async function GET(request: Request) {
-  const session = await getSession()
+  let session: Awaited<ReturnType<typeof getSession>>
+  try {
+    session = await getSession()
+  } catch {
+    return libraryUnavailable()
+  }
   if (!session) {
     return problemResponse({
       type: 'https://platter.dev/problems/authentication-required',
@@ -58,21 +85,36 @@ export async function GET(request: Request) {
     })
   }
 
-  const db = await getConnectedDatabase()
-  const page = await searchRecipeLibrary(db, session.user.id, parsed.data)
+  try {
+    const db = await getConnectedDatabase()
+    const page = await searchRecipeLibrary(db, session.user.id, {
+      text: parsed.data.q,
+      cursor: parsed.data.cursor,
+      pageSize: parsed.data.pageSize,
+    })
+    const response = recipeLibraryPageResponseSchema.safeParse({
+      recipes: page.entries.map(({ recipe, access, sharedListNames }) => ({
+        ...recipe,
+        libraryAccess: access,
+        ...(sharedListNames.length ? { sharedListNames } : {}),
+      })),
+      ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
+    })
+    if (!response.success) return libraryUnavailable()
 
-  return Response.json({
-    recipes: page.entries.map(({ recipe, access, sharedListNames }) => ({
-      ...recipe,
-      libraryAccess: access,
-      ...(sharedListNames.length ? { sharedListNames } : {}),
-    })),
-    ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
-  })
+    return Response.json(response.data)
+  } catch {
+    return libraryUnavailable()
+  }
 }
 
 export async function POST(request: Request) {
-  const session = await getSession()
+  let session: Awaited<ReturnType<typeof getSession>>
+  try {
+    session = await getSession()
+  } catch {
+    return recipeCreationUnavailable()
+  }
   if (!session) {
     return problemResponse({
       type: 'https://platter.dev/problems/authentication-required',
@@ -108,13 +150,21 @@ export async function POST(request: Request) {
     })
   }
 
-  const draft = createDraftDocument(session.user.id, parsed.data.title)
-  const db = await getConnectedDatabase()
-  await db.collection<RecipeDraftDocument>('recipes').insertOne(draft)
-  const version = createRecipeVersionDocument(draft)
-  const { _id: versionId, ...versionContent } = version
-  await recipeVersions(
-    db.collection<RecipeVersionDocument>('recipe_versions'),
-  ).insertOne({ _id: versionId, ...versionContent })
-  return Response.json({ recipe: toRecipeDraft(draft) }, { status: 201 })
+  try {
+    const draft = createDraftDocument(session.user.id, parsed.data.title)
+    const db = await getConnectedDatabase()
+    await db.collection<RecipeDraftDocument>('recipes').insertOne(draft)
+    const version = createRecipeVersionDocument(draft)
+    const { _id: versionId, ...versionContent } = version
+    await recipeVersions(
+      db.collection<RecipeVersionDocument>('recipe_versions'),
+    ).insertOne({ _id: versionId, ...versionContent })
+    const response = recipeDraftCreationResponseSchema.safeParse({
+      recipe: toRecipeDraft(draft),
+    })
+    if (!response.success) return recipeCreationUnavailable()
+    return Response.json(response.data, { status: 201 })
+  } catch {
+    return recipeCreationUnavailable()
+  }
 }

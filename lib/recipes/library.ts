@@ -4,6 +4,7 @@ import { isoDateTime } from '@/lib/contracts/ids'
 import { listMembershipFilter, type ListDocument } from '@/lib/lists'
 import {
   recipeShares,
+  recipeDraftResponseSchema,
   toRecipeDraftForViewer,
   type RecipeDraft,
   type RecipeDraftDocument,
@@ -23,6 +24,21 @@ export type RecipeLibraryPage = {
   entries: RecipeLibraryEntry[]
   nextCursor?: string
 }
+
+/** Runtime boundary for the authenticated personal-library response. */
+const recipeLibraryEntryResponseSchema = recipeDraftResponseSchema.extend({
+  libraryAccess: z.enum(['owned', 'shared', 'saved']),
+  sharedListNames: z.array(z.string().min(1).max(200)).max(50).optional(),
+})
+
+export const recipeLibraryPageResponseSchema = z.strictObject({
+  recipes: z.array(recipeLibraryEntryResponseSchema).max(50),
+  nextCursor: z.string().min(1).max(500).optional(),
+})
+
+export const recipeDraftCreationResponseSchema = z.strictObject({
+  recipe: recipeDraftResponseSchema,
+})
 
 export type RecipeLibrarySearch = {
   text?: string

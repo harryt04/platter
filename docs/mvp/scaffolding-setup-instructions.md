@@ -219,12 +219,13 @@ The root package must expose these commands after setup:
 | `npm run test` | Run the non-watch unit/component suite once. |
 | `npm run test:watch` | Run Vitest interactively. |
 | `npm run test:integration` | Run integration tests against the test database. |
-| `npm run test:e2e` | Run Playwright against a production build. |
-| `npm run test:a11y` | Run the tagged Playwright/axe accessibility checks. |
+| `npm run test:e2e` | Run the deterministic Chromium Playwright suite against a production build. Use `npx playwright test` for the full configured browser matrix. |
+| `npm run test:a11y` | Run the tagged Chromium Playwright/axe accessibility checks. |
 | `npm run db:indexes` | Idempotently create or reconcile declared indexes. |
 | `npm run db:migrate` | Apply pending document transformations with a ledger. |
 | `npm run db:seed:test-user` | Idempotently create the ignored local AI test account. |
 | `npm run check` | Run format check, lint, typecheck, tests, and build. |
+| `npm run ci` | Run `check` plus security, integration, browser, and accessibility suites. |
 
 Tests may add narrower internal scripts, but the commands above are the public
 developer contract and must stay accurate in `README.md` and `AGENTS.md`.

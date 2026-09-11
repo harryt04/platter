@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test'
 
+let clientAddress = 1
+
+test.beforeEach(async ({ context }) => {
+  const address = `10.${process.pid % 200}.${Math.floor(clientAddress / 255)}.${clientAddress % 255}`
+  clientAddress += 1
+  await context.setExtraHTTPHeaders({ 'x-forwarded-for': address })
+})
+
 test.describe('account deletion', () => {
   test.skip(
     !process.env.E2E_USER_EMAIL || !process.env.E2E_USER_PASSWORD,

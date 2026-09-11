@@ -605,10 +605,10 @@ missing-optional-metadata states.
 | `npm run lint` / `typecheck` | Run ESLint or TypeScript checks. |
 | `npm run test` / `test:security` / `test:watch` | Run the unit/component suite, security regression suite, or watch tests. |
 | `npm run test:integration` | Run integration tests against a test/CI Mongo database. |
-| `npm run test:e2e` / `test:a11y` | Run production Playwright or tagged accessibility tests. |
+| `npm run test:e2e` / `test:a11y` | Run the deterministic Chromium production Playwright suite or its tagged accessibility checks. Use `npx playwright test` for the full configured browser matrix. |
 | `npm run db:indexes` / `db:migrate` | Reconcile indexes or apply the migration ledger. |
-| `npm run check` | Format check, lint, typecheck, tests, and build. |
-| `npm run ci` | Alias for the merge-ready local check. |
+| `npm run check` | Format check, lint, typecheck, unit/component tests, and build. |
+| `npm run ci` | Full merge-ready check: `check`, security, integration, browser, and accessibility tests. |
 
 See [deployment notes](docs/mvp/deployment.md) for reverse proxy, MongoDB,
 SMTP, analytics, and future Google OAuth guidance.
@@ -616,6 +616,12 @@ SMTP, analytics, and future Google OAuth guidance.
 Integration tests refuse to write to a development database. For a host-side
 Mongo replica set, use a test database and direct connection, for example:
 `MONGODB_URI='mongodb://127.0.0.1:27017/?directConnection=true' MONGODB_DATABASE=platter_test npm run test:integration`.
+
+`npm run ci` includes the integration and Playwright suites, so run it after
+starting the documented local services and provisioning the ignored E2E
+account. It uses the same production-build browser server as
+`npm run test:e2e`; set `MONGODB_DATABASE` to a test or CI database when
+running the full command locally.
 
 The integration foundation suite includes a synthetic performance guard for
 public discovery and normal list loads. It seeds 100 public recipes and 20

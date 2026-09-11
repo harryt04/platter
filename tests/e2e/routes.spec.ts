@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test'
 
+let clientAddress = 1
+
+test.beforeEach(async ({ context }) => {
+  const address = `10.${process.pid % 200}.${Math.floor(clientAddress / 255)}.${clientAddress % 255}`
+  clientAddress += 1
+  await context.setExtraHTTPHeaders({ 'x-forwarded-for': address })
+})
+
 test('public discovery is reachable', async ({ page }) => {
   await page.goto('/discover')
   await expect(
@@ -105,29 +113,45 @@ test.describe('authenticated list workflow', () => {
     const prefix = `Browser ${Date.now()}`
     let firstListUrl = ''
     for (const suffix of ['Family', 'Guests', 'Personal']) {
-      await page.getByRole('link', { name: 'New list' }).click()
+      await page
+        .getByRole('main')
+        .getByRole('link', { name: 'New list' })
+        .click()
       await page
         .getByRole('textbox', { name: 'List name' })
         .fill(`${prefix} ${suffix}`)
       await page.getByRole('button', { name: 'Create list' }).click()
-      await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+      await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
       if (!firstListUrl) firstListUrl = page.url()
       await page.goto('/lists')
     }
 
-    await expect(page.getByText(`${prefix} Family`)).toBeVisible()
-    await expect(page.getByText(`${prefix} Guests`)).toBeVisible()
-    await expect(page.getByText(`${prefix} Personal`)).toBeVisible()
+    await expect(
+      page.getByRole('main').getByText(`${prefix} Family`),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('main').getByText(`${prefix} Guests`),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('main').getByText(`${prefix} Personal`),
+    ).toBeVisible()
 
     await page.goto(firstListUrl)
-    await page.getByRole('button', { name: 'Archive list' }).click()
-    await page.getByRole('button', { name: 'Archive list' }).last().click()
+    await page.getByRole('button', { name: 'Archive list' }).first().click()
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Archive list' })
+      .click()
     await expect(page.getByText('This list is archived.')).toBeVisible()
+    await page.reload()
 
-    await page.getByRole('button', { name: 'Unarchive list' }).click()
-    await page.getByRole('button', { name: 'Unarchive list' }).last().click()
+    await page.getByRole('button', { name: 'Unarchive list' }).first().click()
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Unarchive list' })
+      .click()
     await expect(
-      page.getByRole('button', { name: 'Start shopping' }),
+      page.getByRole('link', { name: 'Start shopping' }),
     ).toBeVisible()
   })
 
@@ -147,7 +171,7 @@ test.describe('authenticated list workflow', () => {
       .getByRole('textbox', { name: 'List name' })
       .fill(`Checklist access ${Date.now()}`)
     await page.getByRole('button', { name: 'Create list' }).click()
-    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+    await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
     const listUrl = page.url()
     const checklistUrl = `${listUrl}/shop`
 
@@ -210,7 +234,7 @@ test.describe('authenticated list workflow', () => {
     const sixPeopleList = `Scale six ${Date.now()}`
     await page.getByRole('textbox', { name: 'List name' }).fill(sixPeopleList)
     await page.getByRole('button', { name: 'Create list' }).click()
-    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+    await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
 
     await page.goto(`/recipes/${process.env.E2E_SCALE_RECIPE_ID}`)
     const list = page.getByLabel('List')
@@ -243,7 +267,7 @@ test.describe('authenticated list workflow', () => {
       .getByRole('textbox', { name: 'List name' })
       .fill(`Manual groceries ${Date.now()}`)
     await page.getByRole('button', { name: 'Create list' }).click()
-    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+    await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
 
     await page
       .getByRole('link', { name: 'Review at home', exact: true })
@@ -299,7 +323,7 @@ test.describe('authenticated list workflow', () => {
       .getByRole('textbox', { name: 'List name' })
       .fill(`Complete run ${Date.now()}`)
     await page.getByRole('button', { name: 'Create list' }).click()
-    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+    await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
 
     await page.getByRole('link', { name: 'Start shopping' }).click()
     await expect(
@@ -500,7 +524,7 @@ test.describe('authenticated list workflow', () => {
       .getByRole('textbox', { name: 'List name' })
       .fill(`Purchased groceries ${Date.now()}`)
     await page.getByRole('button', { name: 'Create list' }).click()
-    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+    await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
 
     await page
       .getByRole('link', { name: 'Review at home', exact: true })
@@ -567,7 +591,7 @@ test.describe('authenticated list workflow', () => {
       .getByRole('textbox', { name: 'List name' })
       .fill(`Split groceries ${Date.now()}`)
     await page.getByRole('button', { name: 'Create list' }).click()
-    await expect(page).toHaveURL(/\/lists\/[^/]+$/)
+    await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
 
     await page.getByRole('link', { name: 'Review at home' }).click()
     for (const [index, line] of ['2 cups onions', '1 cup onions'].entries()) {

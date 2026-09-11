@@ -55,6 +55,12 @@ export function ListLifecycleActions({
   const [error, setError] = useState('')
   const selectedCopy = action ? actionCopy[action] : null
 
+  function beginAction(nextAction: LifecycleAction) {
+    setBusy(false)
+    setError('')
+    setAction(nextAction)
+  }
+
   async function applyAction() {
     if (!action) return
     setBusy(true)
@@ -80,6 +86,7 @@ export function ListLifecycleActions({
         router.push('/lists')
       } else {
         setAction(null)
+        setBusy(false)
         router.refresh()
       }
     } catch (caught) {
@@ -104,12 +111,12 @@ export function ListLifecycleActions({
         <Button
           variant="outline"
           onClick={() =>
-            setAction(status === 'active' ? 'archive' : 'unarchive')
+            beginAction(status === 'active' ? 'archive' : 'unarchive')
           }
         >
           {status === 'active' ? 'Archive list' : 'Unarchive list'}
         </Button>
-        <Button variant="destructive" onClick={() => setAction('delete')}>
+        <Button variant="destructive" onClick={() => beginAction('delete')}>
           Delete list
         </Button>
       </div>

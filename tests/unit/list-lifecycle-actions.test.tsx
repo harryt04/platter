@@ -54,6 +54,45 @@ describe('ListLifecycleActions', () => {
     expect(refresh).toHaveBeenCalled()
   })
 
+  it('reenables a later lifecycle action after an archive succeeds', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ list: { status: 'archived' } }), {
+        status: 200,
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+    const view = render(
+      <ListLifecycleActions
+        listId="list-1"
+        listName="Family"
+        status="active"
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Archive list' }))
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'Archive list',
+      }),
+    )
+
+    view.rerender(
+      <ListLifecycleActions
+        listId="list-1"
+        listName="Family"
+        status="archived"
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: 'Unarchive list' }))
+
+    expect(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'Unarchive list',
+      }),
+    ).toBeEnabled()
+  })
+
   it('names the shared impact before deleting and redirects afterward', async () => {
     const fetchMock = vi
       .fn()

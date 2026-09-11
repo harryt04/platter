@@ -1,5 +1,13 @@
 import { expect, test } from '@playwright/test'
 
+let clientAddress = 1
+
+test.beforeEach(async ({ context }) => {
+  const address = `10.${process.pid % 200}.${Math.floor(clientAddress / 255)}.${clientAddress % 255}`
+  clientAddress += 1
+  await context.setExtraHTTPHeaders({ 'x-forwarded-for': address })
+})
+
 const hasPublishedHostedPolicy =
   process.env.PUBLIC_CATALOG_POLICIES_PUBLISHED === 'true' &&
   Boolean(

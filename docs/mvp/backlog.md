@@ -1110,7 +1110,7 @@ and responsive QA
 - [ ] Data model, importer adapter contract, grocery calculations,
       synchronization protocol, privacy boundaries, indexes, migrations, and
       deployment assumptions are current and linked from contributor docs.
-- [ ] Clean-clone setup and every documented non-watch command pass; CI includes
+- [x] Clean-clone setup and every documented non-watch command pass; CI includes
       format, lint, type checks, unit, integration, browser, accessibility,
       security, and production-build checks.
 - [ ] The repository contains no secrets, private data, unlicensed images, or

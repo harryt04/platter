@@ -392,9 +392,11 @@ describe('invitation management routes', () => {
       email: invitation.email,
       status: 'pending',
     })
-    expect(body.invitation.inviteUrl).toMatch(
-      /^http:\/\/localhost:3000\/invitations\/[A-Za-z0-9_-]{43}$/,
+    const inviteUrl = new URL(body.invitation.inviteUrl)
+    expect(inviteUrl.origin).toBe(
+      process.env.APP_URL ?? 'http://localhost:3000',
     )
+    expect(inviteUrl.pathname).toMatch(/^\/invitations\/[A-Za-z0-9_-]{43}$/)
     const update = invitationCollection.findOneAndUpdate.mock.calls[0][1]
     expect(update.$set.tokenHash).not.toBe(invitation.tokenHash)
     expect(update.$set.expiresAt).not.toBe(invitation.expiresAt)

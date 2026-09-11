@@ -223,6 +223,7 @@ describe('Mongo-backed list management workflow', () => {
     expect(oldRunId).toBeDefined()
     if (!oldRunId) throw new Error('Expected the list to have an active run.')
     const responseBody = {
+      runId: oldRunId,
       operationId: `${fixtureToken}-completion`,
       clientId: `${fixtureToken}-client`,
       baseRevision: 0,

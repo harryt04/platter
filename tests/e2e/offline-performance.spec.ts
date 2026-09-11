@@ -1,5 +1,13 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test'
 
+let clientAddress = 1
+
+test.beforeEach(async ({ context }) => {
+  const address = `10.${process.pid % 200}.${Math.floor(clientAddress / 255)}.${clientAddress % 255}`
+  clientAddress += 1
+  await context.setExtraHTTPHeaders({ 'x-forwarded-for': address })
+})
+
 const userEmail = process.env.E2E_USER_EMAIL
 const userPassword = process.env.E2E_USER_PASSWORD
 const cachedOfflineNavigationBudgetMs = 2_000

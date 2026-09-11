@@ -796,7 +796,7 @@ visibility; 09: Manage the personal recipe library
 
 **Status:** ready-for-agent
 
-- [ ] A signed-in user can view and update supported profile fields, including
+- [x] A signed-in user can view and update supported profile fields, including
       display name and locale, with server validation.
 - [ ] Locale affects user-facing date and supported unit presentation without
       changing deterministic stored calculation values.

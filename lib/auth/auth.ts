@@ -22,6 +22,7 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       role: { type: 'string', required: false, defaultValue: 'user' },
+      locale: { type: 'string', required: false, defaultValue: 'en-US' },
     },
   },
   plugins: [nextCookies()],

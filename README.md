@@ -223,6 +223,9 @@ explicitly restore one active target. Restoration is transactional and creates a
 second audit record; a recipe is reopened only when no other active suppression
 still matches it, and the moderation route has no list-membership or shopping
 authority.
+Signed-in users can now view and update their display name and supported locale
+from Account settings. Profile updates are validated on the server, sanitize
+control characters, and keep the authentication email read-only.
 New imports and historical reprocessing check all of those source identities
 before exposing a preview, while preview saves repeat the check inside their
 transaction so a suppression cannot race with public publication.

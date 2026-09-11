@@ -1,9 +1,26 @@
-import { PlaceholderPage } from '@/components/states/placeholder-page'
-export default function AccountPage() {
+import { AccountProfileForm } from '@/components/settings/account-profile-form'
+import { requireSession } from '@/lib/auth/authorization'
+import { defaultProfileLocale, profileLocaleOptions } from '@/lib/account'
+import { ContentContainer, PageHeader } from '@/components/shell/page-header'
+
+export default async function AccountPage() {
+  const session = await requireSession('/settings/account')
+  const initialLocale =
+    profileLocaleOptions.find(({ value }) => value === session.user.locale)
+      ?.value ?? defaultProfileLocale
+
   return (
-    <PlaceholderPage
-      title="Account"
-      description="Review your account details. Deletion impact and export controls will be added with the Accounts feature."
-    />
+    <ContentContainer>
+      <PageHeader
+        eyebrow="Settings"
+        title="Account"
+        description="Keep your name and locale up to date. Your email address is managed by sign-in."
+      />
+      <AccountProfileForm
+        email={session.user.email}
+        initialLocale={initialLocale}
+        initialName={session.user.name}
+      />
+    </ContentContainer>
   )
 }

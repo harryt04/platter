@@ -953,6 +953,9 @@ complaints; 35: Delete an account safely
   - [x] Invitation-notification inspection and acceptance validate recipient
         response envelopes and hide storage, transaction, or malformed-record
         failures behind a stable retryable problem response.
+  - [x] Editor leave-list mutations validate the returned list envelope and
+        hide authentication, storage, or malformed-record failures behind a
+        stable retryable problem response.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

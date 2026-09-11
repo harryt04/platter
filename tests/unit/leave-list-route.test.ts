@@ -37,6 +37,65 @@ const list = {
 }
 
 describe('POST /api/v1/lists/[listId]/leave', () => {
+  it('hides authentication and storage failures behind a retryable problem', async () => {
+    getSession.mockRejectedValue(new Error('authentication service offline'))
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/leave', {
+        method: 'POST',
+      }),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect((await response.json()).code).toBe('LIST_LEAVE_UNAVAILABLE')
+  })
+
+  it('hides storage failures behind a retryable problem', async () => {
+    getSession.mockResolvedValue({ user: { id: 'editor-1' } })
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/leave', {
+        method: 'POST',
+      }),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    const problem = await response.json()
+    expect(problem.code).toBe('LIST_LEAVE_UNAVAILABLE')
+    expect(problem.detail).not.toContain('database')
+  })
+
+  it('rejects a malformed updated list instead of returning untrusted data', async () => {
+    getSession.mockResolvedValue({ user: { id: 'editor-1' } })
+    const collection = {
+      findOne: vi.fn().mockResolvedValue(list),
+      findOneAndUpdate: vi.fn().mockResolvedValue({
+        ...list,
+        activeRunId: '',
+        members: [list.members[0]],
+      }),
+    }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/leave', {
+        method: 'POST',
+      }),
+      { params: Promise.resolve({ listId: 'list-1' }) },
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('LIST_LEAVE_UNAVAILABLE')
+  })
+
   it('rejects malformed list ids before touching list storage', async () => {
     getSession.mockResolvedValue({ user: { id: 'editor-1' } })
     const collection = { findOneAndUpdate: vi.fn() }

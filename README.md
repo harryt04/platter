@@ -87,6 +87,9 @@ stable retryable problems.
 Owner-only list lifecycle updates and deletes now use the same validated
 response and retryable storage-failure boundary, without exposing malformed
 persisted list records or database details.
+Editor leave-list mutations now validate their returned list envelope and hide
+authentication, storage, or malformed-record failures behind the same stable
+retryable problem contract.
 The personal recipe-library API now validates recipe envelopes and pagination
 results, passes the user's search text into the library query, and hides
 storage or malformed-record failures behind the same stable retryable problem

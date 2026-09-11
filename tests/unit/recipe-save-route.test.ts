@@ -39,6 +39,20 @@ function setup(recipe: typeof publicRecipe | null = publicRecipe) {
 beforeEach(() => vi.clearAllMocks())
 
 describe('/api/v1/recipes/[recipeId]/save', () => {
+  it('rejects malformed recipe ids before querying storage', async () => {
+    const { databaseCollection } = setup()
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/recipes/%00/save', {
+        method: 'POST',
+      }),
+      { params: Promise.resolve({ recipeId: '\u0000' }) },
+    )
+
+    expect(response.status).toBe(404)
+    expect(databaseCollection).not.toHaveBeenCalled()
+  })
+
   it('requires authentication to save or remove a recipe', async () => {
     getSession.mockResolvedValue(null)
 

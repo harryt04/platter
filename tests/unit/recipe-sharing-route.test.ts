@@ -68,6 +68,21 @@ function setup({
 }
 
 describe('PUT /api/v1/recipes/[recipeId]/shares', () => {
+  it('rejects malformed recipe ids before querying storage', async () => {
+    const collection = setup()
+
+    const response = await PUT(
+      new Request('http://localhost/api/v1/recipes/%00/shares', {
+        method: 'PUT',
+        body: JSON.stringify({ listIds: [] }),
+      }),
+      { params: Promise.resolve({ recipeId: '\u0000' }) },
+    )
+
+    expect(response.status).toBe(404)
+    expect(collection.findOne).not.toHaveBeenCalled()
+  })
+
   it('shares an authored usable recipe only with current list members', async () => {
     const collection = setup()
 

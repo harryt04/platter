@@ -7,6 +7,7 @@ import {
   ownedRecipeFilter,
   recipeShareFilter,
   recipeShareUpdateSchema,
+  recipeIdSchema,
   recipeShares,
   type RecipeDraftDocument,
   type RecipeShareDocument,
@@ -76,6 +77,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return authenticationRequired('Sign in to manage recipe sharing.')
 
   const { recipeId } = await context.params
+  if (!recipeIdSchema.safeParse(recipeId).success) return recipeNotFound()
   const recipe = await ownedRecipe(recipeId, session.user.id)
   if (!recipe) return recipeNotFound()
 
@@ -106,6 +108,7 @@ export async function PUT(request: Request, context: RouteContext) {
   if (!session) return authenticationRequired('Sign in to share a recipe.')
 
   const { recipeId } = await context.params
+  if (!recipeIdSchema.safeParse(recipeId).success) return recipeNotFound()
   const recipe = await ownedRecipe(recipeId, session.user.id)
   if (!recipe) return recipeNotFound()
   if (

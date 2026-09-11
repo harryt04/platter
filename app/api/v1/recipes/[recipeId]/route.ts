@@ -11,6 +11,7 @@ import {
   publicRecipeFilter,
   recipeShares,
   recipeVersions,
+  recipeIdSchema,
   toRecipeDraft,
   toRecipeDraftForViewer,
   updateDraftSchema,
@@ -124,6 +125,7 @@ function recipeVersionConflict() {
 
 export async function GET(_request: Request, context: RouteContext) {
   const { recipeId } = await context.params
+  if (!recipeIdSchema.safeParse(recipeId).success) return notFoundResponse()
   const session = await getSession()
   if (!session) {
     const draft = await publicRecipe(recipeId)
@@ -155,6 +157,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!session) return authenticationRequired('Sign in to edit your recipes.')
 
   const { recipeId } = await context.params
+  if (!recipeIdSchema.safeParse(recipeId).success) return notFoundResponse()
   const draft = await ownedDraft(recipeId, session.user.id)
   if (!draft) return notFoundResponse()
 
@@ -354,6 +357,7 @@ export async function DELETE(request: Request, context: RouteContext) {
   if (!session) return authenticationRequired('Sign in to delete your recipes.')
 
   const { recipeId } = await context.params
+  if (!recipeIdSchema.safeParse(recipeId).success) return notFoundResponse()
   const draft = await ownedDraft(recipeId, session.user.id)
   if (!draft) return notFoundResponse()
 

@@ -5,6 +5,7 @@ import { requireSession } from '@/lib/auth/authorization'
 import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import {
   ownedRecipeFilter,
+  recipeIdSchema,
   recipeShares,
   type RecipeDraftDocument,
   type RecipeShareDocument,
@@ -18,6 +19,7 @@ export default async function EditRecipePage({
   params: Promise<{ recipeId: string }>
 }) {
   const { recipeId } = await params
+  if (!recipeIdSchema.safeParse(recipeId).success) notFound()
   const session = await requireSession(`/recipes/${recipeId}/edit`)
   const db = await getConnectedDatabase()
   const draft = await db

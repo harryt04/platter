@@ -21,6 +21,7 @@ import {
   getRecipeSourceMetadata,
   isRecipeImagePubliclyPermitted,
   publicRecipeFilter,
+  recipeIdSchema,
   toRecipeDraftForViewer,
 } from '@/lib/recipes/drafts'
 import type { RecipeDraftDocument } from '@/lib/recipes/drafts'
@@ -31,6 +32,7 @@ export default async function RecipePage({
   params: Promise<{ recipeId: string }>
 }) {
   const { recipeId } = await params
+  if (!recipeIdSchema.safeParse(recipeId).success) notFound()
   const session = await getSession()
   const db = await getConnectedDatabase()
   const document = await db

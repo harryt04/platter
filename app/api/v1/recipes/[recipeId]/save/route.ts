@@ -3,6 +3,7 @@ import { getConnectedDatabase } from '@/lib/db/mongo-client'
 import { problemResponse } from '@/lib/contracts/problem'
 import {
   publicRecipeFilter,
+  recipeIdSchema,
   type RecipeDraftDocument,
 } from '@/lib/recipes/drafts'
 import {
@@ -38,6 +39,7 @@ export async function POST(_request: Request, context: RouteContext) {
   if (!session) return authenticationRequired()
 
   const { recipeId } = await context.params
+  if (!recipeIdSchema.safeParse(recipeId).success) return recipeNotFound()
   const db = await getConnectedDatabase()
   const recipe = await db
     .collection<RecipeDraftDocument>('recipes')
@@ -59,6 +61,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   if (!session) return authenticationRequired()
 
   const { recipeId } = await context.params
+  if (!recipeIdSchema.safeParse(recipeId).success) return recipeNotFound()
   const db = await getConnectedDatabase()
   await recipeSaves(
     db.collection<RecipeSaveDocument>('recipe_saves'),

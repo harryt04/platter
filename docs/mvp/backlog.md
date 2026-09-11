@@ -874,6 +874,8 @@ complaints; 35: Delete an account safely
 - [ ] List IDs, recipe IDs, run IDs, history IDs, import IDs, and complaint IDs
       are treated as untrusted and checked against least-privilege policy on every
       page, API, realtime, and worker-triggering operation.
+- [x] Recipe detail, edit, save, and sharing page/API boundaries validate
+      bounded opaque recipe IDs before querying or mutating storage.
 - [ ] All writes and external reads use shared schemas, stable problem responses,
       opaque IDs and cursors, and never expose stack traces or database errors.
 - [ ] Authentication, invitations, imports, public search, and public reports

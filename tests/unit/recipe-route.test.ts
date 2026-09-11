@@ -652,6 +652,22 @@ describe('DELETE /api/v1/recipes/[recipeId]', () => {
 })
 
 describe('GET /api/v1/recipes/[recipeId]', () => {
+  it('rejects malformed recipe ids before querying storage', async () => {
+    getSession.mockResolvedValue(null)
+    const collection = { findOne: vi.fn() }
+    getConnectedDatabase.mockResolvedValue({
+      collection: vi.fn().mockReturnValue(collection),
+    })
+
+    const response = await GET(
+      new Request('http://localhost/api/v1/recipes/%00'),
+      { params: Promise.resolve({ recipeId: '\u0000' }) },
+    )
+
+    expect(response.status).toBe(404)
+    expect(collection.findOne).not.toHaveBeenCalled()
+  })
+
   it('allows anonymous readers to view a public recipe', async () => {
     getSession.mockResolvedValue(null)
     const collection = {

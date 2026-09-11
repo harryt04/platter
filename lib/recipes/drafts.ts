@@ -14,6 +14,16 @@ import type {
 const cleanText = (value: string) =>
   value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim()
 
+/** Route and persistence boundary for opaque recipe identifiers. */
+export const recipeIdSchema = z
+  .string({ error: 'Enter a recipe id.' })
+  .min(1, 'Enter a recipe id.')
+  .max(200, 'Recipe ids must be 200 characters or fewer.')
+  .refine(
+    (value) => !/[\u0000-\u001F\u007F]/.test(value),
+    'Recipe ids cannot contain control characters.',
+  )
+
 const recipeTitleSchema = z
   .string({ error: 'Enter a recipe title.' })
   .transform(cleanText)

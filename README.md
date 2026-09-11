@@ -58,6 +58,9 @@ their independent boundaries.
 Authenticated import status list and detail reads also validate persisted
 summaries before returning them, and hide database or malformed-record failures
 behind the same retryable problem contract.
+Administrator complaint queue and status updates also hide database and audit
+failures behind stable retryable problem responses without exposing backend
+details.
 MongoDB’s shared index setup covers weighted public discovery, approved public
 canonical-URL deduplication, list membership, one active run per list, and
 history lookup by list and completion date.

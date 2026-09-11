@@ -111,6 +111,36 @@ describe('admin complaint routes', () => {
     expect(getConnectedDatabase).not.toHaveBeenCalled()
   })
 
+  it('hides complaint queue storage and audit failures behind a retryable problem', async () => {
+    getConnectedDatabase.mockRejectedValueOnce(
+      new Error('database unavailable'),
+    )
+
+    const response = await GET()
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    )
+    expect(await response.json()).toEqual({
+      type: 'https://platter.dev/problems/admin-complaint-queue-unavailable',
+      title: 'Complaint queue temporarily unavailable',
+      status: 503,
+      detail:
+        'The administrator complaint queue is temporarily unavailable. Try again shortly.',
+      code: 'ADMIN_COMPLAINT_QUEUE_UNAVAILABLE',
+    })
+
+    const { collection } = setup()
+    collection.insertOne.mockRejectedValueOnce(new Error('audit unavailable'))
+    const auditResponse = await GET()
+
+    expect(auditResponse.status).toBe(503)
+    expect(JSON.stringify(await auditResponse.json())).not.toContain(
+      'audit unavailable',
+    )
+  })
+
   it('records an administrator status transition with actor and history', async () => {
     const { collection, updated } = setup()
     const response = await PATCH(request({ status: 'actioned' }), {
@@ -143,6 +173,22 @@ describe('admin complaint routes', () => {
         toStatus: 'actioned',
       }),
     )
+  })
+
+  it('hides complaint update storage failures behind a retryable problem', async () => {
+    getConnectedDatabase.mockRejectedValueOnce(
+      new Error('database unavailable'),
+    )
+
+    const response = await PATCH(request({ status: 'actioned' }), {
+      params: Promise.resolve({ complaintId }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      type: 'https://platter.dev/problems/admin-complaint-storage-unavailable',
+      code: 'ADMIN_COMPLAINT_STORAGE_UNAVAILABLE',
+    })
   })
 
   it('validates IDs, statuses, and the complaint state machine', async () => {

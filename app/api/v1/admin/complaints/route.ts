@@ -27,26 +27,41 @@ function administratorRequired() {
   })
 }
 
+function complaintQueueUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/admin-complaint-queue-unavailable',
+    title: 'Complaint queue temporarily unavailable',
+    status: 503,
+    detail:
+      'The administrator complaint queue is temporarily unavailable. Try again shortly.',
+    code: 'ADMIN_COMPLAINT_QUEUE_UNAVAILABLE',
+  })
+}
+
 export async function GET() {
   const session = await getSession()
   if (!session) return authenticationRequired()
   if (session.user.role !== 'admin') return administratorRequired()
 
-  const db = await getConnectedDatabase()
-  const documents = await db
-    .collection<ComplaintDocument>('complaints')
-    .find({})
-    .sort({ receivedAt: -1, _id: -1 })
-    .limit(100)
-    .toArray()
+  try {
+    const db = await getConnectedDatabase()
+    const documents = await db
+      .collection<ComplaintDocument>('complaints')
+      .find({})
+      .sort({ receivedAt: -1, _id: -1 })
+      .limit(100)
+      .toArray()
 
-  await recordComplaintAudit(db, {
-    action: 'queue-viewed',
-    actorId: session.user.id,
-    complaintIds: documents.map((document) => document._id),
-  })
+    await recordComplaintAudit(db, {
+      action: 'queue-viewed',
+      actorId: session.user.id,
+      complaintIds: documents.map((document) => document._id),
+    })
 
-  return Response.json({
-    complaints: documents.map(toAdminComplaintSummary),
-  })
+    return Response.json({
+      complaints: documents.map(toAdminComplaintSummary),
+    })
+  } catch {
+    return complaintQueueUnavailable()
+  }
 }

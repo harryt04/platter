@@ -73,6 +73,17 @@ function transitionNotAllowed() {
   })
 }
 
+function complaintStorageUnavailable() {
+  return problemResponse({
+    type: 'https://platter.dev/problems/admin-complaint-storage-unavailable',
+    title: 'Complaint update temporarily unavailable',
+    status: 503,
+    detail:
+      'The administrator complaint update is temporarily unavailable. Try again shortly.',
+    code: 'ADMIN_COMPLAINT_STORAGE_UNAVAILABLE',
+  })
+}
+
 export async function PATCH(request: Request, context: RouteContext) {
   const session = await getSession()
   if (!session) return authenticationRequired()
@@ -93,45 +104,49 @@ export async function PATCH(request: Request, context: RouteContext) {
   const parsed = updateComplaintStatusSchema.safeParse(body)
   if (!parsed.success) return validationFailed()
 
-  const db = await getConnectedDatabase()
-  const complaints = db.collection<ComplaintDocument>('complaints')
-  const current = await complaints.findOne({ _id: complaintId })
-  if (!current) return complaintNotFound()
-  if (!canTransitionComplaint(current.status, parsed.data.status)) {
-    return transitionNotAllowed()
-  }
-  if (current.status === parsed.data.status) {
-    return Response.json({ complaint: toAdminComplaintSummary(current) })
-  }
+  try {
+    const db = await getConnectedDatabase()
+    const complaints = db.collection<ComplaintDocument>('complaints')
+    const current = await complaints.findOne({ _id: complaintId })
+    if (!current) return complaintNotFound()
+    if (!canTransitionComplaint(current.status, parsed.data.status)) {
+      return transitionNotAllowed()
+    }
+    if (current.status === parsed.data.status) {
+      return Response.json({ complaint: toAdminComplaintSummary(current) })
+    }
 
-  const changedAt = isoDateTime(new Date())
-  const updated = await complaints.findOneAndUpdate(
-    { _id: complaintId, status: current.status },
-    {
-      $set: {
-        status: parsed.data.status,
-        updatedAt: changedAt,
-      },
-      $push: {
-        statusHistory: {
+    const changedAt = isoDateTime(new Date())
+    const updated = await complaints.findOneAndUpdate(
+      { _id: complaintId, status: current.status },
+      {
+        $set: {
           status: parsed.data.status,
-          changedAt,
-          actorType: 'administrator',
-          actorId: session.user.id,
+          updatedAt: changedAt,
+        },
+        $push: {
+          statusHistory: {
+            status: parsed.data.status,
+            changedAt,
+            actorType: 'administrator',
+            actorId: session.user.id,
+          },
         },
       },
-    },
-    { returnDocument: 'after' },
-  )
-  if (!updated) return transitionNotAllowed()
+      { returnDocument: 'after' },
+    )
+    if (!updated) return transitionNotAllowed()
 
-  await recordComplaintAudit(db, {
-    action: 'status-changed',
-    actorId: session.user.id,
-    complaintIds: [complaintId],
-    fromStatus: current.status,
-    toStatus: parsed.data.status,
-  })
+    await recordComplaintAudit(db, {
+      action: 'status-changed',
+      actorId: session.user.id,
+      complaintIds: [complaintId],
+      fromStatus: current.status,
+      toStatus: parsed.data.status,
+    })
 
-  return Response.json({ complaint: toAdminComplaintSummary(updated) })
+    return Response.json({ complaint: toAdminComplaintSummary(updated) })
+  } catch {
+    return complaintStorageUnavailable()
+  }
 }

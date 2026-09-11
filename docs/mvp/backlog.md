@@ -889,6 +889,9 @@ complaints; 35: Delete an account safely
   - [x] Authenticated import status list and detail reads validate normalized
         persisted summaries and return a retryable problem when storage or
         persisted status data is unavailable.
+  - [x] Administrator complaint queue and status-update storage or audit
+        failures return stable retryable problems without exposing backend
+        details.
 - [x] Authentication, invitations, imports, public search, and public reports
       have tested rate limits with useful retry behavior.
   - [x] Public recipe search is rate-limited per client address with tested

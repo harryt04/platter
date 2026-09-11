@@ -202,7 +202,7 @@ export function GroceryAmountOverrideForm({
           </p>
           {suggestion && (
             <div
-              className="border-warning/40 bg-warning/10 text-warning-foreground mt-2 rounded-md border p-2 text-xs"
+              className="border-warning/40 bg-warning/10 text-warning mt-2 rounded-md border p-2 text-xs"
               role="note"
             >
               <p>

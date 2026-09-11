@@ -12,7 +12,7 @@ export function GroceryOverrideWarning({
 
   return (
     <p
-      className="border-warning/40 bg-warning/10 text-warning-foreground rounded-md border p-3 text-xs"
+      className="border-warning/40 bg-warning/10 text-warning rounded-md border p-3 text-xs"
       role="alert"
     >
       Your intended shopping amount remains{' '}

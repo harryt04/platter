@@ -1052,8 +1052,13 @@ recipes; 31: Process public-content complaints; 35: Delete an account safely
       keyboard and screen-reader reviews cover the shopping journey.
 - [x] Remote changes, optimistic state, offline queues, reconciliation, and
       completion are announced usefully without excessive live-region output.
-- [ ] Status never depends on color alone, normal text and controls meet WCAG
-      2.2 AA contrast, and motion respects reduced-motion preferences.
+- [x] Status never depends on color alone, normal text and controls meet WCAG
+      2.2 AA contrast, and motion respects reduced-motion preferences. Shopping
+      status labels remain visible alongside their semantic controls; tinted
+      warning surfaces use the semantic warning text token instead of the
+      foreground reserved for solid warning fills; and the shopping
+      accessibility browser check verifies reduced-motion behavior in every
+      supported theme.
 - [ ] Common shopping actions remain one tap, touch targets are at least 44 by
       44 pixels, and all reordering has a non-drag alternative.
 

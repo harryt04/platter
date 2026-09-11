@@ -92,7 +92,7 @@ export default async function ReviewPage({
         action={<ShoppingModeNavigation listId={listId} mode="review" />}
       />
       {isReadOnly && (
-        <p className="border-warning/40 bg-warning/10 text-warning-foreground mb-6 rounded-[var(--radius-card)] border p-4 text-sm">
+        <p className="border-warning/40 bg-warning/10 text-warning mb-6 rounded-[var(--radius-card)] border p-4 text-sm">
           This list is archived. The shopping run is read-only until an owner
           unarchives it.
         </p>

@@ -176,7 +176,7 @@ export function GroceryRow({
           suggestion.left.id === item?.id ? suggestion.right : suggestion.left
         return (
           <div
-            className="border-warning/40 bg-warning/10 text-warning-foreground rounded-[var(--radius-card)] border p-3 text-sm"
+            className="border-warning/40 bg-warning/10 text-warning rounded-[var(--radius-card)] border p-3 text-sm"
             key={suggestion.id}
             role="note"
           >

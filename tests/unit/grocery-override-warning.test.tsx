@@ -26,7 +26,10 @@ describe('GroceryOverrideWarning', () => {
   it('states the intended amount and both calculated requirements', () => {
     render(<GroceryOverrideWarning item={item} />)
 
-    expect(screen.getByRole('alert')).toHaveTextContent(
+    const warning = screen.getByRole('alert')
+    expect(warning).toHaveClass('text-warning')
+    expect(warning).not.toHaveClass('text-warning-foreground')
+    expect(warning).toHaveTextContent(
       'Your intended shopping amount remains 5.25 lb. The calculated requirement changed from 2 lb to 3 lb.',
     )
   })

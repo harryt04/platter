@@ -62,10 +62,14 @@ The primary signal is **Cobalt** and the contrasting secondary signal is **Marig
 | Muted | `#606B7A` | `#A6B1C0` | secondary text |
 | Border | `#DFE1E6` | `#303845` | structural separation |
 | Success | `#19754B` | `#4EBD7A` | confirmed/successful state |
-| Warning | `#A96400` | `#FFCF63` | caution requiring attention |
+| Warning | `#925700` | `#FFCF63` | caution requiring attention |
 | Destructive | `#BA2E3A` | `#FF8590` | irreversible or failed action |
 
 Use semantic state tokens for success, warning, and destructive states. `Already have` and `Purchased` must each use a visible control state plus a text label; their meaning must survive grayscale, high contrast, and color-vision differences.
+
+Use `text-warning` on tinted warning surfaces such as `bg-warning/10` or
+`bg-warning/15`. Reserve `text-warning-foreground` for solid `bg-warning`
+fills, where the theme supplies a contrasting foreground.
 
 ### Theme behavior
 

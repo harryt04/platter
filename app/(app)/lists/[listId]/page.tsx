@@ -116,7 +116,7 @@ export default async function ListPage({
         }
       />
       {list.status === 'archived' && (
-        <p className="border-warning/40 bg-warning/10 text-warning-foreground mb-6 rounded-[var(--radius-card)] border p-4 text-sm">
+        <p className="border-warning/40 bg-warning/10 text-warning mb-6 rounded-[var(--radius-card)] border p-4 text-sm">
           This list is archived. Its shared shopping run is read-only until an
           owner unarchives it.
         </p>

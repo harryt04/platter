@@ -16,7 +16,7 @@ export function OfflineBanner() {
   return offline ? (
     <div
       aria-live="polite"
-      className="border-warning bg-warning/15 text-warning-foreground border-b px-4 py-2 text-center text-sm"
+      className="border-warning bg-warning/15 text-warning border-b px-4 py-2 text-center text-sm"
       role="status"
     >
       Offline. Changes stay on this device until you reconnect.

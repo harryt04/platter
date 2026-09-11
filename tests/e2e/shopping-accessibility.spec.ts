@@ -21,6 +21,29 @@ async function expectAccessible(page: Page) {
   ).toEqual([])
 }
 
+async function expectReducedMotion(page: Page) {
+  const longestMotionInMilliseconds = await page.evaluate(() => {
+    const toMilliseconds = (value: string) => {
+      const number = Number.parseFloat(value)
+      return value.trim().endsWith('s') && !value.trim().endsWith('ms')
+        ? number * 1000
+        : number
+    }
+    return Array.from(document.querySelectorAll<HTMLElement>('*')).reduce(
+      (longest, element) => {
+        const styles = getComputedStyle(element)
+        const durations = [
+          ...styles.transitionDuration.split(','),
+          ...styles.animationDuration.split(','),
+        ].map(toMilliseconds)
+        return Math.max(longest, ...durations)
+      },
+      0,
+    )
+  })
+  expect(longestMotionInMilliseconds).toBeLessThanOrEqual(0.1)
+}
+
 test.describe('shopping responsive and theme accessibility', () => {
   test.skip(
     !userEmail || !userPassword,
@@ -64,7 +87,10 @@ test.describe('shopping responsive and theme accessibility', () => {
       { name: 'Light', colorScheme: 'light' as const, dark: false },
       { name: 'Dark', colorScheme: 'dark' as const, dark: true },
     ]) {
-      await page.emulateMedia({ colorScheme: theme.colorScheme })
+      await page.emulateMedia({
+        colorScheme: theme.colorScheme,
+        reducedMotion: 'reduce',
+      })
       await page.goto('/settings/appearance')
       await page.locator(`#theme-${theme.name.toLowerCase()}`).check()
       await page.goto(shopUrl)
@@ -95,6 +121,7 @@ test.describe('shopping responsive and theme accessibility', () => {
         (await markPurchased.boundingBox())?.height ?? 0,
       ).toBeGreaterThanOrEqual(44)
       await expectAccessible(page)
+      await expectReducedMotion(page)
       await markPurchased.focus()
       await expect(markPurchased).toBeFocused()
       await markPurchased.press('Enter')
@@ -117,5 +144,18 @@ test.describe('shopping responsive and theme accessibility', () => {
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true)
+
+    const archiveResponse = await page.request.patch(
+      `/api/v1/lists/${listId}`,
+      { data: { status: 'archived' } },
+    )
+    expect(archiveResponse.status()).toBe(200)
+    await page.goto(shopUrl)
+    await expect(
+      page.getByText(
+        'This list is archived. The shopping run is read-only until an owner unarchives it.',
+      ),
+    ).toBeVisible()
+    await expectAccessible(page)
   })
 })

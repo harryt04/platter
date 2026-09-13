@@ -13,6 +13,7 @@
     "services:up": "docker compose up -d",
     "services:down": "docker compose down",
     "build": "next build --webpack && tsup --config tsup.config.ts",
+    "start": "next start",
     "start:web": "next start",
     "start:realtime": "node dist/realtime/index.mjs",
     "start:worker": "node dist/worker/index.mjs",

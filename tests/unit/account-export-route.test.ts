@@ -43,7 +43,7 @@ const document = {
     history: [],
   },
   createdAt: '2026-09-10T00:00:00.000Z' as never,
-  expiresAt: '2026-09-12T00:00:00.000Z' as never,
+  expiresAt: '2030-09-12T00:00:00.000Z' as never,
 }
 
 describe('account export routes', () => {

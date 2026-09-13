@@ -7,7 +7,10 @@ declare global {
 
 export function getMongoClient() {
   if (!global.platterMongoClient) {
-    global.platterMongoClient = new MongoClient(serverEnv().MONGODB_URI)
+    global.platterMongoClient = new MongoClient(serverEnv().MONGODB_URI, {
+      connectTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 5000,
+    })
   }
   return global.platterMongoClient
 }

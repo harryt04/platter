@@ -6,6 +6,11 @@ proxy in front of the web process and route the realtime origin to the
 Socket.IO port with WebSocket upgrade support. Set `APP_URL`,
 `BETTER_AUTH_URL`, and `ALLOWED_ORIGINS` to the public origin.
 
+Configure the web resource health check to use `GET /api/v1/health`. A 200
+response confirms that the web process can also reach MongoDB; a 503 response
+means the deployment is not ready to serve database-backed pages. The endpoint
+returns only service status and never exposes connection details.
+
 MongoDB must be a replica set, including for a single-node deployment. Set an
 explicit `MONGODB_DATABASE`; do not share the development database with tests.
 Run `npm run db:indexes` and `npm run db:migrate` as part of release setup.

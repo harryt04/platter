@@ -182,10 +182,7 @@ describe('account export integration', () => {
     await getMongoClient().close()
   })
 
-  async function createStoredExport(
-    user: typeof owner,
-    now = new Date('2026-09-10T12:00:00.000Z'),
-  ) {
+  async function createStoredExport(user: typeof owner, now = new Date()) {
     const document = await createAccountExport(db, user, now)
     await db
       .collection<AccountExportDocument>('account_exports')

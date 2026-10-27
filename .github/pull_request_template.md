@@ -4,7 +4,7 @@
 
 ## Checks
 
-- [ ] `npm run check`
+- [ ] `pnpm run check`
 - [ ] Relevant browser/accessibility checks
 - [ ] Screenshots included for UI changes
 

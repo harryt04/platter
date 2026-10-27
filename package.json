@@ -6,7 +6,7 @@
     "node": "24.x"
   },
   "scripts": {
-    "dev": "concurrently -k -n web,realtime,worker \"npm:dev:web\" \"npm:dev:realtime\" \"npm:dev:worker\"",
+    "dev": "concurrently -k -n web,realtime,worker \"pnpm run dev:web\" \"pnpm run dev:realtime\" \"pnpm run dev:worker\"",
     "dev:web": "next dev",
     "dev:realtime": "node --import ./scripts/load-env.mjs ./node_modules/tsx/dist/cli.mjs watch server/realtime/index.ts",
     "dev:worker": "node --import ./scripts/load-env.mjs ./node_modules/tsx/dist/cli.mjs watch server/worker/index.ts",
@@ -17,7 +17,7 @@
     "start:realtime": "node dist/realtime/index.mjs",
     "start:worker": "node dist/worker/index.mjs",
     "format": "prettier --write .",
-    "prettify": "npm run format",
+    "prettify": "pnpm run format",
     "format:check": "prettier --check .",
     "repository:check": "node scripts/check-repository-hygiene.mjs",
     "lint": "eslint .",
@@ -31,8 +31,8 @@
     "db:indexes": "node --import ./scripts/load-env.mjs ./node_modules/tsx/dist/cli.mjs scripts/db/indexes.ts",
     "db:migrate": "node --import ./scripts/load-env.mjs ./node_modules/tsx/dist/cli.mjs scripts/db/migrate.ts",
     "db:seed:test-user": "node --import ./scripts/load-env.mjs ./node_modules/tsx/dist/cli.mjs scripts/seed/test-user.ts",
-    "check": "npm run format:check && npm run repository:check && npm run lint && npm run typecheck && npm run test && npm run build",
-    "ci": "npm run check && npm run test:security && npm run test:integration && npm run test:e2e && npm run test:a11y"
+    "check": "pnpm run format:check && pnpm run repository:check && pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build",
+    "ci": "pnpm run check && pnpm run test:security && pnpm run test:integration && pnpm run test:e2e && pnpm run test:a11y"
   },
   "dependencies": {
     "@agendajs/mongo-backend": "^4.0.3",
@@ -106,8 +106,10 @@
     "msw": "^2.15.0",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.6.14",
+    "tailwindcss": "4.3.3",
     "typescript": "^5.9.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.7"
-  }
+  },
+  "packageManager": "pnpm@11.24.0"
 }

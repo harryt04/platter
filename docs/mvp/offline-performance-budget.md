@@ -15,4 +15,4 @@ The `tests/e2e/offline-performance.spec.ts` check records these budgets:
   500 ms of the user's tap.
 
 The check is tagged `@performance` and requires the provisioned E2E account.
-Run it with `npm run test:e2e -- tests/e2e/offline-performance.spec.ts --project=chromium`.
+Run it with `pnpm run test:e2e tests/e2e/offline-performance.spec.ts --project=chromium`.

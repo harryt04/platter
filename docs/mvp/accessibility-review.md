@@ -14,7 +14,7 @@ Run the focused Chromium review with the authenticated test account:
 CI=1 PORT=3100 APP_URL=http://localhost:3100 \
   BETTER_AUTH_URL=http://localhost:3100 \
   ALLOWED_ORIGINS=http://localhost:3100 \
-  npm run test:e2e -- tests/e2e/shopping-accessibility.spec.ts --project=chromium
+  pnpm run test:e2e tests/e2e/shopping-accessibility.spec.ts --project=chromium
 ```
 
 Use a free port for `PORT` when another local application owns port 3000; the

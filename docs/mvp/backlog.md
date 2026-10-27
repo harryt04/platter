@@ -1126,4 +1126,4 @@ and responsive QA
       clearly distinguished from operator-completed public policies. The
       tracked-content and asset guard is documented in
       [the repository hygiene reference](repository-hygiene.md) and runs in
-      `npm run check` and `npm run ci`.
+      `pnpm run check` and `pnpm run ci`.

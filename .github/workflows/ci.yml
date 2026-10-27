@@ -66,6 +66,17 @@ jobs:
           mongodb-replica-set: rs0
       - run: pnpm run db:indexes
       - run: pnpm exec playwright install --with-deps
+      - name: Start realtime service
+        run: |
+          NODE_ENV=production pnpm run start:realtime > "$RUNNER_TEMP/platter-realtime.log" 2>&1 &
+          for attempt in {1..30}; do
+            if curl --fail --silent http://localhost:3001/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/platter-realtime.log"
+          exit 1
       - run: pnpm run test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()
@@ -74,4 +85,5 @@ jobs:
           path: |
             playwright-report/
             test-results/
+            ${{ runner.temp }}/platter-realtime.log
           retention-days: 5

@@ -70,7 +70,7 @@ demonstrate their intended shape but must not masquerade as working behavior.
 
 | Area | Decision | Reason |
 | --- | --- | --- |
-| Repository | One npm package with root-level `app/` | Matches the exemplar and keeps local operation simple. |
+| Repository | One pnpm package with root-level `app/` | Matches the exemplar and keeps local operation simple. |
 | Runtime | Node 24, Next.js 16 App Router, matching React 19 | Preserves the planned stack while correcting version drift. |
 | Styling | Tailwind CSS 4 and shadcn/ui `new-york` with Radix primitives | Uses the maintained shadcn baseline and the documented Platter design. |
 | Rendering | React Server Components by default | Keeps client JavaScript limited to interactive or browser-only behavior. |
@@ -102,7 +102,7 @@ generated file.
 ## Phase 1: Bootstrap an aligned Next.js application
 
 Use a temporary directory because the repository is not empty. Use
-`create-next-app@16` with npm, TypeScript, Tailwind, ESLint, App Router, no
+`create-next-app@16` with pnpm, TypeScript, Tailwind, ESLint, App Router, no
 `src/` directory, and the `@/*` alias. Disable React Compiler for the foundation.
 Do not use an unbounded `@latest` command that could silently install Next.js 17.
 
@@ -111,7 +111,7 @@ configuration, PostCSS configuration, ESLint flat configuration, and base app
 files into this repository. Then:
 
 1. Set the package name to `platter`, keep it private, declare Node `24.x`, and
-   commit `package-lock.json`.
+   commit `pnpm-lock.yaml`.
 2. Keep TypeScript `strict: true` and `strictNullChecks: true`. Preserve the
    exemplar preference `noImplicitAny: false`, while requiring explicit types
    at public interfaces.
@@ -152,7 +152,7 @@ development dependency section:
 Remove packages generated or inherited but unused after configuration is
 complete.
 
-**Complete when:** `npm install`, a minimal development server, ESLint, and the
+**Complete when:** `pnpm install`, a minimal development server, ESLint, and the
 TypeScript compiler run with mutually compatible versions and no documentation
 has been overwritten.
 
@@ -206,29 +206,29 @@ The root package must expose these commands after setup:
 
 | Command | Required behavior |
 | --- | --- |
-| `npm run dev` | Run web, realtime, and worker development processes concurrently. |
-| `npm run dev:web` | Run only Next.js development mode. |
-| `npm run services:up` | Start MongoDB replica set and Mailpit. |
-| `npm run services:down` | Stop local services without deleting their volumes. |
-| `npm run build` | Build Next.js and bundle both auxiliary processes. |
-| `npm run start:web` | Start the production Next.js build. |
-| `npm run start:realtime` | Start the bundled Socket.IO service. |
-| `npm run start:worker` | Start the bundled Agenda worker. |
-| `npm run format` | Write Prettier formatting. |
-| `npm run prettify` | Alias `format` for compatibility with the exemplar. |
-| `npm run format:check` | Check formatting without writing. |
-| `npm run lint` | Run ESLint without writing. |
-| `npm run typecheck` | Run `tsc --noEmit`. |
-| `npm run test` | Run the non-watch unit/component suite once. |
-| `npm run test:watch` | Run Vitest interactively. |
-| `npm run test:integration` | Run integration tests against the test database. |
-| `npm run test:e2e` | Run the deterministic Chromium Playwright suite against a production build. Use `npx playwright test` for the full configured browser matrix. |
-| `npm run test:a11y` | Run the tagged Chromium Playwright/axe accessibility checks. |
-| `npm run db:indexes` | Idempotently create or reconcile declared indexes. |
-| `npm run db:migrate` | Apply pending document transformations with a ledger. |
-| `npm run db:seed:test-user` | Idempotently create the ignored local AI test account. |
-| `npm run check` | Run format check, lint, typecheck, tests, and build. |
-| `npm run ci` | Run `check` plus security, integration, browser, and accessibility suites. |
+| `pnpm run dev` | Run web, realtime, and worker development processes concurrently. |
+| `pnpm run dev:web` | Run only Next.js development mode. |
+| `pnpm run services:up` | Start MongoDB replica set and Mailpit. |
+| `pnpm run services:down` | Stop local services without deleting their volumes. |
+| `pnpm run build` | Build Next.js and bundle both auxiliary processes. |
+| `pnpm run start:web` | Start the production Next.js build. |
+| `pnpm run start:realtime` | Start the bundled Socket.IO service. |
+| `pnpm run start:worker` | Start the bundled Agenda worker. |
+| `pnpm run format` | Write Prettier formatting. |
+| `pnpm run prettify` | Alias `format` for compatibility with the exemplar. |
+| `pnpm run format:check` | Check formatting without writing. |
+| `pnpm run lint` | Run ESLint without writing. |
+| `pnpm run typecheck` | Run `tsc --noEmit`. |
+| `pnpm run test` | Run the non-watch unit/component suite once. |
+| `pnpm run test:watch` | Run Vitest interactively. |
+| `pnpm run test:integration` | Run integration tests against the test database. |
+| `pnpm run test:e2e` | Run the deterministic Chromium Playwright suite against a production build. Use `pnpm exec playwright test` for the full configured browser matrix. |
+| `pnpm run test:a11y` | Run the tagged Chromium Playwright/axe accessibility checks. |
+| `pnpm run db:indexes` | Idempotently create or reconcile declared indexes. |
+| `pnpm run db:migrate` | Apply pending document transformations with a ledger. |
+| `pnpm run db:seed:test-user` | Idempotently create the ignored local AI test account. |
+| `pnpm run check` | Run format check, lint, typecheck, tests, and build. |
+| `pnpm run ci` | Run `check` plus security, integration, browser, and accessibility suites. |
 
 Tests may add narrower internal scripts, but the commands above are the public
 developer contract and must stay accurate in `README.md` and `AGENTS.md`.
@@ -640,15 +640,15 @@ placeholder text follows the content guide.
 
 ### Continuous integration
 
-Create GitHub Actions workflows that install from the lockfile, cache npm and
+Create GitHub Actions workflows that install from the lockfile, cache pnpm and
 Next.js build artifacts, start the Mongo replica set, create ephemeral secrets,
 and run:
 
-1. `npm run format:check`;
-2. `npm run lint`;
-3. `npm run typecheck`;
+1. `pnpm run format:check`;
+2. `pnpm run lint`;
+3. `pnpm run typecheck`;
 4. unit and integration tests with coverage;
-5. `npm run build`; and
+5. `pnpm run build`; and
 6. Playwright smoke/accessibility tests against the production build.
 
 Upload Playwright traces, screenshots, and coverage only on failure or for a
@@ -680,7 +680,7 @@ unlicensed image is present.
 Land and tag the completed scaffold before feature branches start. The
 foundation integrator owns these high-contention files after that checkpoint:
 
-- `package.json`, `package-lock.json`, root TypeScript/ESLint/Prettier/Next.js/
+- `package.json`, `pnpm-lock.yaml`, root TypeScript/ESLint/Prettier/Next.js/
   Playwright/Vitest configuration, Docker Compose, and CI;
 - `app/globals.css`, `components.json`, and `components/ui/`;
 - shared shells, navigation configuration, manifest, service worker, and icons;
@@ -724,7 +724,7 @@ behavior starts only after the mutation and revision contracts are fixed.
    boundary.
 3. Merge foundational domain contracts before consumers; merge UI consumers
    afterward without relocating shared files.
-4. Run `npm run check` and the lane's relevant Playwright scenarios before
+4. Run `pnpm run check` and the lane's relevant Playwright scenarios before
    requesting integration.
 5. Include screenshots for UI changes and note PRD or documentation changes.
 6. Use synthetic or explicitly licensed fixtures and preserve source

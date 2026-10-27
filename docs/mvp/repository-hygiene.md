@@ -1,8 +1,8 @@
 # Repository content and policy hygiene
 
 Platter keeps the repository safe to redistribute by checking tracked content
-as part of `npm run check` and `npm run ci`. Run the focused check with
-`npm run repository:check`.
+as part of `pnpm run check` and `pnpm run ci`. Run the focused check with
+`pnpm run repository:check`.
 
 The check verifies that:
 

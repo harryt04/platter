@@ -26,18 +26,19 @@ jobs:
       ALLOWED_ORIGINS: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - name: Generate ephemeral auth secret
         run: echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test -- --coverage
-      - run: npm run build
+      - run: pnpm run format:check
+      - run: pnpm run lint
+      - run: pnpm run typecheck
+      - run: pnpm run test --coverage
+      - run: pnpm run build
 
   browser:
     needs: quality
@@ -50,17 +51,18 @@ jobs:
       ALLOWED_ORIGINS: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - name: Generate ephemeral auth secret
         run: echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-      - run: npm run build
-      - run: npm run db:indexes
-      - run: npx playwright install --with-deps
-      - run: npm run test:e2e
+      - run: pnpm run build
+      - run: pnpm run db:indexes
+      - run: pnpm exec playwright install --with-deps
+      - run: pnpm run test:e2e
         continue-on-error: true
       - uses: actions/upload-artifact@v4
         if: failure()

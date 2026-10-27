@@ -93,11 +93,11 @@ Then install dependencies, start the local services, initialize MongoDB, and
 start the application:
 
 ```sh
-npm install
-npm run services:up
-npm run db:indexes
-npm run db:migrate
-npm run dev
+pnpm install
+pnpm run services:up
+pnpm run db:indexes
+pnpm run db:migrate
+pnpm run dev
 ```
 
 The local services are available at:
@@ -108,8 +108,8 @@ The local services are available at:
 | Realtime service | <http://localhost:3001> |
 | Mailpit inbox | <http://localhost:8025> |
 
-`npm run dev` starts the web app, realtime service, and import worker. Run
-`npm run services:down` when you want to stop MongoDB and Mailpit. Normal
+`pnpm run dev` starts the web app, realtime service, and import worker. Run
+`pnpm run services:down` when you want to stop MongoDB and Mailpit. Normal
 shutdown preserves the MongoDB volume.
 
 ### Optional browser test account
@@ -119,7 +119,7 @@ Authenticated browser tests require an ignored local account. Set
 `.env.local`, then run:
 
 ```sh
-npm run db:seed:test-user
+pnpm run db:seed:test-user
 ```
 
 Never commit those values. A fresh clone does not contain them.
@@ -128,20 +128,20 @@ Never commit those values. A fresh clone does not contain them.
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Start the web app, realtime service, and import worker. |
-| `npm run build` | Build the web app and auxiliary processes. |
-| `npm run format` | Format the repository. |
-| `npm run format:check` | Check formatting without changing files. |
-| `npm run repository:check` | Check tracked content for credential and asset-policy violations. |
-| `npm run lint` | Run ESLint. |
-| `npm run typecheck` | Run the TypeScript compiler without emitting files. |
-| `npm run test` | Run unit and component tests. |
-| `npm run test:security` | Run focused security regression tests. |
-| `npm run test:integration` | Run MongoDB-backed integration tests. |
-| `npm run test:e2e` | Run the Chromium browser suite. |
-| `npm run test:a11y` | Run tagged Chromium accessibility checks. |
-| `npm run check` | Run formatting, repository, lint, type, test, and build checks. |
-| `npm run ci` | Run the full local CI-style verification suite. |
+| `pnpm run dev` | Start the web app, realtime service, and import worker. |
+| `pnpm run build` | Build the web app and auxiliary processes. |
+| `pnpm run format` | Format the repository. |
+| `pnpm run format:check` | Check formatting without changing files. |
+| `pnpm run repository:check` | Check tracked content for credential and asset-policy violations. |
+| `pnpm run lint` | Run ESLint. |
+| `pnpm run typecheck` | Run the TypeScript compiler without emitting files. |
+| `pnpm run test` | Run unit and component tests. |
+| `pnpm run test:security` | Run focused security regression tests. |
+| `pnpm run test:integration` | Run MongoDB-backed integration tests. |
+| `pnpm run test:e2e` | Run the Chromium browser suite. |
+| `pnpm run test:a11y` | Run tagged Chromium accessibility checks. |
+| `pnpm run check` | Run formatting, repository, lint, type, test, and build checks. |
+| `pnpm run ci` | Run the full local CI-style verification suite. |
 
 Service-backed tests require the local MongoDB setup. Use a separate test
 database for integration tests rather than the development database. See the
@@ -198,3 +198,10 @@ The MIT license does not grant rights to recipe content, images, imported
 datasets, or other third-party material. Contributions must preserve source
 attribution and verify the applicable license or permission for external
 content.
+
+## Package manager
+
+Use pnpm 11.24.0, pinned in `package.json`. Install it with
+`npm install --global pnpm@11.24.0` if pnpm is not available.
+Run `pnpm install --frozen-lockfile` after cloning. Commit `pnpm-lock.yaml`
+when dependencies change; do not generate npm or Yarn lockfiles.

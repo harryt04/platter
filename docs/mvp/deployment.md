@@ -13,7 +13,7 @@ returns only service status and never exposes connection details.
 
 MongoDB must be a replica set, including for a single-node deployment. Set an
 explicit `MONGODB_DATABASE`; do not share the development database with tests.
-Run `npm run db:indexes` and `npm run db:migrate` as part of release setup.
+Run `pnpm run db:indexes` and `pnpm run db:migrate` as part of release setup.
 
 Set `SMTP_ENABLED=true` before configuring hosted SMTP with `SMTP_HOST`,
 `SMTP_PORT`, `SMTP_FROM`, and optional credentials. Password reset and list

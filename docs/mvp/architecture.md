@@ -28,8 +28,8 @@ browser ── HTTPS/reverse proxy ── Next.js web process
   [deployment import notes](deployment.md#recipe-import-adapters).
 - MongoDB must run as a replica set, including for a single-node deployment,
   because transactions and change-stream-compatible realtime behavior depend
-  on that topology. Release setup runs `npm run db:indexes` and
-  `npm run db:migrate`.
+  on that topology. Release setup runs `pnpm run db:indexes` and
+  `pnpm run db:migrate`.
 - Search, analytics, SMTP, and hosted public-catalog policy are optional
   integrations. Manual recipes, saved recipes, discovery through the built-in
   Mongo provider, and shopping do not require a paid or proprietary service.
@@ -175,11 +175,11 @@ migrations.
 The contributor-facing release contract is:
 
 ```sh
-npm run prettify
-npm run ci
+pnpm run prettify
+pnpm run ci
 ```
 
-`npm run ci` covers formatting, lint, type checking, unit/component tests,
+`pnpm run ci` covers formatting, lint, type checking, unit/component tests,
 security regression tests, Mongo-backed integration tests, Chromium browser
 tests, accessibility checks, and production builds. Service-backed checks use
 the test database and the local Mongo replica set described in

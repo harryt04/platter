@@ -50,10 +50,17 @@ Recipe calculation, merging, and synchronization are the product’s core promis
 | Override retained after recalculation | `Your shopping amount stays at 2 lb. Your selected recipes now call for 3 lb.` |
 | Already have | `Marked already have. It’s hidden from your buy view.` |
 | Restore | `Added back to your buy view.` |
-| Imported data needs correction | `We found ingredients and instructions. Review the details before saving.` |
+| Imported data needs correction | `We preserved the safe recipe facts we could extract. Add or correct the missing fields before saving.` |
 | Offline operation | `Saved on this device. We’ll sync it when you’re back online.` |
 | Reconciliation | `This item changed while you were offline. Showing the latest shared version.` |
 | Shared destructive change | `Removing Tacos will remove 6 grocery contributions from the Family run.` |
+| Account export ready | `Your export is ready to download.` Keep the file private and state its expiry. |
+| Account export failure | `We couldn’t prepare your export. Try again.` |
+| Account deletion confirmation | `This cannot be undone. Your private authored recipes and account data will be removed. Existing list history keeps only a minimal unavailable recipe reference.` |
+
+Public imported recipes that remain in the catalog after account deletion keep
+their source attribution and rights status, but are owned by an anonymous
+catalog identity. Do not describe them as authored by the deleted user.
 
 Avoid vague confirmation such as `Updated`, `Success`, `Conflict detected`, or `Something changed` when Platter can name the object and consequence.
 
@@ -62,8 +69,13 @@ Avoid vague confirmation such as `Updated`, `Success`, `Conflict detected`, or `
 - Attribute imported recipes with the source name and a source link wherever a recipe is presented in detail.
 - Preserve original ingredient wording where normalization confidence is low.
 - Explain public import restrictions without legalistic filler: `This source does not permit an image here. The recipe link is still available.`
+- Keep image source, creator, license or permission, and rights status separate from recipe attribution; unknown rights must remain explicit.
+- Treat nutrition values as optional informational data, label their basis (such as per person), and do not make health or dietary claims from them.
 - Do not present a scraped recipe as authored by Platter.
 - Write concise procedural instructions; do not reproduce editorial storytelling from a source.
+- Hosted policy pages describe product behavior, not legal advice; keep
+  jurisdiction-specific obligations, contacts, and moderation processes
+  explicitly configurable by the operator.
 
 ## States and errors
 

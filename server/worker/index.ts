@@ -1,7 +1,11 @@
-import { Agenda } from 'agenda'
+import { Agenda, backoffStrategies } from 'agenda'
 import { MongoBackend } from '@agendajs/mongo-backend'
 import { getConnectedDatabase, getMongoClient } from '@/lib/db/mongo-client'
 import { validateJobPayload } from '@/lib/jobs/registry'
+import {
+  createRecipeImportJobHandler,
+  recipeImportRetryPolicy,
+} from '@/lib/recipe-import-worker'
 
 async function main() {
   const db = await getConnectedDatabase()
@@ -19,16 +23,19 @@ async function main() {
       JSON.stringify({ service: 'worker', job: 'smoke', status: 'completed' }),
     )
   })
-  agenda.define('recipe-import', async (job) => {
-    validateJobPayload('recipe-import', job.attrs.data)
-    console.log(
-      JSON.stringify({
-        service: 'worker',
-        job: 'recipe-import',
-        status: 'reserved',
+  agenda.define(
+    'recipe-import',
+    async (job) => {
+      await createRecipeImportJobHandler(db)(job)
+    },
+    {
+      backoff: backoffStrategies.exponential({
+        delay: recipeImportRetryPolicy.initialDelayMs,
+        maxDelay: recipeImportRetryPolicy.maxDelayMs,
+        maxRetries: recipeImportRetryPolicy.maxRetries,
       }),
-    )
-  })
+    },
+  )
 
   await agenda.start()
   console.log(JSON.stringify({ service: 'worker', status: 'ready' }))

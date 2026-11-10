@@ -1,0 +1,110 @@
+import '@testing-library/jest-dom/vitest'
+import { cleanup, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { RecipeImportForm } from '@/components/recipes/recipe-import-form'
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}))
+
+describe('RecipeImportForm', () => {
+  afterEach(cleanup)
+
+  it('shows connected import guidance and durable statuses', () => {
+    render(
+      <RecipeImportForm
+        initialImports={[
+          {
+            id: 'b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7' as never,
+            sourceUrl: 'https://example.com/recipe',
+            status: 'queued',
+            attemptCount: 0,
+            submittedAt: '2026-09-10T12:00:00.000Z' as never,
+            updatedAt: '2026-09-10T12:00:00.000Z' as never,
+          },
+        ]}
+      />,
+    )
+
+    expect(screen.getByLabelText('Recipe URL')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Import recipe URL' }),
+    ).toBeDisabled()
+    expect(screen.getByText('Queued')).toBeInTheDocument()
+    expect(
+      screen.getByText(/never adds.*shopping run automatically/i),
+    ).toBeInTheDocument()
+  })
+
+  it('links a ready import to its editable preview', () => {
+    render(
+      <RecipeImportForm
+        initialImports={[
+          {
+            id: 'b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7' as never,
+            sourceUrl: 'https://example.com/recipe',
+            status: 'preview-ready',
+            attemptCount: 1,
+            submittedAt: '2026-09-10T12:00:00.000Z' as never,
+            updatedAt: '2026-09-10T12:00:00.000Z' as never,
+            preview: {
+              title: 'Example recipe',
+              ingredients: [],
+              instructions: [],
+              sourceUrl: 'https://example.com/recipe',
+              warnings: [],
+            },
+          },
+        ]}
+      />,
+    )
+
+    expect(
+      screen.getByRole('link', { name: 'Review extracted recipe' }),
+    ).toHaveAttribute('href', '/import/b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7')
+  })
+
+  it('explains disabled imports and disables controls without hiding history', () => {
+    render(
+      <RecipeImportForm
+        importsEnabled={false}
+        initialImports={[
+          {
+            id: 'b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7' as never,
+            sourceUrl: 'https://example.com/recipe',
+            status: 'failed',
+            attemptCount: 1,
+            submittedAt: '2026-09-10T12:00:00.000Z' as never,
+            updatedAt: '2026-09-10T12:00:00.000Z' as never,
+          },
+        ]}
+      />,
+    )
+
+    expect(
+      screen.getByText(/public url imports are disabled/i),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Recipe URL')).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: /import recipe url/i }),
+    ).toBeDisabled()
+    expect(screen.getByText('https://example.com/recipe')).toBeInTheDocument()
+  })
+
+  it('explains hosted policy gating separately from an operator pause', () => {
+    render(
+      <RecipeImportForm
+        importsBlockedByPolicy
+        importsEnabled={false}
+        initialImports={[]}
+      />,
+    )
+
+    expect(
+      screen.getByText(/must publish and configure the terms/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/disabled by the instance operator/i),
+    ).not.toBeInTheDocument()
+  })
+})

@@ -1,0 +1,1020 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { POST as duplicatePOST } from '@/app/api/v1/lists/[listId]/selections/[selectionId]/duplicate/route'
+import { POST as acceptUpdatePOST } from '@/app/api/v1/lists/[listId]/selections/[selectionId]/update/route'
+import {
+  DELETE,
+  PATCH,
+} from '@/app/api/v1/lists/[listId]/selections/[selectionId]/route'
+import { POST } from '@/app/api/v1/lists/[listId]/selections/route'
+
+const { getSession, getConnectedDatabase } = vi.hoisted(() => ({
+  getSession: vi.fn(),
+  getConnectedDatabase: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/authorization', () => ({ getSession }))
+vi.mock('@/lib/db/mongo-client', () => ({ getConnectedDatabase }))
+
+const list = {
+  _id: 'list-1',
+  name: 'Family',
+  ownerIds: ['user-1'],
+  status: 'active' as const,
+  activeRunId: 'run-1',
+  members: [
+    {
+      userId: 'user-1',
+      role: 'owner' as const,
+      invitationState: 'active' as const,
+    },
+  ],
+}
+
+const recipe = {
+  _id: 'recipe-1',
+  recipeId: 'recipe-1',
+  versionId: 'version-4',
+  versionNumber: 4,
+  ownerId: 'user-1',
+  title: 'Tomato soup',
+  status: 'usable' as const,
+  visibility: 'private' as const,
+  typicalPeopleFed: 4,
+  ingredients: [],
+  instructions: [],
+}
+
+function routeContext(listId = 'list-1') {
+  return { params: Promise.resolve({ listId }) }
+}
+
+function updateRouteContext(selectionId = 'selection-1') {
+  return {
+    params: Promise.resolve({ listId: 'list-1', selectionId }),
+  }
+}
+
+function duplicateRouteContext(selectionId = 'selection-1') {
+  return {
+    params: Promise.resolve({ listId: 'list-1', selectionId }),
+  }
+}
+
+function mutationMetadata(operationId = 'operation-1', baseRevision?: number) {
+  return {
+    runId: 'run-1',
+    operationId,
+    clientId: 'client-1',
+    ...(baseRevision === undefined ? {} : { baseRevision }),
+  }
+}
+
+function databaseFor({
+  currentRecipe = recipe,
+  currentVersion = { ...recipe, _id: 'version-4' },
+  currentRun = { revision: 1 },
+}: {
+  currentRecipe?: typeof recipe | null
+  currentVersion?: Record<string, unknown> | null
+  currentRun?: Record<string, unknown> | null
+} = {}) {
+  const lists = { findOne: vi.fn().mockResolvedValue(list) }
+  const recipes = { findOne: vi.fn().mockResolvedValue(currentRecipe) }
+  const shares = { findOne: vi.fn().mockResolvedValue(null) }
+  const versions = { findOne: vi.fn().mockResolvedValue(currentVersion) }
+  const runs = {
+    findOne: vi.fn().mockResolvedValue(currentRun),
+    findOneAndUpdate: vi.fn().mockResolvedValue(currentRun),
+  }
+  const collections: Record<string, unknown> = {
+    lists,
+    recipes,
+    recipe_shares: shares,
+    recipe_versions: versions,
+    shopping_runs: runs,
+  }
+  return {
+    db: {
+      collection: vi.fn((name: string) => collections[name]),
+    },
+    lists,
+    recipes,
+    versions,
+    runs,
+  }
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  getSession.mockResolvedValue({ user: { id: 'user-1' } })
+})
+
+describe('POST /api/v1/lists/[listId]/selections', () => {
+  it('adds an accessible usable recipe with an immutable version and exact scale', async () => {
+    const database = databaseFor()
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/selections', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 6,
+          ...mutationMetadata('operation-create-1', 1),
+        }),
+      }),
+      routeContext(),
+    )
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toMatchObject({
+      selection: {
+        recipeId: 'recipe-1',
+        versionId: 'version-4',
+        versionNumber: 4,
+        desiredPeople: 6,
+        scaleFactor: '1.5',
+      },
+      revision: 2,
+      calculatedIngredients: [],
+    })
+    expect(database.runs.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: 'run-1', listId: 'list-1', state: 'active', revision: 1 },
+      expect.objectContaining({
+        $push: {
+          recipeSelections: expect.objectContaining({
+            recipeId: 'recipe-1',
+            versionId: 'version-4',
+            scaleFactor: '1.5',
+          }),
+          selectionMutationReceipts: expect.objectContaining({
+            operationId: 'operation-create-1',
+          }),
+        },
+        $inc: { revision: 1 },
+      }),
+      { returnDocument: 'after' },
+    )
+  })
+
+  it('returns precise calculated quantities without changing recipe quantities', async () => {
+    const database = databaseFor({
+      currentVersion: {
+        ...recipe,
+        ingredients: [
+          {
+            originalText: '1/3 cup sugar',
+            quantity: '0.3333333333333333333333333333333333333333',
+            unit: 'cup',
+            ingredientName: 'sugar',
+            optional: false,
+          },
+        ],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/selections', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 6,
+          ...mutationMetadata('operation-create-2', 1),
+        }),
+      }),
+      routeContext(),
+    )
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toMatchObject({
+      calculatedIngredients: [
+        {
+          sourceQuantity: '0.3333333333333333333333333333333333333333',
+          calculatedQuantity: { min: '0.5' },
+          suggestedShoppingQuantity: null,
+        },
+      ],
+    })
+  })
+
+  it('rejects invalid people counts before reading list or recipe data', async () => {
+    const database = databaseFor()
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/selections', {
+        method: 'POST',
+        body: JSON.stringify({ recipeId: 'recipe-1', desiredPeople: 0 }),
+      }),
+      routeContext(),
+    )
+
+    expect(response.status).toBe(422)
+    expect((await response.json()).code).toBe('VALIDATION_FAILED')
+    expect(database.lists.findOne).not.toHaveBeenCalled()
+  })
+
+  it('does not select a recipe when its immutable version is unavailable', async () => {
+    const database = databaseFor({ currentVersion: null })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/selections', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 2,
+          ...mutationMetadata('operation-create-3', 1),
+        }),
+      }),
+      routeContext(),
+    )
+
+    expect(response.status).toBe(409)
+    expect((await response.json()).code).toBe('RECIPE_VERSION_UNAVAILABLE')
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('rejects archived lists before attempting a selection', async () => {
+    const database = databaseFor()
+    database.lists.findOne.mockResolvedValue({ ...list, status: 'archived' })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/selections', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 2,
+          ...mutationMetadata('operation-create-4', 1),
+        }),
+      }),
+      routeContext(),
+    )
+
+    expect(response.status).toBe(409)
+    expect((await response.json()).code).toBe('LIST_NOT_ACTIVE')
+    expect(database.recipes.findOne).not.toHaveBeenCalled()
+  })
+
+  it('replays a completed create operation without adding a duplicate selection', async () => {
+    const replay = {
+      selection: {
+        _id: 'selection-1',
+        recipeId: 'recipe-1',
+        versionId: 'version-4',
+        versionNumber: 4,
+        desiredPeople: 6,
+        scaleFactor: '1.5',
+        createdAt: '2026-09-10T12:00:00.000Z',
+        updatedAt: '2026-09-10T12:00:00.000Z',
+      },
+      recipe: {
+        id: 'recipe-1',
+        title: 'Tomato soup',
+        typicalPeopleFed: 4,
+        versionId: 'version-4',
+        versionNumber: 4,
+      },
+      calculatedIngredients: [],
+      revision: 2,
+    }
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 2,
+        recipeSelections: [],
+        selectionMutationReceipts: [
+          {
+            operationId: 'operation-replay',
+            clientId: 'client-1',
+            target: 'recipe:recipe-1',
+            kind: 'create',
+            status: 201,
+            response: replay,
+          },
+        ],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/selections', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 6,
+          ...mutationMetadata('operation-replay', 2),
+        }),
+      }),
+      routeContext(),
+    )
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toEqual(replay)
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('replays a concurrent create after the first writer wins the revision race', async () => {
+    const replay = {
+      selection: {
+        _id: 'selection-1',
+        recipeId: 'recipe-1',
+        versionId: 'version-4',
+        versionNumber: 4,
+        desiredPeople: 6,
+        scaleFactor: '1.5',
+        createdAt: '2026-09-10T12:00:00.000Z',
+        updatedAt: '2026-09-10T12:00:00.000Z',
+      },
+      recipe: {
+        id: 'recipe-1',
+        title: 'Tomato soup',
+        typicalPeopleFed: 4,
+        versionId: 'version-4',
+        versionNumber: 4,
+      },
+      calculatedIngredients: [],
+      revision: 2,
+    }
+    const currentRun = {
+      _id: 'run-1',
+      listId: 'list-1',
+      state: 'active' as const,
+      revision: 1,
+      recipeSelections: [],
+    }
+    const database = databaseFor({ currentRun })
+    database.runs.findOne
+      .mockResolvedValueOnce(currentRun)
+      .mockResolvedValueOnce({
+        ...currentRun,
+        revision: 2,
+        selectionMutationReceipts: [
+          {
+            operationId: 'operation-race',
+            clientId: 'client-1',
+            target: 'recipe:recipe-1',
+            kind: 'create',
+            status: 201,
+            response: replay,
+          },
+        ],
+      })
+    database.runs.findOneAndUpdate.mockResolvedValue(null)
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/selections', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 6,
+          ...mutationMetadata('operation-race', 1),
+        }),
+      }),
+      routeContext(),
+    )
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toEqual(replay)
+  })
+
+  it('does not replay a malformed persisted response', async () => {
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 2,
+        recipeSelections: [],
+        selectionMutationReceipts: [
+          {
+            operationId: 'operation-malformed',
+            clientId: 'client-1',
+            target: 'recipe:recipe-1',
+            kind: 'create',
+            status: 201,
+            response: { revision: 'not-a-number' },
+          },
+        ],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await POST(
+      new Request('http://localhost/api/v1/lists/list-1/selections', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipeId: 'recipe-1',
+          desiredPeople: 6,
+          ...mutationMetadata('operation-malformed', 2),
+        }),
+      }),
+      routeContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('SELECTION_STATE_UNAVAILABLE')
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+})
+
+describe('PATCH /api/v1/lists/[listId]/selections/[selectionId]', () => {
+  it('recalculates one selection from its pinned immutable version', async () => {
+    const selection = {
+      _id: 'selection-1',
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 2,
+      scaleFactor: '0.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:00:00.000Z',
+    }
+    const otherSelection = { ...selection, _id: 'selection-2' }
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [selection, otherSelection],
+      },
+    })
+    database.versions.findOne.mockResolvedValue({
+      ...recipe,
+      _id: 'version-4',
+      ingredients: [
+        {
+          originalText: '2 onions',
+          quantity: '2',
+          unit: 'each',
+          ingredientName: 'onions',
+          optional: false,
+        },
+      ],
+    })
+    database.runs.findOneAndUpdate.mockResolvedValue({
+      _id: 'run-1',
+      revision: 5,
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await PATCH(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            desiredPeople: 6,
+            ...mutationMetadata('operation-update-1', 4),
+          }),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      selection: {
+        _id: 'selection-1',
+        desiredPeople: 6,
+        scaleFactor: '1.5',
+      },
+      calculatedIngredients: [
+        { calculatedQuantity: { min: '3' }, sourceQuantity: '2' },
+      ],
+      revision: 5,
+    })
+    expect(database.runs.findOneAndUpdate).toHaveBeenCalledWith(
+      {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        'recipeSelections._id': 'selection-1',
+      },
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          'recipeSelections.$': expect.objectContaining({
+            _id: 'selection-1',
+            desiredPeople: 6,
+            scaleFactor: '1.5',
+          }),
+        }),
+        $inc: { revision: 1 },
+      }),
+      { returnDocument: 'after' },
+    )
+  })
+
+  it('rejects invalid people counts before reading the list', async () => {
+    const database = databaseFor()
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await PATCH(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            desiredPeople: 2.5,
+            ...mutationMetadata('operation-update-2', 4),
+          }),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(422)
+    expect(database.lists.findOne).not.toHaveBeenCalled()
+  })
+
+  it('does not mutate the run when the selection is missing', async () => {
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await PATCH(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            desiredPeople: 6,
+            ...mutationMetadata('operation-update-3', 4),
+          }),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(404)
+    expect((await response.json()).code).toBe('SELECTION_NOT_FOUND')
+    expect(database.versions.findOne).not.toHaveBeenCalled()
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('rejects a stale base revision before recalculating a selection', async () => {
+    const selection = {
+      _id: 'selection-1',
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 2,
+      scaleFactor: '0.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:00:00.000Z',
+    }
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [selection],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await PATCH(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            desiredPeople: 6,
+            ...mutationMetadata('operation-stale', 3),
+          }),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(409)
+    expect((await response.json()).code).toBe('RUN_REVISION_CONFLICT')
+    expect(database.versions.findOne).not.toHaveBeenCalled()
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('returns a stable retryable problem when storage fails', async () => {
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await PATCH(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            desiredPeople: 4,
+            ...mutationMetadata('operation-patch-storage'),
+          }),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('SELECTION_STATE_UNAVAILABLE')
+  })
+})
+
+describe('POST /api/v1/lists/[listId]/selections/[selectionId]/update', () => {
+  it('repins one selection only after explicitly accepting a newer version', async () => {
+    const selection = {
+      _id: 'selection-1',
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 6,
+      scaleFactor: '1.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:00:00.000Z',
+    }
+    const otherSelection = { ...selection, _id: 'selection-2' }
+    const database = databaseFor({
+      currentRecipe: {
+        ...recipe,
+        versionId: 'version-5',
+        versionNumber: 5,
+      },
+      currentVersion: {
+        ...recipe,
+        _id: 'version-5',
+        versionId: 'version-5',
+        versionNumber: 5,
+        ingredients: [
+          {
+            originalText: '2 onions',
+            quantity: '2',
+            unit: 'each',
+            ingredientName: 'onions',
+            optional: false,
+          },
+        ],
+      },
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [selection, otherSelection],
+      },
+    })
+    database.runs.findOneAndUpdate.mockResolvedValue({ revision: 5 })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await acceptUpdatePOST(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1/update',
+        {
+          method: 'POST',
+          body: JSON.stringify(mutationMetadata('operation-repin-1', 4)),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      previousVersionNumber: 4,
+      selection: {
+        _id: 'selection-1',
+        versionId: 'version-5',
+        versionNumber: 5,
+        desiredPeople: 6,
+        scaleFactor: '1.5',
+      },
+      calculatedIngredients: [
+        { calculatedQuantity: { min: '3' }, sourceQuantity: '2' },
+      ],
+      revision: 5,
+    })
+    expect(database.runs.findOneAndUpdate).toHaveBeenCalledWith(
+      {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        'recipeSelections._id': 'selection-1',
+        'recipeSelections.versionId': 'version-4',
+        'recipeSelections.versionNumber': 4,
+        revision: 4,
+      },
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          'recipeSelections.$': expect.objectContaining({
+            _id: 'selection-1',
+            versionId: 'version-5',
+            versionNumber: 5,
+          }),
+        }),
+        $inc: { revision: 1 },
+      }),
+      { returnDocument: 'after' },
+    )
+  })
+
+  it('does not mutate a selection when no newer version is available', async () => {
+    const selection = {
+      _id: 'selection-1',
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 2,
+      scaleFactor: '0.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:00:00.000Z',
+    }
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [selection],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await acceptUpdatePOST(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1/update',
+        {
+          method: 'POST',
+          body: JSON.stringify(mutationMetadata('operation-repin-2', 4)),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(409)
+    expect((await response.json()).code).toBe('NO_NEWER_RECIPE_VERSION')
+    expect(database.versions.findOne).not.toHaveBeenCalled()
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('returns a stable retryable problem when storage fails', async () => {
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await acceptUpdatePOST(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1/update',
+        {
+          method: 'POST',
+          body: JSON.stringify(mutationMetadata('operation-repin-storage')),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('SELECTION_STATE_UNAVAILABLE')
+  })
+})
+
+describe('DELETE /api/v1/lists/[listId]/selections/[selectionId]', () => {
+  it('removes only the requested selection and advances the run revision', async () => {
+    const selection = {
+      _id: 'selection-1',
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 6,
+      scaleFactor: '1.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:00:00.000Z',
+    }
+    const otherSelection = { ...selection, _id: 'selection-2' }
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [selection, otherSelection],
+      },
+    })
+    database.runs.findOneAndUpdate.mockResolvedValue({
+      _id: 'run-1',
+      revision: 5,
+      recipeSelections: [otherSelection],
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await DELETE(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'DELETE',
+          body: JSON.stringify(mutationMetadata('operation-remove-1', 4)),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      code: 'SELECTION_REMOVED',
+      selectionId: 'selection-1',
+      revision: 5,
+    })
+    expect(database.runs.findOneAndUpdate).toHaveBeenCalledWith(
+      {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        'recipeSelections._id': 'selection-1',
+      },
+      expect.objectContaining({
+        $pull: { recipeSelections: { _id: 'selection-1' } },
+        $inc: { revision: 1 },
+      }),
+      { returnDocument: 'after' },
+    )
+  })
+
+  it('does not mutate the run when the selection is missing', async () => {
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await DELETE(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'DELETE',
+          body: JSON.stringify(mutationMetadata('operation-remove-2', 4)),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(404)
+    expect((await response.json()).code).toBe('SELECTION_NOT_FOUND')
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('returns a stable retryable problem when storage fails', async () => {
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await DELETE(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1',
+        {
+          method: 'DELETE',
+          body: JSON.stringify(mutationMetadata('operation-delete-storage')),
+        },
+      ),
+      updateRouteContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('SELECTION_STATE_UNAVAILABLE')
+  })
+})
+
+describe('POST /api/v1/lists/[listId]/selections/[selectionId]/duplicate', () => {
+  it('creates a separate selection for the same immutable version and people count', async () => {
+    const selection = {
+      _id: 'selection-1',
+      recipeId: 'recipe-1',
+      versionId: 'version-4',
+      versionNumber: 4,
+      desiredPeople: 6,
+      scaleFactor: '1.5',
+      createdAt: '2026-09-10T12:00:00.000Z',
+      updatedAt: '2026-09-10T12:00:00.000Z',
+    }
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [selection],
+      },
+    })
+    database.versions.findOne.mockResolvedValue({
+      ...recipe,
+      _id: 'version-4',
+      ingredients: [],
+    })
+    database.runs.findOneAndUpdate.mockImplementation(
+      async (_filter, update) => ({
+        revision: 5,
+        recipeSelections: [selection, update.$push.recipeSelections],
+      }),
+    )
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await duplicatePOST(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1/duplicate',
+        {
+          method: 'POST',
+          body: JSON.stringify(mutationMetadata('operation-duplicate-1', 4)),
+        },
+      ),
+      duplicateRouteContext(),
+    )
+
+    expect(response.status).toBe(201)
+    const body = await response.json()
+    expect(body).toMatchObject({
+      selection: {
+        recipeId: 'recipe-1',
+        versionId: 'version-4',
+        versionNumber: 4,
+        desiredPeople: 6,
+        scaleFactor: '1.5',
+      },
+      revision: 5,
+      calculatedIngredients: [],
+    })
+    expect(body.selection._id).not.toBe(selection._id)
+    expect(database.runs.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: 'run-1', listId: 'list-1', state: 'active', revision: 4 },
+      expect.objectContaining({
+        $push: {
+          recipeSelections: expect.objectContaining({
+            recipeId: 'recipe-1',
+            versionId: 'version-4',
+            desiredPeople: 6,
+            scaleFactor: '1.5',
+          }),
+          selectionMutationReceipts: expect.objectContaining({
+            operationId: 'operation-duplicate-1',
+          }),
+        },
+        $inc: { revision: 1 },
+      }),
+      { returnDocument: 'after' },
+    )
+  })
+
+  it('does not duplicate a missing selection', async () => {
+    const database = databaseFor({
+      currentRun: {
+        _id: 'run-1',
+        listId: 'list-1',
+        state: 'active',
+        revision: 4,
+        recipeSelections: [],
+      },
+    })
+    getConnectedDatabase.mockResolvedValue(database.db)
+
+    const response = await duplicatePOST(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1/duplicate',
+        {
+          method: 'POST',
+          body: JSON.stringify(mutationMetadata('operation-duplicate-2', 4)),
+        },
+      ),
+      duplicateRouteContext(),
+    )
+
+    expect(response.status).toBe(404)
+    expect((await response.json()).code).toBe('SELECTION_NOT_FOUND')
+    expect(database.versions.findOne).not.toHaveBeenCalled()
+    expect(database.runs.findOneAndUpdate).not.toHaveBeenCalled()
+  })
+
+  it('returns a stable retryable problem when storage fails', async () => {
+    getConnectedDatabase.mockRejectedValue(new Error('database offline'))
+
+    const response = await duplicatePOST(
+      new Request(
+        'http://localhost/api/v1/lists/list-1/selections/selection-1/duplicate',
+        {
+          method: 'POST',
+          body: JSON.stringify(mutationMetadata('operation-duplicate-storage')),
+        },
+      ),
+      duplicateRouteContext(),
+    )
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).code).toBe('SELECTION_STATE_UNAVAILABLE')
+  })
+})

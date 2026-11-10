@@ -26,6 +26,8 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { authClient } from '@/lib/auth/auth-client'
+import { clearOfflineSession } from '@/lib/offline/database'
+import { PlatterMark } from '@/components/brand/platter-mark'
 
 const groups = [
   {
@@ -38,19 +40,26 @@ const groups = [
   },
 ]
 
-export function AppSidebar() {
+export function AppSidebar({
+  lists,
+}: {
+  lists: { id: string; name: string }[]
+}) {
   const pathname = usePathname()
-  const { open } = useSidebar()
+  const { open, isMobile, setOpen } = useSidebar()
+  const closeMobileNavigation = () => {
+    if (isMobile) setOpen(false)
+  }
   return (
     <Sidebar>
       <SidebarHeader>
         <Link
           href="/lists"
+          aria-label="Platter home"
           className="font-display flex min-h-11 items-center gap-3 text-xl font-semibold"
+          onClick={closeMobileNavigation}
         >
-          <span className="bg-primary text-primary-foreground flex h-9 w-9 items-center justify-center rounded-md font-sans text-lg">
-            P
-          </span>
+          <PlatterMark aria-hidden="true" className="h-9 w-9 rounded-md" />
           <span className="sidebar-label">Platter</span>
         </Link>
       </SidebarHeader>
@@ -69,7 +78,11 @@ export function AppSidebar() {
                     }
                     asChild
                   >
-                    <Link href={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-label={item.label}
+                      onClick={closeMobileNavigation}
+                    >
                       <item.icon size={18} />
                       <span className="sidebar-label">{item.label}</span>
                     </Link>
@@ -82,20 +95,30 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Your lists</SidebarGroupLabel>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                active={pathname.startsWith('/lists/family')}
-                asChild
-              >
-                <Link href="/lists/family">
-                  <ChefHat size={18} />
-                  <span className="sidebar-label">Family</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {lists.map((list) => (
+              <SidebarMenuItem key={list.id}>
+                <SidebarMenuButton
+                  active={pathname.startsWith(`/lists/${list.id}`)}
+                  asChild
+                >
+                  <Link
+                    href={`/lists/${list.id}`}
+                    aria-label={list.name}
+                    onClick={closeMobileNavigation}
+                  >
+                    <ChefHat size={18} />
+                    <span className="sidebar-label">{list.name}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link href="/lists/new">
+                <Link
+                  href="/lists/new"
+                  aria-label="New list"
+                  onClick={closeMobileNavigation}
+                >
                   <Plus size={18} />
                   <span className="sidebar-label">New list</span>
                 </Link>
@@ -120,14 +143,18 @@ export function AppSidebar() {
             aria-label="Open settings"
             asChild
           >
-            <Link href="/settings">
+            <Link href="/settings" onClick={closeMobileNavigation}>
               <Settings size={18} />
             </Link>
           </Button>
         </div>
         <button
+          aria-label="Sign out"
           className="text-muted-foreground hover:text-foreground mt-2 min-h-11 w-full text-left text-xs"
-          onClick={() => authClient.signOut()}
+          onClick={async () => {
+            await clearOfflineSession().catch(() => undefined)
+            await authClient.signOut()
+          }}
         >
           {open ? 'Sign out' : '↪'}
         </button>

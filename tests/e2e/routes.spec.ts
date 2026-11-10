@@ -104,6 +104,21 @@ test('@a11y discovery has one page heading', async ({ page }) => {
   await expect(page.locator('h1')).toHaveCount(1)
 })
 
+test('@a11y signed-out pages expose exactly one main landmark', async ({
+  page,
+}) => {
+  for (const path of [
+    '/discover',
+    '/sign-in',
+    '/sign-up',
+    '/sources',
+    '/privacy',
+  ]) {
+    await page.goto(path)
+    await expect(page.getByRole('main'), path).toHaveCount(1)
+  }
+})
+
 test('public visitors are sent to sign in before opening a checklist', async ({
   page,
 }) => {

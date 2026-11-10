@@ -25,6 +25,9 @@ be run in a clean environment with Node 24 and the documented local services.
 
 - [Product requirements](prd.md) defines product behavior, permissions, data
   concepts, edge cases, and final acceptance criteria.
+- [Architecture reference](architecture.md) maps those contracts to the
+  current collections, domain modules, import adapters, synchronization
+  protocol, privacy boundaries, indexes, migrations, and deployment topology.
 - [Design system](../DESIGN.md) defines the visual direction, exact colors,
   typography, spacing, shell, accessibility, and motion.
 - [UI implementation guide](ui-implementation-guide.md) defines component and
@@ -67,7 +70,7 @@ demonstrate their intended shape but must not masquerade as working behavior.
 
 | Area | Decision | Reason |
 | --- | --- | --- |
-| Repository | One npm package with root-level `app/` | Matches the exemplar and keeps local operation simple. |
+| Repository | One pnpm package with root-level `app/` | Matches the exemplar and keeps local operation simple. |
 | Runtime | Node 24, Next.js 16 App Router, matching React 19 | Preserves the planned stack while correcting version drift. |
 | Styling | Tailwind CSS 4 and shadcn/ui `new-york` with Radix primitives | Uses the maintained shadcn baseline and the documented Platter design. |
 | Rendering | React Server Components by default | Keeps client JavaScript limited to interactive or browser-only behavior. |
@@ -99,7 +102,7 @@ generated file.
 ## Phase 1: Bootstrap an aligned Next.js application
 
 Use a temporary directory because the repository is not empty. Use
-`create-next-app@16` with npm, TypeScript, Tailwind, ESLint, App Router, no
+`create-next-app@16` with pnpm, TypeScript, Tailwind, ESLint, App Router, no
 `src/` directory, and the `@/*` alias. Disable React Compiler for the foundation.
 Do not use an unbounded `@latest` command that could silently install Next.js 17.
 
@@ -108,7 +111,7 @@ configuration, PostCSS configuration, ESLint flat configuration, and base app
 files into this repository. Then:
 
 1. Set the package name to `platter`, keep it private, declare Node `24.x`, and
-   commit `package-lock.json`.
+   commit `pnpm-lock.yaml`.
 2. Keep TypeScript `strict: true` and `strictNullChecks: true`. Preserve the
    exemplar preference `noImplicitAny: false`, while requiring explicit types
    at public interfaces.
@@ -149,7 +152,7 @@ development dependency section:
 Remove packages generated or inherited but unused after configuration is
 complete.
 
-**Complete when:** `npm install`, a minimal development server, ESLint, and the
+**Complete when:** `pnpm install`, a minimal development server, ESLint, and the
 TypeScript compiler run with mutually compatible versions and no documentation
 has been overwritten.
 
@@ -203,28 +206,29 @@ The root package must expose these commands after setup:
 
 | Command | Required behavior |
 | --- | --- |
-| `npm run dev` | Run web, realtime, and worker development processes concurrently. |
-| `npm run dev:web` | Run only Next.js development mode. |
-| `npm run services:up` | Start MongoDB replica set and Mailpit. |
-| `npm run services:down` | Stop local services without deleting their volumes. |
-| `npm run build` | Build Next.js and bundle both auxiliary processes. |
-| `npm run start:web` | Start the production Next.js build. |
-| `npm run start:realtime` | Start the bundled Socket.IO service. |
-| `npm run start:worker` | Start the bundled Agenda worker. |
-| `npm run format` | Write Prettier formatting. |
-| `npm run prettify` | Alias `format` for compatibility with the exemplar. |
-| `npm run format:check` | Check formatting without writing. |
-| `npm run lint` | Run ESLint without writing. |
-| `npm run typecheck` | Run `tsc --noEmit`. |
-| `npm run test` | Run the non-watch unit/component suite once. |
-| `npm run test:watch` | Run Vitest interactively. |
-| `npm run test:integration` | Run integration tests against the test database. |
-| `npm run test:e2e` | Run Playwright against a production build. |
-| `npm run test:a11y` | Run the tagged Playwright/axe accessibility checks. |
-| `npm run db:indexes` | Idempotently create or reconcile declared indexes. |
-| `npm run db:migrate` | Apply pending document transformations with a ledger. |
-| `npm run db:seed:test-user` | Idempotently create the ignored local AI test account. |
-| `npm run check` | Run format check, lint, typecheck, tests, and build. |
+| `pnpm run dev` | Run web, realtime, and worker development processes concurrently. |
+| `pnpm run dev:web` | Run only Next.js development mode. |
+| `pnpm run services:up` | Start MongoDB replica set and Mailpit. |
+| `pnpm run services:down` | Stop local services without deleting their volumes. |
+| `pnpm run build` | Build Next.js and bundle both auxiliary processes. |
+| `pnpm run start:web` | Start the production Next.js build. |
+| `pnpm run start:realtime` | Start the bundled Socket.IO service. |
+| `pnpm run start:worker` | Start the bundled Agenda worker. |
+| `pnpm run format` | Write Prettier formatting. |
+| `pnpm run prettify` | Alias `format` for compatibility with the exemplar. |
+| `pnpm run format:check` | Check formatting without writing. |
+| `pnpm run lint` | Run ESLint without writing. |
+| `pnpm run typecheck` | Run `tsc --noEmit`. |
+| `pnpm run test` | Run the non-watch unit/component suite once. |
+| `pnpm run test:watch` | Run Vitest interactively. |
+| `pnpm run test:integration` | Run integration tests against the test database. |
+| `pnpm run test:e2e` | Run the deterministic Chromium Playwright suite against a production build. Use `pnpm exec playwright test` for the full configured browser matrix. |
+| `pnpm run test:a11y` | Run the tagged Chromium Playwright/axe accessibility checks. |
+| `pnpm run db:indexes` | Idempotently create or reconcile declared indexes. |
+| `pnpm run db:migrate` | Apply pending document transformations with a ledger. |
+| `pnpm run db:seed:test-user` | Idempotently create the ignored local AI test account. |
+| `pnpm run check` | Run format check, lint, typecheck, tests, and build. |
+| `pnpm run ci` | Run `check` plus security, integration, browser, and accessibility suites. |
 
 Tests may add narrower internal scripts, but the commands above are the public
 developer contract and must stay accurate in `README.md` and `AGENTS.md`.
@@ -242,18 +246,27 @@ Create `.env.example` with names and safe local defaults where possible. Keep
 | --- | --- | --- |
 | `APP_URL` | Canonical application URL | Required; local default `http://localhost:3000`. |
 | `NODE_ENV` | Runtime environment | Supplied by the runtime. |
-| `MONGODB_URI` | Mongo replica-set connection | Required; local URI names `rs0`. |
+| `MONGODB_URI` | Mongo replica-set connection | Required; local URI targets the published Mongo port with a direct connection to the single-node `rs0` replica set. |
 | `MONGODB_DATABASE` | Explicit database name | Required; local default `platter_development`. |
 | `BETTER_AUTH_SECRET` | Better Auth encryption/signing secret | Required; example contains no value. |
 | `BETTER_AUTH_URL` | Better Auth base URL | Required; same local origin as the web app. |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` | Password reset delivery | Required locally with Mailpit defaults. |
+| `SMTP_ENABLED` | Password reset and invitation email delivery | Explicit opt-in; local Mailpit default is `true` in `.env.example`. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` | Password reset and invitation email delivery | Required when SMTP is enabled; local defaults target Mailpit. |
+| `RECIPE_IMPORTS_ENABLED` | Allow new public recipe URL imports and source refreshes | Optional; `true` by default. Set to `false` to keep manual recipes, existing saved recipes, and shopping available while disabling public import work. |
+| `RECIPE_IMPORT_DISABLED_ADAPTERS` | Comma-separated recipe import adapter IDs to disable | Optional; empty by default. Disabled adapters fail only their import job. |
+| `PUBLIC_CATALOG_POLICIES_PUBLISHED` | Affirm that the hosted terms, privacy, removal-contact, and repeat-infringer policies are published | Defaults to `false`; production public imports remain disabled until this is `true` and all four policy fields below are configured. |
+| `PUBLIC_CATALOG_TERMS_URL`, `PUBLIC_CATALOG_PRIVACY_URL` | Published hosted terms and privacy-policy URLs | Required for production public imports. |
+| `PUBLIC_CATALOG_REMOVAL_CONTACT` | Public content-removal contact | Required for production public imports; do not use a private support credential. |
+| `PUBLIC_CATALOG_REPEAT_INFRINGER_POLICY_URL` | Published repeat-infringer handling URL | Required for production public imports. |
+| `PUBLIC_CATALOG_DMCA_AGENT_NAME`, `PUBLIC_CATALOG_DMCA_AGENT_CONTACT` | Optional public designated-agent name and contact | Configure together when the operator chooses to publish a DMCA agent. |
+| `PUBLIC_CATALOG_DMCA_NOTICE_URL`, `PUBLIC_CATALOG_DMCA_COUNTER_NOTICE_URL` | Optional public notice and counter-notice process URLs | Configure together with the agent fields; these settings are not required to enable imports. |
 | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE` | Hosted SMTP settings | Optional locally. |
 | `REALTIME_PORT` | Socket.IO service port | Local default `3001`. |
 | `NEXT_PUBLIC_REALTIME_URL` | Browser-visible realtime origin | Local default `http://localhost:3001`. |
 | `ALLOWED_ORIGINS` | Web/realtime origin allowlist | Required outside tests. |
 | `POSTHOG_ENABLED` | Explicit analytics opt-in | Default `false`. |
 | `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` | Optional PostHog settings | Required only when enabled. |
-| `E2E_USER_NAME`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` | Local agent/browser account | Present only in ignored `.env.test.local`. |
+| `E2E_USER_NAME`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` | Local agent/browser account | Read from an ignored local `.env` or `.env.local`; fresh clones must populate these values locally. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Future Google sign-in | Documented and unset; no Google button until configured. |
 
 Validate environment variables once in `lib/env`, with separate server-only and
@@ -269,9 +282,11 @@ Docker Compose must:
 4. retain data across normal `services:down`; and
 5. expose a separate test database without embedding production credentials.
 
-The test-user seed reads credentials from `.env.test.local`, creates or updates
-only that local account, and never prints the password. CI creates an ephemeral
-credential instead of relying on a developer's file.
+The test-user seed reads credentials from the loaded local environment (normally
+`.env` or `.env.local`), creates or updates only that local account, and never
+prints the password. CI creates an ephemeral credential instead of relying on a
+developer's file. Keep these values out of commits and other shared
+documentation.
 
 **Complete when:** a new contributor can copy `.env.example`, supply one local
 auth secret, start services, initialize the database, seed a test user, and run
@@ -301,8 +316,8 @@ the application without an undocumented dependency.
   API handlers, realtime handshakes, and worker-triggering operations perform
   authoritative server-side checks.
 - Provide `requireSession`, `requireListRole`, and `requireAdmin` helpers. The
-  list helper may initially throw a typed not-implemented result until list
-  persistence lands, but its input/output contract is fixed.
+  list-role helper must resolve an active membership and allowed role before a
+  protected list operation proceeds.
 - Leave Google configuration as a documented extension point. The future human
   step is to create OAuth credentials and approved redirect URIs; the future
   implementation step is to register the provider and reveal its sign-in
@@ -354,7 +369,7 @@ interface QueuedOperation {
   baseRevision?: number
   createdAt: string
   attemptCount: number
-  status: 'pending' | 'syncing' | 'failed'
+  status: 'pending' | 'syncing' | 'failed' | 'synced'
 }
 ```
 
@@ -406,10 +421,10 @@ contract without changing envelope fields.
   and `/offline`. Use network-first navigation. Never generically cache auth
   responses, private HTML, `/api/auth`, or `/api/v1` responses.
 - Create a Dexie database factory scoped to the authenticated user. Define
-  versioned tables for active-run snapshots and queued operations without
-  adding product-specific payloads yet.
-- On sign-out, close and delete the prior user's private database and clear
-  private caches before navigating to public content.
+  versioned tables for active-run snapshots and queued operations; product
+  payloads must remain behind the typed mutation boundary.
+- On sign-out or account deletion, close and delete the prior user's private
+  database and clear private caches before navigating to public content.
 - Expose `offline`, `pending`, `syncing`, `synced`, and `failed` states. Never
   label a local operation synchronized until the server accepts it.
 
@@ -418,6 +433,10 @@ contract without changing envelope fields.
 - Wrap client and server analytics behind a small adapter.
 - Return a typed no-op implementation unless `POSTHOG_ENABLED=true` and the
   required settings exist.
+- Browser callers must pass an explicit enabled configuration containing the
+  public key and host; the adapter disables autocapture and session recording.
+- Provider setup, delivery, and shutdown failures are isolated from product
+  actions and leave the adapter usable as a no-op.
 - Centralize allowed event names and properties. Recipe content, ingredient
   text, grocery content, URLs, complaint contacts, and secrets are forbidden
   properties.
@@ -481,9 +500,11 @@ typography, all button/form states, focus, badges, banners, skeletons, grocery
 rows, contribution detail, overrides, and both themes. Return `notFound()` for
 this route in production.
 
-Generate a temporary license-safe Platter monogram: Cobalt background, white
-`P`, and sufficient safe area for a maskable icon. Supply SVG source, favicon,
-Apple icon, and 192px and 512px PNG PWA assets. Mark it as replaceable branding.
+Generate a license-safe Platter Market Check mark: a Cobalt background, white
+grocery basket, blue completion check, Marigold fresh-food cue, and sufficient
+safe area for a maskable icon. Supply SVG source, favicon, Apple icon, and
+192px and 512px PNG PWA assets. Keep the mark reusable in the public header and
+collapsed application sidebar.
 
 **Complete when:** the gallery and application shell render correctly at 320px
 and desktop widths, in light and dark themes, with visible focus, no
@@ -516,7 +537,7 @@ claims that a control already works.
 | URL | Placeholder purpose |
 | --- | --- |
 | `/discover` | Public discovery/search results, filter controls, loading skeleton, and empty state. |
-| `/recipes/[recipeId]` | Recipe title, yield, ingredients, directions, source, attribution, version, and image-license state. |
+| `/platter/[recipeId]` | Recipe title, yield, ingredients, directions, source, attribution, version, and image-license state. |
 | `/sources` | Public source and attribution policy. |
 | `/copyright` | Copyright/removal process overview. |
 | `/copyright/report` | Removal-request form shell and privacy notice. |
@@ -532,15 +553,15 @@ claims that a control already works.
 | `/sign-up` | Working name, email, and password registration. |
 | `/forgot-password` | Working request with non-enumerating confirmation. |
 | `/reset-password` | Working token validation and password reset. |
-| `/invitations/[token]` | Invitation summary placeholder; authentication and connectivity boundary are real, acceptance is deferred. |
+| `/invitations/[token]` | Invitation summary and connected acceptance with invited-account and expiry checks. |
 
 ### Protected application routes
 
 | URL | Placeholder purpose |
 | --- | --- |
 | `/my-recipes` | Personal library, search shell, and empty state. |
-| `/recipes/new` | Manual recipe-editor hierarchy and draft requirements. |
-| `/recipes/[recipeId]/edit` | Version-aware editor placeholder. |
+| `/platter/new` | Manual recipe-editor hierarchy and draft requirements. |
+| `/platter/[recipeId]/edit` | Version-aware editor placeholder. |
 | `/import` | URL entry, connectivity requirement, and editable-preview explanation. |
 | `/lists` | Lists index, synthetic memberships, and create-list action. |
 | `/lists/[listId]` | Recipe-selection/current-run summary. |
@@ -552,7 +573,7 @@ claims that a control already works.
 | `/lists/[listId]/history/[runId]` | Completion date and selected immutable recipe versions only. |
 | `/settings` | Settings index. |
 | `/settings/appearance` | Working System/Light/Dark selection. |
-| `/settings/account` | Account details and future deletion-impact placeholder. |
+| `/settings/account` | Account details, export controls, ownership-aware deletion impact, and confirmed account deletion. |
 
 ### Administrative routes
 
@@ -560,7 +581,7 @@ claims that a control already works.
 | --- | --- |
 | `/admin/public-recipes` | Find public content by ID, URL, domain, importer, or fingerprint. |
 | `/admin/complaints` | Complaint queue and restricted contact-data warning. |
-| `/admin/suppressions` | Recipe/source/domain suppression shell. |
+| `/admin/suppressions` | Audited recipe/source/domain suppression management. |
 | `/settings/instance` | Self-hosting, public-catalog, email, analytics, and moderation settings summary. |
 
 Add root and major-segment `loading.tsx`, `error.tsx`, and `not-found.tsx`
@@ -619,15 +640,15 @@ placeholder text follows the content guide.
 
 ### Continuous integration
 
-Create GitHub Actions workflows that install from the lockfile, cache npm and
+Create GitHub Actions workflows that install from the lockfile, cache pnpm and
 Next.js build artifacts, start the Mongo replica set, create ephemeral secrets,
 and run:
 
-1. `npm run format:check`;
-2. `npm run lint`;
-3. `npm run typecheck`;
+1. `pnpm run format:check`;
+2. `pnpm run lint`;
+3. `pnpm run typecheck`;
 4. unit and integration tests with coverage;
-5. `npm run build`; and
+5. `pnpm run build`; and
 6. Playwright smoke/accessibility tests against the production build.
 
 Upload Playwright traces, screenshots, and coverage only on failure or for a
@@ -659,7 +680,7 @@ unlicensed image is present.
 Land and tag the completed scaffold before feature branches start. The
 foundation integrator owns these high-contention files after that checkpoint:
 
-- `package.json`, `package-lock.json`, root TypeScript/ESLint/Prettier/Next.js/
+- `package.json`, `pnpm-lock.yaml`, root TypeScript/ESLint/Prettier/Next.js/
   Playwright/Vitest configuration, Docker Compose, and CI;
 - `app/globals.css`, `components.json`, and `components/ui/`;
 - shared shells, navigation configuration, manifest, service worker, and icons;
@@ -703,7 +724,7 @@ behavior starts only after the mutation and revision contracts are fixed.
    boundary.
 3. Merge foundational domain contracts before consumers; merge UI consumers
    afterward without relocating shared files.
-4. Run `npm run check` and the lane's relevant Playwright scenarios before
+4. Run `pnpm run check` and the lane's relevant Playwright scenarios before
    requesting integration.
 5. Include screenshots for UI changes and note PRD or documentation changes.
 6. Use synthetic or explicitly licensed fixtures and preserve source

@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { authClient } from '@/lib/auth/auth-client'
+import { safeReturnPath } from '@/lib/auth/return-to'
+import { rememberOfflineUser } from '@/lib/offline/database'
 
 type AuthMode = 'sign-in' | 'sign-up' | 'forgot-password' | 'reset-password'
 
@@ -39,19 +41,18 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     setError('')
     setMessage('')
     try {
+      const returnTo = safeReturnPath(params.get('returnTo'))
       if (mode === 'sign-in') {
         const result = await authClient.signIn.email({ email, password })
         if (result.error) throw new Error(result.error.message)
-        router.push(
-          params.get('returnTo')?.startsWith('/')
-            ? params.get('returnTo')!
-            : '/lists',
-        )
+        if (result.data?.user.id) rememberOfflineUser(result.data.user.id)
+        router.push(returnTo)
         router.refresh()
       } else if (mode === 'sign-up') {
         const result = await authClient.signUp.email({ name, email, password })
         if (result.error) throw new Error(result.error.message)
-        router.push('/lists')
+        if (result.data?.user.id) rememberOfflineUser(result.data.user.id)
+        router.push(returnTo)
         router.refresh()
       } else if (mode === 'forgot-password') {
         const result = await authClient.requestPasswordReset({

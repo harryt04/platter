@@ -9,11 +9,11 @@ export default async function BrowseLayout({
 }) {
   const session = await getSession()
   return session ? (
-    <AppShell>{children}</AppShell>
+    <AppShell userId={session.user.id}>{children}</AppShell>
   ) : (
     <>
       <PublicHeader />
-      {children}
+      <main>{children}</main>
     </>
   )
 }

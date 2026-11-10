@@ -116,6 +116,18 @@ No calendar assignment is required at any point.
 - Sensitive pages and APIs must validate the server-side session.
 - A user must be able to delete their account.
 - Account deletion must explain the fate of shared lists, manually authored recipes, and public imports before confirmation.
+- Account deletion removes private authored recipe documents and personal
+  account artifacts. A recipe version referenced by an active or completed run
+  is retained only as an anonymous unavailable identity snapshot so the pinned
+  reference remains resolvable; unreferenced versions are deleted.
+- Approved public imports remain in the public catalog after account deletion so
+  their source and rights provenance remain truthful. Their catalog and
+  immutable-version ownership is replaced with an anonymous system owner, and
+  the deleted user’s import jobs and saved references are removed.
+- Account deletion writes one retry-stable, metadata-only audit record with a
+  pseudonymous account fingerprint and aggregate impact/cleanup counts. It
+  never retains the deleted account's email, name, raw identifier, recipe
+  content, grocery content, or password.
 - Public recipe discovery may be browsed without authentication; saving, importing, editing, or using a list requires authentication.
 
 ### 9.2 Lists and sharing
@@ -336,8 +348,12 @@ The implementation may refine document boundaries, but it must preserve these co
 - stable recipe identity and immutable version identity;
 - owner/creator and visibility;
 - title, metadata, typical yield, ingredients, and instructions;
+- optional nutrition values per person when known, presented as informational
+  data rather than health guidance;
 - source and attribution;
 - acquisition method and public-content state;
+- separate user-scoped saved-recipe references that do not modify the public
+  recipe or add it to a shopping run;
 - timestamps and version relationship.
 
 Imported recipes should record:
@@ -349,6 +365,7 @@ Imported recipes should record:
 - source content fingerprint;
 - rights or license metadata when known;
 - separate provenance for each copied image;
+- source availability and last-check timestamp;
 - suppression or takedown status.
 
 ### 11.4 Ingredient line

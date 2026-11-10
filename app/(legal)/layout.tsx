@@ -8,7 +8,7 @@ export default function LegalLayout({
   return (
     <>
       <PublicHeader />
-      {children}
+      <main>{children}</main>
     </>
   )
 }

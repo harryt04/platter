@@ -13,7 +13,7 @@ export default async function BrowseLayout({
   ) : (
     <>
       <PublicHeader />
-      {children}
+      <main>{children}</main>
     </>
   )
 }

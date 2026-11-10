@@ -1,8 +1,8 @@
 import { createServer } from 'node:http'
-import { Server } from 'socket.io'
 import { createAdapter } from '@socket.io/mongo-adapter'
 import { auth } from '@/lib/auth/auth'
 import { getConnectedDatabase, getMongoClient } from '@/lib/db/mongo-client'
+import { createRealtimeApplication } from '@/lib/realtime/application'
 import { serverEnv } from '@/lib/env/server'
 
 const env = serverEnv()
@@ -16,35 +16,9 @@ const httpServer = createServer((request, response) => {
   response.end()
 })
 
-const io = new Server(httpServer, {
-  cors: {
-    origin: env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()),
-    credentials: true,
-  },
-})
-
-io.use(async (socket, next) => {
-  try {
-    const cookie = socket.handshake.headers.cookie
-    if (!cookie) return next(new Error('AUTHENTICATION_REQUIRED'))
-    const session = await auth.api.getSession({
-      headers: new Headers({ cookie }),
-    })
-    if (!session) return next(new Error('AUTHENTICATION_REQUIRED'))
-    socket.data.userId = session.user.id
-    next()
-  } catch {
-    next(new Error('AUTHENTICATION_UNAVAILABLE'))
-  }
-})
-
-io.on('connection', (socket) => {
-  socket.on('foundation:join', (listId: string) => {
-    if (!['family', 'personal'].includes(listId))
-      return socket.emit('foundation:error', { code: 'LIST_ACCESS_DENIED' })
-    socket.join(`list:${listId}`)
-    socket.emit('foundation:smoke', { revision: Date.now(), listId })
-  })
+const io = createRealtimeApplication(httpServer, {
+  readSession: (headers) => auth.api.getSession({ headers }),
+  allowedOrigins: env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()),
 })
 
 async function main() {

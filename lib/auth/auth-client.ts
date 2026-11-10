@@ -2,4 +2,6 @@
 
 import { createAuthClient } from 'better-auth/react'
 
-export const authClient = createAuthClient({ baseURL: '/api/auth' })
+// Let Better Auth resolve the same-origin `/api/auth` endpoint in the browser.
+// A relative baseURL is invalid during Next.js server rendering.
+export const authClient = createAuthClient()

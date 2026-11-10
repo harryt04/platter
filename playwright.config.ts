@@ -1,4 +1,20 @@
 import { defineConfig, devices } from '@playwright/test'
+import { loadEnvFile } from 'node:process'
+
+for (const file of ['.env.local', '.env']) {
+  try {
+    loadEnvFile(file)
+  } catch (error) {
+    if (
+      !error ||
+      typeof error !== 'object' ||
+      !('code' in error) ||
+      error.code !== 'ENOENT'
+    ) {
+      throw error
+    }
+  }
+}
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -17,7 +33,7 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['iPhone 13'] } },
   ],
   webServer: {
-    command: 'npm run start:web',
+    command: 'pnpm run start:web',
     url: process.env.APP_URL ?? 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

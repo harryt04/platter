@@ -50,7 +50,7 @@ The primary signal is **Cobalt** and the contrasting secondary signal is **Marig
 
 | Role | Light | Dark | Use |
 | --- | --- | --- | --- |
-| Primary | `#0057D9` | `#3B82F6` | primary action, active navigation, links, focus ring |
+| Primary | `#0057D9` | `#60A5FA` | primary action, active navigation, links, focus ring |
 | Primary foreground | `#FFFFFF` | `#0B1220` | text on primary fills |
 | Secondary | `#F6A700` | `#F6A700` | rare attention/momentum signal, secondary action, small visual anchor |
 | Secondary foreground | `#1E293B` | `#1E293B` | text on marigold; never use white text |
@@ -62,10 +62,14 @@ The primary signal is **Cobalt** and the contrasting secondary signal is **Marig
 | Muted | `#606B7A` | `#A6B1C0` | secondary text |
 | Border | `#DFE1E6` | `#303845` | structural separation |
 | Success | `#19754B` | `#4EBD7A` | confirmed/successful state |
-| Warning | `#A96400` | `#FFCF63` | caution requiring attention |
+| Warning | `#925700` | `#FFCF63` | caution requiring attention |
 | Destructive | `#BA2E3A` | `#FF8590` | irreversible or failed action |
 
 Use semantic state tokens for success, warning, and destructive states. `Already have` and `Purchased` must each use a visible control state plus a text label; their meaning must survive grayscale, high contrast, and color-vision differences.
+
+Use `text-warning` on tinted warning surfaces such as `bg-warning/10` or
+`bg-warning/15`. Reserve `text-warning-foreground` for solid `bg-warning`
+fills, where the theme supplies a contrasting foreground.
 
 ### Theme behavior
 
@@ -133,3 +137,4 @@ The shadcn sidebar documents the expected composition, icon-collapse, mobile beh
 | 2026-09-09 | Cobalt + Marigold color system | Punchy, contrasting, color-vision-conscious signals. |
 | 2026-09-09 | Official shadcn sidebar | Familiar, composable interaction model for an application shell. |
 | 2026-09-09 | System-first theme preference | Matches device expectations while preserving user control in settings. |
+| 2026-09-10 | Market Check brand mark | Makes the grocery checklist the primary identity while retaining a restrained fresh-food cue. |

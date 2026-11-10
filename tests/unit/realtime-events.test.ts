@@ -37,7 +37,9 @@ describe('realtime run mutation events', () => {
     const insertOne = vi.fn().mockResolvedValue({ acknowledged: true })
     const emit = vi.fn()
     const inRoom = vi.fn().mockReturnValue({ emit })
-    Emitter.mockImplementation(() => ({ in: inRoom }))
+    Emitter.mockImplementation(function () {
+      return { in: inRoom }
+    })
     const db = {
       collection: vi.fn().mockReturnValue({ insertOne }),
     } as never
@@ -84,7 +86,9 @@ describe('realtime run mutation events', () => {
     const insertOne = vi.fn().mockResolvedValue({ acknowledged: true })
     const emit = vi.fn()
     const inRoom = vi.fn().mockReturnValue({ emit })
-    Emitter.mockImplementation(() => ({ in: inRoom }))
+    Emitter.mockImplementation(function () {
+      return { in: inRoom }
+    })
     const db = {
       collection: vi.fn().mockReturnValue({ insertOne }),
     } as never

@@ -16,7 +16,11 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isMobile, setIsMobile] = React.useState(false)
   React.useEffect(() => {
     const query = window.matchMedia('(max-width: 767px)')
-    const update = () => setIsMobile(query.matches)
+    const update = () => {
+      const mobile = query.matches
+      setIsMobile(mobile)
+      if (mobile) setOpen(false)
+    }
     update()
     query.addEventListener('change', update)
     return () => query.removeEventListener('change', update)
@@ -40,32 +44,127 @@ export function Sidebar({
   children: React.ReactNode
   className?: string
 }) {
-  const { open, isMobile } = useSidebar()
+  const { open, isMobile, setOpen } = useSidebar()
+  const sidebarRef = React.useRef<HTMLElement>(null)
+  const restoreFocusRef = React.useRef<HTMLElement | null>(null)
+  const mobileOpenRef = React.useRef(false)
+
+  React.useEffect(() => {
+    const wasMobileOpen = mobileOpenRef.current
+
+    if (isMobile && open && !wasMobileOpen) {
+      const activeElement = document.activeElement
+      restoreFocusRef.current =
+        activeElement instanceof HTMLElement &&
+        !sidebarRef.current?.contains(activeElement)
+          ? activeElement
+          : null
+
+      const focusFirstControl = () => {
+        const firstControl = sidebarRef.current?.querySelector<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        )
+        firstControl?.focus()
+      }
+      focusFirstControl()
+    }
+
+    if (isMobile && !open && wasMobileOpen) {
+      const restoreTarget = restoreFocusRef.current
+      if (restoreTarget && document.contains(restoreTarget))
+        restoreTarget.focus()
+      restoreFocusRef.current = null
+    }
+
+    mobileOpenRef.current = isMobile && open
+  }, [isMobile, open])
+
+  React.useEffect(() => {
+    if (!isMobile || !open) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setOpen(false)
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const focusable = Array.from(
+        sidebarRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      )
+      if (focusable.length === 0) {
+        event.preventDefault()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const activeElement = document.activeElement
+      if (!sidebarRef.current?.contains(activeElement)) {
+        event.preventDefault()
+        first.focus()
+      } else if (event.shiftKey && activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isMobile, open, setOpen])
+
   return (
-    <aside
-      className={cn(
-        'sticky top-0 z-30 flex h-screen shrink-0 flex-col border-r bg-[var(--sidebar)] transition-[width,transform] duration-200',
-        isMobile
-          ? open
-            ? 'fixed inset-y-0 left-0 w-72 shadow-xl'
-            : 'fixed w-72 -translate-x-full'
-          : open
-            ? 'w-64'
-            : 'w-16',
-        className,
+    <>
+      <aside
+        id="primary-navigation"
+        ref={sidebarRef}
+        aria-hidden={isMobile && !open}
+        inert={isMobile && !open ? true : undefined}
+        className={cn(
+          'sticky top-0 z-30 flex h-screen shrink-0 flex-col border-r bg-[var(--sidebar)] transition-[width,transform] duration-200',
+          isMobile
+            ? open
+              ? 'fixed inset-y-0 left-0 w-72 shadow-xl'
+              : 'fixed w-72 -translate-x-full'
+            : open
+              ? 'w-64'
+              : 'w-16',
+          className,
+        )}
+        aria-label="Primary navigation"
+      >
+        {children}
+      </aside>
+      {isMobile && open && (
+        <button
+          aria-label="Close navigation"
+          className="bg-foreground/20 fixed inset-0 z-20"
+          onClick={() => setOpen(false)}
+          type="button"
+        />
       )}
-      aria-label="Primary navigation"
-    >
-      {children}
-    </aside>
+    </>
   )
 }
 export function SidebarHeader({
   children,
   className,
 }: React.HTMLAttributes<HTMLDivElement>) {
+  const { open } = useSidebar()
   return (
-    <div className={cn('flex min-h-16 items-center px-3', className)}>
+    <div
+      className={cn(
+        'flex min-h-16 items-center px-3',
+        !open && 'justify-center px-0 [&_.sidebar-label]:hidden',
+        className,
+      )}
+    >
       {children}
     </div>
   )
@@ -129,35 +228,28 @@ export function SidebarMenuButton({
   asChild?: boolean
 }) {
   const { open } = useSidebar()
-  return asChild ? (
-    <div
-      className={cn(
-        'rounded-md',
-        active &&
-          'bg-[var(--sidebar-accent)] text-[var(--sidebar-accent-foreground)]',
-        !open && '[&_.sidebar-label]:hidden',
-      )}
-    >
-      {children}
-    </div>
-  ) : (
-    <button
-      className={cn(
-        'flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm hover:bg-[var(--sidebar-accent)]',
-        active &&
-          'bg-[var(--sidebar-accent)] text-[var(--sidebar-accent-foreground)]',
-        !open && 'justify-center px-0 [&_.sidebar-label]:hidden',
-      )}
-    >
-      {children}
-    </button>
+  const className = cn(
+    'flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm hover:bg-[var(--sidebar-accent)]',
+    active &&
+      'bg-[var(--sidebar-accent)] text-[var(--sidebar-accent-foreground)]',
+    !open && 'justify-center px-0 [&_.sidebar-label]:hidden',
   )
+
+  if (asChild && React.isValidElement<{ className?: string }>(children)) {
+    return React.cloneElement(children, {
+      className: cn(className, children.props.className),
+    })
+  }
+
+  return <button className={className}>{children}</button>
 }
 export function SidebarTrigger() {
   const { open, setOpen, isMobile } = useSidebar()
   return (
     <Button
       aria-label={open ? 'Close navigation' : 'Open navigation'}
+      aria-controls="primary-navigation"
+      aria-expanded={open}
       variant="ghost"
       size="icon"
       onClick={() => setOpen(!open)}

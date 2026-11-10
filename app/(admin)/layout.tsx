@@ -5,6 +5,6 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  await requireAdmin()
-  return <AppShell>{children}</AppShell>
+  const session = await requireAdmin()
+  return <AppShell userId={session.user.id}>{children}</AppShell>
 }

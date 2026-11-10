@@ -1,73 +1,207 @@
 # Platter
 
-Platter is a mobile-first recipe-to-grocery app you can install on your device. It turns chosen recipes into one shared shopping list, shows where ingredients came from, supports recipe discovery and personal recipes, and works offline.
+[![CI](https://github.com/harryt04/platter/actions/workflows/ci.yml/badge.svg)](https://github.com/harryt04/platter/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+Recipe-to-grocery planning for people who cook at home.
+
+[Try the beta](https://beta.platter.harryt.dev) · [Visit the project site](https://platter.harryt.dev) · [Contribute](CONTRIBUTING.md)
+
+Platter helps you choose the recipes you want to cook, turn them into one
+accurate grocery list, and shop with other people. It is a mobile-first,
+installable web app that is designed to remain useful when a grocery store has
+poor connectivity.
+
+## Why Platter
+
+Planning several meals usually means collecting recipes from different places,
+combining their ingredients by hand, checking what is already at home, and
+keeping another shopper up to date. Platter brings those steps into one
+workflow:
+
+1. Find, import, or create recipes.
+2. Choose recipes and the number of people each should feed.
+3. Review one generated list with ingredient calculations and recipe sources.
+4. Mark items you already have or adjust what you intend to buy.
+5. Shop together with a shared checklist, including when temporarily offline.
+
+The goal is a grocery list you can trust without turning Platter into a pantry
+inventory system or a meal calendar.
+
+## Who it is for
+
+- Home cooks who plan several fresh meals before going shopping.
+- Partners, families, roommates, and other groups who share shopping work.
+- Contributors who want an open recipe-to-shopping project to improve.
+- Self-hosters who want the core workflow without a paid recipe API.
+
+## What it does
+
+- Discovers public recipes and preserves source attribution.
+- Imports recipes from public URLs through a reviewable, replaceable adapter pipeline.
+- Stores private recipes and personal recipe-library saves.
+- Scales ingredient quantities to a chosen number of people.
+- Combines compatible grocery contributions while showing where each amount came from.
+- Keeps `Already have` separate from `Purchased`.
+- Supports manual grocery items, amount adjustments, categories, and temporary ordering.
+- Supports shared shopping with realtime updates and honest offline reconciliation.
+- Keeps minimal shopping history without pretending that a recipe was cooked or every item was purchased.
+
+## What it is not
+
+Platter is not a calendar-based meal planner, meal-prep scheduler, persistent
+pantry inventory, food-delivery service, or retailer checkout integration.
 
 ## Project status
 
-The foundation scaffold is in place. Product behavior such as recipe parsing,
-persistence, ingredient normalization, grocery calculations, collaboration,
-and moderation remains intentionally deferred to the feature lanes described in
-the [scaffolding plan](docs/mvp/scaffolding-setup-instructions.md).
+Platter is in **early development** and is available as a beta. The core
+recipe-to-shopping workflow is implemented, but the product is still receiving
+new features, usability improvements, and operational hardening. Expect rough
+edges and breaking changes, and treat self-hosted deployments as
+pre-production software.
 
-## Documentation
+## Try the beta
 
-- [Product requirements](docs/mvp/prd.md) — product rules, data model, permissions, edge cases, and acceptance checks.
-- [Scaffolding setup instructions](docs/mvp/scaffolding-setup-instructions.md) — foundation architecture, setup phases, placeholder routes, verification, and parallel-agent ownership.
-- [Design system](docs/DESIGN.md) — visual style, colors, app layout, screen sizes, accessibility, and motion.
-- [UI implementation guide](docs/mvp/ui-implementation-guide.md) — UI work steps, component rules, and states.
-- [Copy and content guidelines](docs/mvp/copy-and-content-guidelines.md) — vocabulary, action labels, trust copy, and error states.
-- [Application intentions](docs/mvp/application-intentions.md) — the original product brief.
-
-## Planned technology
-
-The planned app will use Next.js 16 App Router with TypeScript, React Server Components, Tailwind CSS, shadcn/ui, Better Auth, and MongoDB’s native driver. Platter will be FOSS under the MIT license and support self-hosting without paid or closed services for its core features.
-
-## Product principles
-
-- Show recipe calculations and how each ingredient got on the list.
-- Keep `Already have` distinct from `Purchased`.
-- Design for phones first, with keyboard access and light and dark themes.
-- Credit recipe sources and follow the licenses for imported recipes, images, and datasets.
+Use the hosted beta at [beta.platter.harryt.dev](https://beta.platter.harryt.dev).
+The [project site](https://platter.harryt.dev) contains the public project
+information and links to the source repository.
 
 ## Local setup
 
-Requirements: Node 24.x, npm, and Docker Compose.
+### Requirements
+
+- Node.js 24.x
+- npm
+- Docker Compose
+
+### Run Platter locally
 
 ```sh
+git clone https://github.com/harryt04/platter.git
+cd platter
 cp .env.example .env.local
-# Set BETTER_AUTH_SECRET to a random value of at least 16 characters.
-npm install
-npm run services:up
-npm run db:indexes
-npm run db:migrate
-npm run dev
 ```
 
-The web app runs on `http://localhost:3000`, Socket.IO on port `3001`, and the
-Mailpit inbox on `http://localhost:8025`. `npm run services:down` stops services
-without removing the Mongo volume. Password reset mail is delivered to
-Mailpit locally.
+Open `.env.local` and set `BETTER_AUTH_SECRET` to a random value of at least 16
+characters. A local secret can be generated with:
 
-For the ignored local browser account, create `.env.test.local` with
-`E2E_USER_NAME`, `E2E_USER_EMAIL`, and `E2E_USER_PASSWORD`, then run
-`npm run db:seed:test-user`. The seed never prints the password.
+```sh
+openssl rand -hex 32
+```
 
-## Commands
+Then install dependencies, start the local services, initialize MongoDB, and
+start the application:
+
+```sh
+pnpm install
+pnpm run services:up
+pnpm run db:indexes
+pnpm run db:migrate
+pnpm run dev
+```
+
+The local services are available at:
+
+| Service | URL |
+| --- | --- |
+| Web app | <http://localhost:3000> |
+| Realtime service | <http://localhost:3001> |
+| Mailpit inbox | <http://localhost:8025> |
+
+`pnpm run dev` starts the web app, realtime service, and import worker. Run
+`pnpm run services:down` when you want to stop MongoDB and Mailpit. Normal
+shutdown preserves the MongoDB volume.
+
+### Optional browser test account
+
+Authenticated browser tests require an ignored local account. Set
+`E2E_USER_NAME`, `E2E_USER_EMAIL`, and `E2E_USER_PASSWORD` in `.env` or
+`.env.local`, then run:
+
+```sh
+pnpm run db:seed:test-user
+```
+
+Never commit those values. A fresh clone does not contain them.
+
+## Development commands
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Web, realtime, and worker development processes. |
-| `npm run dev:web` | Next.js development server only. |
-| `npm run build` | Production web build and auxiliary-process bundles. |
-| `npm run start:web` | Start the production web build. |
-| `npm run start:realtime` / `start:worker` | Start bundled auxiliary processes. |
-| `npm run format` / `format:check` | Write or check Prettier formatting. |
-| `npm run lint` / `typecheck` | Run ESLint or TypeScript checks. |
-| `npm run test` / `test:watch` | Run or watch unit/component tests. |
-| `npm run test:integration` | Run integration tests; service-backed tests need Mongo. |
-| `npm run test:e2e` / `test:a11y` | Run production Playwright or tagged accessibility tests. |
-| `npm run db:indexes` / `db:migrate` | Reconcile indexes or apply the migration ledger. |
-| `npm run check` | Format check, lint, typecheck, tests, and build. |
+| `pnpm run dev` | Start the web app, realtime service, and import worker. |
+| `pnpm run build` | Build the web app and auxiliary processes. |
+| `pnpm run format` | Format the repository. |
+| `pnpm run format:check` | Check formatting without changing files. |
+| `pnpm run repository:check` | Check tracked content for credential and asset-policy violations. |
+| `pnpm run lint` | Run ESLint. |
+| `pnpm run typecheck` | Run the TypeScript compiler without emitting files. |
+| `pnpm run test` | Run unit and component tests. |
+| `pnpm run test:security` | Run focused security regression tests. |
+| `pnpm run test:integration` | Run MongoDB-backed integration tests. |
+| `pnpm run test:e2e` | Run the Chromium browser suite. |
+| `pnpm run test:a11y` | Run tagged Chromium accessibility checks. |
+| `pnpm run check` | Run formatting, repository, lint, type, test, and build checks. |
+| `pnpm run ci` | Run the full local CI-style verification suite. |
 
-See [deployment notes](docs/mvp/deployment.md) for reverse proxy, MongoDB,
-SMTP, analytics, and future Google OAuth guidance.
+Service-backed tests require the local MongoDB setup. Use a separate test
+database for integration tests rather than the development database. See the
+[deployment notes](docs/mvp/deployment.md) for the full environment and service
+configuration.
+
+## Self-hosting
+
+Platter's core workflows are designed to run with self-hosted MongoDB and no
+paid or proprietary recipe or search service. A deployment consists of a
+Next.js web process, a Socket.IO realtime process, an Agenda import worker, and
+a MongoDB replica set. SMTP and privacy-safe analytics are optional.
+
+Read the [deployment notes](docs/mvp/deployment.md) before deploying. In
+particular:
+
+- MongoDB must run as a replica set, including for a single-node deployment.
+- Hosted public recipe imports remain disabled until the deployment publishes
+  its required terms, privacy, removal-contact, and repeat-infringer policies.
+- The `/privacy` and `/terms` pages in this repository are operator templates,
+  not ready-to-publish legal policies.
+- Optional integrations must be configured explicitly and do not make manual
+  recipes or shopping unavailable when disabled.
+
+## Contributing
+
+Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) for
+the pull request workflow and checks. UI changes should include screenshots,
+tests should use synthetic or appropriately licensed fixtures, and changes
+must not include secrets, private data, copied recipe content, or unlicensed
+imagery.
+
+The project maintains product and technical source documents separately from
+this overview:
+
+- [Product requirements](docs/mvp/prd.md): product behavior, terminology, permissions, and boundaries.
+- [Architecture reference](docs/mvp/architecture.md): data ownership, imports, grocery calculations, synchronization, privacy, and migrations.
+- [Design system](docs/DESIGN.md): visual language, responsive behavior, accessibility, and motion.
+- [UI implementation guide](docs/mvp/ui-implementation-guide.md): component and screen-state guidance.
+- [Copy and content guidelines](docs/mvp/copy-and-content-guidelines.md): product vocabulary and user-facing copy.
+- [Repository hygiene](docs/mvp/repository-hygiene.md): content rights, assets, fixtures, and policy safeguards.
+
+## Security and conduct
+
+Please report vulnerabilities privately as described in
+[SECURITY.md](SECURITY.md), not in public issues. Contributors are expected to
+follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## License and content rights
+
+The Platter source code is available under the [MIT license](LICENSE).
+
+The MIT license does not grant rights to recipe content, images, imported
+datasets, or other third-party material. Contributions must preserve source
+attribution and verify the applicable license or permission for external
+content.
+
+## Package manager
+
+Use pnpm 11.24.0, pinned in `package.json`. Install it with
+`npm install --global pnpm@11.24.0` if pnpm is not available.
+Run `pnpm install --frozen-lockfile` after cloning. Commit `pnpm-lock.yaml`
+when dependencies change; do not generate npm or Yarn lockfiles.

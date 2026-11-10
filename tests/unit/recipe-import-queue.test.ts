@@ -19,9 +19,9 @@ beforeEach(() => {
   job.unique.mockReturnValue(job)
   job.schedule.mockReturnValue(job)
   job.save.mockResolvedValue(undefined)
-  Agenda.mockImplementation(() => ({
-    create: vi.fn().mockReturnValue(job),
-  }))
+  Agenda.mockImplementation(function () {
+    return { create: vi.fn().mockReturnValue(job) }
+  })
 })
 
 describe('enqueueRecipeImport', () => {

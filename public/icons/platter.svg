@@ -1,9 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Platter Market Check</title>
-  <desc id="desc">A grocery basket with a completed checklist and a fresh leaf.</desc>
-  <rect width="512" height="512" rx="104" fill="#0057D9"/>
-  <path d="M137 222h238l-24 151a46 46 0 0 1-45 38H206a46 46 0 0 1-45-38l-24-151Z" fill="#FFFFFF"/>
-  <path d="M186 224c7-68 33-103 70-103s63 35 70 103" fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-width="31"/>
-  <path d="m190 307 40 40 91-94" fill="none" stroke="#0057D9" stroke-linecap="round" stroke-linejoin="round" stroke-width="31"/>
-  <path d="M335 148c30-20 55-15 65-6-6 25-27 48-63 45-12-1-23-5-31-11 7-10 16-19 29-28Z" fill="#F6A700"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" aria-labelledby="title desc" role="img" viewBox="0 0 512 512"><title id="title">Platter Market Check</title><desc id="desc">A grocery basket with a completed checklist and a fresh leaf.</desc><rect width="512" height="512" fill="#0057D9" rx="104"/><path fill="#FFF" d="M137 222h238l-24 151a46 46 0 0 1-45 38H206a46 46 0 0 1-45-38l-24-151Z"/><path fill="none" stroke="#FFF" stroke-linecap="round" stroke-width="31" d="M186 224c7-68 33-103 70-103s63 35 70 103"/><path fill="none" stroke="#0057D9" stroke-linecap="round" stroke-linejoin="round" stroke-width="31" d="m190 307 40 40 91-94"/><path fill="#F6A700" d="M335 148c30-20 55-15 65-6-6 25-27 48-63 45-12-1-23-5-31-11 7-10 16-19 29-28Z"/></svg>

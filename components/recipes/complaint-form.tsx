@@ -104,7 +104,7 @@ export function ComplaintForm({
             </label>
             <Input
               id="complaint-recipe"
-              onChange={(event) => setRecipeId(event.target.value)}
+              onValueChange={setRecipeId}
               placeholder="Paste the recipe ID"
               value={recipeId}
             />
@@ -117,7 +117,7 @@ export function ComplaintForm({
             </label>
             <Input
               id="complaint-source"
-              onChange={(event) => setSourceUrl(event.target.value)}
+              onValueChange={setSourceUrl}
               placeholder="https://example.com/recipe"
               type="url"
               value={sourceUrl}
@@ -138,7 +138,7 @@ export function ComplaintForm({
             <Textarea
               id="complaint-description"
               maxLength={4000}
-              onChange={(event) => setDescription(event.target.value)}
+              onValueChange={setDescription}
               placeholder="Describe the material and your relationship to it."
               required
               value={description}
@@ -159,7 +159,7 @@ export function ComplaintForm({
                 </label>
                 <Input
                   id="complaint-name"
-                  onChange={(event) => setContactName(event.target.value)}
+                  onValueChange={setContactName}
                   value={contactName}
                 />
               </div>
@@ -172,7 +172,7 @@ export function ComplaintForm({
                 </label>
                 <Input
                   id="complaint-email"
-                  onChange={(event) => setContactEmail(event.target.value)}
+                  onValueChange={setContactEmail}
                   type="email"
                   value={contactEmail}
                 />

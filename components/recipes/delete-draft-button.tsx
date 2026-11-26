@@ -84,7 +84,7 @@ export function DeleteDraftButton({
               <Input
                 id={`delete-${recipeId}`}
                 value={confirmation}
-                onChange={(event) => setConfirmation(event.target.value)}
+                onValueChange={setConfirmation}
                 autoFocus
               />
               {error && (

@@ -72,6 +72,7 @@ export default async function DiscoverPage({
       />
       <form className="mb-8 grid gap-3 sm:grid-cols-2" method="get">
         <Input
+          agentReadable
           aria-label="Search recipes"
           className="sm:col-span-2"
           defaultValue={query}
@@ -79,18 +80,21 @@ export default async function DiscoverPage({
           placeholder="Search titles, ingredients, sources, or labels"
         />
         <Input
+          agentReadable
           aria-label="Filter by cuisine"
           defaultValue={cuisine}
           name="cuisine"
           placeholder="Cuisine, such as Italian"
         />
         <Input
+          agentReadable
           aria-label="Filter by tags"
           defaultValue={tags}
           name="tags"
           placeholder="Tags, separated by commas"
         />
         <Input
+          agentReadable
           aria-label="Filter by dietary labels"
           defaultValue={dietaryLabels}
           name="dietaryLabels"

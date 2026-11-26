@@ -31,10 +31,10 @@ describe('ComplaintForm', () => {
     render(<ComplaintForm initialRecipeId="recipe-1" />)
 
     expect(screen.getByLabelText(/public recipe id/i)).toHaveValue('recipe-1')
-    fireEvent.change(screen.getByLabelText(/what should we review/i), {
+    fireEvent.input(screen.getByLabelText(/what should we review/i), {
       target: { value: 'This source uses my work.' },
     })
-    fireEvent.change(screen.getByLabelText('Email'), {
+    fireEvent.input(screen.getByLabelText('Email'), {
       target: { value: 'owner@example.com' },
     })
     fireEvent.submit(screen.getByRole('button', { name: 'Submit report' }))
@@ -68,7 +68,7 @@ describe('ComplaintForm', () => {
     )
     render(<ComplaintForm />)
 
-    fireEvent.change(screen.getByLabelText(/what should we review/i), {
+    fireEvent.input(screen.getByLabelText(/what should we review/i), {
       target: { value: 'A concern.' },
     })
     fireEvent.submit(screen.getByRole('button', { name: 'Submit report' }))

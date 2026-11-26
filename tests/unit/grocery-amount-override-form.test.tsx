@@ -103,7 +103,7 @@ describe('GroceryAmountOverrideForm', () => {
       />,
     )
 
-    fireEvent.change(screen.getByLabelText('Shopping amount for rice'), {
+    fireEvent.input(screen.getByLabelText('Shopping amount for rice'), {
       target: { value: '5.25' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Set shopping amount' }))
@@ -190,7 +190,7 @@ describe('GroceryAmountOverrideForm', () => {
         userId="user-1"
       />,
     )
-    fireEvent.change(screen.getByLabelText('Shopping amount for rice'), {
+    fireEvent.input(screen.getByLabelText('Shopping amount for rice'), {
       target: { value: '5.25' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Set shopping amount' }))

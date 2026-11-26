@@ -87,7 +87,7 @@ export function AccountProfileForm({
               id="account-name"
               name="name"
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onValueChange={setName}
               maxLength={100}
               required
             />

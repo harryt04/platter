@@ -27,7 +27,13 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   }, [])
   return (
     <SidebarContext.Provider value={{ open, setOpen, isMobile }}>
-      <div className="flex min-h-screen w-full">{children}</div>
+      <div
+        data-agent-hidden
+        data-agent-secret
+        className="flex min-h-screen w-full"
+      >
+        {children}
+      </div>
     </SidebarContext.Provider>
   )
 }

@@ -69,7 +69,7 @@ describe('RecipeImportPreview', () => {
       />,
     )
 
-    fireEvent.change(screen.getByLabelText('Recipe title'), {
+    fireEvent.input(screen.getByLabelText('Recipe title'), {
       target: { value: 'Corrected soup' },
     })
     fireEvent.click(

@@ -1,3 +1,6 @@
+'use client'
+
+import { Button as ButtonPart } from '@ui-sdk/react/button'
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
@@ -45,10 +48,24 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             : undefined,
         ),
       })
+    // Callers with native handlers already own pending state and offline feedback.
+    if (props.onClick) {
+      return (
+        <button className={classes} ref={ref} {...props}>
+          {children}
+        </button>
+      )
+    }
     return (
-      <button className={classes} ref={ref} {...props}>
+      <ButtonPart
+        type="submit"
+        className={classes}
+        ref={ref}
+        {...props}
+        onClick={undefined}
+      >
         {children}
-      </button>
+      </ButtonPart>
     )
   },
 )

@@ -8,7 +8,11 @@ export default async function AuthLayout({
 }) {
   if (await getSession()) redirect('/lists')
   return (
-    <main className="bg-background flex min-h-screen items-center justify-center px-4 py-12">
+    <main
+      data-agent-hidden
+      data-agent-secret
+      className="bg-background flex min-h-screen items-center justify-center px-4 py-12"
+    >
       {children}
     </main>
   )

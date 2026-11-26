@@ -181,7 +181,7 @@ export function GroceryAmountOverrideForm({
               id={`shopping-amount-${item.id}`}
               inputMode="decimal"
               min="0"
-              onChange={(event) => setAmount(event.target.value)}
+              onValueChange={setAmount}
               required
               step="any"
               type="number"

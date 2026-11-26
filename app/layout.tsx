@@ -1,3 +1,4 @@
+import { AgentBridge } from '@/components/providers/agent-bridge'
 import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import './globals.css'
@@ -41,6 +42,7 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider>
+          <AgentBridge />
           <ToastProvider />
           <ServiceWorkerRegistration />
           {children}

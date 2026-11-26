@@ -370,9 +370,9 @@ export function RecipeImportPreview({
                 </Label>
                 <Input
                   id={`import-ingredient-line-${index}`}
-                  onChange={(event) =>
+                  onValueChange={(value) =>
                     updateIngredient(index, {
-                      originalText: event.target.value,
+                      originalText: value,
                     })
                   }
                   required
@@ -393,9 +393,9 @@ export function RecipeImportPreview({
                     </Label>
                     <Input
                       id={`import-ingredient-${field}-${index}`}
-                      onChange={(event) =>
+                      onValueChange={(value) =>
                         updateIngredient(index, {
-                          [field]: event.target.value,
+                          [field]: value,
                         })
                       }
                       required={field === 'ingredientName'}
@@ -410,9 +410,9 @@ export function RecipeImportPreview({
                 </Label>
                 <Input
                   id={`import-ingredient-note-${index}`}
-                  onChange={(event) =>
+                  onValueChange={(value) =>
                     updateIngredient(index, {
-                      preparationNote: event.target.value,
+                      preparationNote: value,
                     })
                   }
                   value={ingredient.preparationNote ?? ''}
@@ -490,10 +490,10 @@ export function RecipeImportPreview({
               </legend>
               <Textarea
                 aria-label={`Instruction ${index + 1}`}
-                onChange={(event) =>
+                onValueChange={(value) =>
                   setInstructions((items) =>
                     items.map((item, itemIndex) =>
-                      itemIndex === index ? event.target.value : item,
+                      itemIndex === index ? value : item,
                     ),
                   )
                 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { SelectField } from '@/components/ui/select'
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -31,6 +32,7 @@ export function AddRecipeToListForm({
   locale?: string
 }) {
   const router = useRouter()
+  const listFieldId = React.useId()
   const [listId, setListId] = React.useState(lists[0]?.id ?? '')
   const [desiredPeople, setDesiredPeople] = React.useState(defaultPeople)
   const [pending, setPending] = React.useState(false)
@@ -91,27 +93,22 @@ export function AddRecipeToListForm({
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="space-y-2 text-sm font-medium">
-          List
-          <select
-            className="bg-background min-h-11 w-full rounded-[var(--radius-control)] border px-3 text-sm"
+        <div className="space-y-2 text-sm font-medium">
+          <label htmlFor={listFieldId}>List</label>
+          <SelectField
             disabled={pending}
-            onChange={(event) => setListId(event.target.value)}
-            value={listId}
-          >
-            {lists.map((list) => (
-              <option key={list.id} value={list.id}>
-                {list.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            id={listFieldId}
+            items={lists.map((list) => ({ value: list.id, label: list.name }))}
+            onValueChange={(value) => setListId(value ?? '')}
+            value={listId || null}
+          />
+        </div>
         <label className="space-y-2 text-sm font-medium">
           People
           <Input
             disabled={pending}
             min={1}
-            onChange={(event) => setDesiredPeople(Number(event.target.value))}
+            onValueChange={(value) => setDesiredPeople(Number(value))}
             type="number"
             value={desiredPeople}
           />

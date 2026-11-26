@@ -1,5 +1,6 @@
 'use client'
 
+import { SelectField } from '@/components/ui/select'
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { createMutationMetadata } from '@/lib/contracts/mutations'
@@ -26,12 +27,14 @@ export function GroceryCategorySelect({
   editable?: boolean
 }) {
   const router = useRouter()
-  const [pending, setPending] = React.useState(false)
+  const [pendingCategory, setPendingCategory] =
+    React.useState<GroceryCategory | null>(null)
+  const pending = pendingCategory !== null
   const [message, setMessage] = React.useState<string | null>(null)
 
   async function changeCategory(nextCategory: GroceryCategory) {
     if (nextCategory === category) return
-    setPending(true)
+    setPendingCategory(nextCategory)
     setMessage(null)
     try {
       const response = await fetch(
@@ -57,7 +60,7 @@ export function GroceryCategorySelect({
           : 'The grocery category could not change.',
       )
     } finally {
-      setPending(false)
+      setPendingCategory(null)
     }
   }
 
@@ -69,23 +72,21 @@ export function GroceryCategorySelect({
       >
         Category for {ingredientName}
       </label>
-      <select
-        className="border-input bg-background h-11 rounded-md border px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+      <SelectField
         disabled={!editable || pending}
         id={`category-${itemId}`}
-        onChange={(event) =>
-          void changeCategory(event.target.value as GroceryCategory)
-        }
-        value={category}
-      >
-        {Object.entries(groceryCategoryDefinitions).map(
-          ([value, definition]) => (
-            <option key={value} value={value}>
-              {definition.label}
-            </option>
-          ),
+        triggerClassName="w-auto min-w-40"
+        items={Object.entries(groceryCategoryDefinitions).map(
+          ([value, definition]) => ({
+            value,
+            label: definition.label,
+          }),
         )}
-      </select>
+        onValueChange={(value) => {
+          if (value !== null) void changeCategory(value as GroceryCategory)
+        }}
+        value={pendingCategory ?? category}
+      />
       <span
         aria-live="polite"
         className="text-muted-foreground text-xs"

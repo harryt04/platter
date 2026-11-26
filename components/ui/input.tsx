@@ -17,21 +17,7 @@ export function Input({
     'bg-background placeholder:text-muted-foreground focus:ring-ring min-h-11 w-full rounded-[var(--radius-control)] border px-3 text-sm outline-none focus:ring-2',
     className,
   )
-  const { value, defaultValue, onSubmit, ...rest } = props
-  if (
-    (value !== undefined && !onValueChange) ||
-    Array.isArray(value) ||
-    Array.isArray(defaultValue) ||
-    onSubmit
-  ) {
-    return (
-      <input
-        className={classes}
-        data-agent-secret={agentReadable ? undefined : true}
-        {...props}
-      />
-    )
-  }
+  const { value, defaultValue, ...rest } = props
   return (
     <InputPart
       className={classes}

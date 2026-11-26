@@ -66,7 +66,8 @@ describe('AddRecipeToListForm', () => {
     })
     expect(await screen.findByText(/scale 0\.5/)).toBeInTheDocument()
 
-    await user.selectOptions(screen.getByLabelText('List'), 'list-six')
+    await user.click(screen.getByRole('combobox', { name: 'List' }))
+    await user.click(screen.getByRole('option', { name: 'Six people' }))
     await user.clear(people)
     await user.type(people, '6')
     await user.click(screen.getByRole('button', { name: 'Add to this week' }))

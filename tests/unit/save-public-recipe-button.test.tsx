@@ -24,7 +24,10 @@ describe('SavePublicRecipeButton', () => {
       method: 'POST',
     })
     expect(
-      screen.getByRole('button', { name: 'Saved to my recipes' }),
+      screen.getByRole('button', {
+        name: 'Saved to my recipes',
+        pressed: true,
+      }),
     ).toHaveAttribute('aria-pressed', 'true')
     expect(
       screen.getByText(

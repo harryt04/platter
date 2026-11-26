@@ -1,5 +1,6 @@
 'use client'
 
+import { SelectField } from '@/components/ui/select'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { profileLocaleOptions, type ProfileSummary } from '@/lib/account'
@@ -94,19 +95,15 @@ export function AccountProfileForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="account-locale">Locale</Label>
-            <select
-              className="border-input bg-background ring-offset-background focus-visible:ring-ring min-h-11 w-full rounded-[var(--radius-control)] border px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            <SelectField
               id="account-locale"
               name="locale"
               value={locale}
-              onChange={(event) => setLocale(event.target.value)}
-            >
-              {profileLocaleOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              items={profileLocaleOptions}
+              onValueChange={(value) => {
+                if (value !== null) setLocale(value)
+              }}
+            />
             <p className="text-muted-foreground text-sm">
               Dates and supported unit presentation will follow this choice.
             </p>

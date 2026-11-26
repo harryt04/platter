@@ -1,19 +1,28 @@
 'use client'
 
 import * as React from 'react'
-import { Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Menu, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from './button'
+import {
+  Dialog,
+  DialogBackdrop,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+} from './dialog'
 
 type SidebarContextValue = {
   open: boolean
   setOpen: (open: boolean) => void
   isMobile: boolean
+  triggerRef: React.RefObject<HTMLButtonElement | null>
 }
 const SidebarContext = React.createContext<SidebarContextValue | null>(null)
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = React.useState(true)
   const [isMobile, setIsMobile] = React.useState(false)
+  const triggerRef = React.useRef<HTMLButtonElement>(null)
   React.useEffect(() => {
     const query = window.matchMedia('(max-width: 767px)')
     const update = () => {
@@ -26,7 +35,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
     return () => query.removeEventListener('change', update)
   }, [])
   return (
-    <SidebarContext.Provider value={{ open, setOpen, isMobile }}>
+    <SidebarContext.Provider value={{ open, setOpen, isMobile, triggerRef }}>
       <div
         data-agent-hidden
         data-agent-secret
@@ -50,114 +59,56 @@ export function Sidebar({
   children: React.ReactNode
   className?: string
 }) {
-  const { open, isMobile, setOpen } = useSidebar()
-  const sidebarRef = React.useRef<HTMLElement>(null)
-  const restoreFocusRef = React.useRef<HTMLElement | null>(null)
-  const mobileOpenRef = React.useRef(false)
+  const { open, isMobile, setOpen, triggerRef } = useSidebar()
+  const navigation = (
+    <aside
+      id="primary-navigation"
+      aria-label="Primary navigation"
+      className={cn(
+        'flex shrink-0 flex-col border-r bg-[var(--sidebar)]',
+        isMobile
+          ? 'h-full w-full'
+          : cn(
+              'sticky top-0 z-30 h-screen transition-[width] duration-200',
+              open ? 'w-64' : 'w-16',
+            ),
+        className,
+      )}
+    >
+      {children}
+      {isMobile && (
+        <DialogClose
+          render={<Button type="button" variant="ghost" size="icon" />}
+          aria-label="Close navigation"
+          className="absolute top-2 right-2"
+        >
+          <X size={18} />
+        </DialogClose>
+      )}
+    </aside>
+  )
 
-  React.useEffect(() => {
-    const wasMobileOpen = mobileOpenRef.current
-
-    if (isMobile && open && !wasMobileOpen) {
-      const activeElement = document.activeElement
-      restoreFocusRef.current =
-        activeElement instanceof HTMLElement &&
-        !sidebarRef.current?.contains(activeElement)
-          ? activeElement
-          : null
-
-      const focusFirstControl = () => {
-        const firstControl = sidebarRef.current?.querySelector<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        )
-        firstControl?.focus()
-      }
-      focusFirstControl()
-    }
-
-    if (isMobile && !open && wasMobileOpen) {
-      const restoreTarget = restoreFocusRef.current
-      if (restoreTarget && document.contains(restoreTarget))
-        restoreTarget.focus()
-      restoreFocusRef.current = null
-    }
-
-    mobileOpenRef.current = isMobile && open
-  }, [isMobile, open])
-
-  React.useEffect(() => {
-    if (!isMobile || !open) return
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        setOpen(false)
-        return
-      }
-      if (event.key !== 'Tab') return
-
-      const focusable = Array.from(
-        sidebarRef.current?.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ) ?? [],
-      )
-      if (focusable.length === 0) {
-        event.preventDefault()
-        return
-      }
-
-      const first = focusable[0]
-      const last = focusable[focusable.length - 1]
-      const activeElement = document.activeElement
-      if (!sidebarRef.current?.contains(activeElement)) {
-        event.preventDefault()
-        first.focus()
-      } else if (event.shiftKey && activeElement === first) {
-        event.preventDefault()
-        last.focus()
-      } else if (!event.shiftKey && activeElement === last) {
-        event.preventDefault()
-        first.focus()
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isMobile, open, setOpen])
+  if (!isMobile) return navigation
 
   return (
-    <>
-      <aside
-        id="primary-navigation"
-        ref={sidebarRef}
-        aria-hidden={isMobile && !open}
-        inert={isMobile && !open ? true : undefined}
-        className={cn(
-          'sticky top-0 z-30 flex h-screen shrink-0 flex-col border-r bg-[var(--sidebar)] transition-[width,transform] duration-200',
-          isMobile
-            ? open
-              ? 'fixed inset-y-0 left-0 w-72 shadow-xl'
-              : 'fixed w-72 -translate-x-full'
-            : open
-              ? 'w-64'
-              : 'w-16',
-          className,
-        )}
-        aria-label="Primary navigation"
+    <Dialog
+      open={open}
+      onOpenChange={setOpen}
+      container={typeof document === 'undefined' ? null : document.body}
+    >
+      <DialogBackdrop className="bg-foreground/20 fixed inset-0" />
+      <DialogContent
+        keepMounted
+        className="inset-y-0 right-auto left-0 m-0 h-dvh w-72 max-w-full rounded-none border-0 p-0"
+        finalFocus={() => triggerRef.current}
       >
-        {children}
-      </aside>
-      {isMobile && open && (
-        <button
-          aria-label="Close navigation"
-          className="bg-foreground/20 fixed inset-0 z-20"
-          onClick={() => setOpen(false)}
-          type="button"
-        />
-      )}
-    </>
+        <DialogTitle className="sr-only">Primary navigation</DialogTitle>
+        {navigation}
+      </DialogContent>
+    </Dialog>
   )
 }
+
 export function SidebarHeader({
   children,
   className,
@@ -247,12 +198,22 @@ export function SidebarMenuButton({
     })
   }
 
-  return <button className={className}>{children}</button>
-}
-export function SidebarTrigger() {
-  const { open, setOpen, isMobile } = useSidebar()
   return (
     <Button
+      type="button"
+      variant="ghost"
+      className={cn('justify-start', className)}
+    >
+      {children}
+    </Button>
+  )
+}
+export function SidebarTrigger() {
+  const { open, setOpen, isMobile, triggerRef } = useSidebar()
+  return (
+    <Button
+      ref={triggerRef}
+      type="button"
       aria-label={open ? 'Close navigation' : 'Open navigation'}
       aria-controls="primary-navigation"
       aria-expanded={open}

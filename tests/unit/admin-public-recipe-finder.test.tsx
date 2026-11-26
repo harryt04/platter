@@ -29,7 +29,7 @@ describe('PublicRecipeFinder', () => {
   })
 
   it('exposes supported search fields and public provenance metadata', () => {
-    render(
+    const { container } = render(
       <PublicRecipeFinder
         field="fingerprint"
         initialRecipes={[recipe]}
@@ -37,7 +37,12 @@ describe('PublicRecipeFinder', () => {
       />,
     )
 
-    expect(screen.getByLabelText('Search by')).toHaveValue('fingerprint')
+    expect(
+      screen.getByRole('combobox', { name: 'Search by' }),
+    ).toHaveTextContent('Content fingerprint')
+    expect(new FormData(container.querySelector('form')!).get('field')).toBe(
+      'fingerprint',
+    )
     expect(screen.getByLabelText('Search value')).toHaveValue('sha256:abc')
     expect(screen.getByText('Synthetic soup')).toBeInTheDocument()
     expect(
@@ -92,6 +97,12 @@ describe('PublicRecipeFinder', () => {
       />,
     )
 
+    const disclosure = screen.getByRole('button', {
+      name: 'Suppress public content',
+    })
+    expect(disclosure).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByLabelText('Reason')).not.toBeVisible()
+    await user.click(disclosure)
     await user.type(screen.getByLabelText('Reason'), 'Rights request')
     await user.click(screen.getByRole('button', { name: 'Record suppression' }))
 

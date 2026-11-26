@@ -116,7 +116,7 @@ export function MemberManagement({
           Owners can manage roles. Editors can use the shared shopping run.
         </p>
       </div>
-      {error && (
+      {!action && error && (
         <p className="text-destructive text-sm" role="alert">
           {error}
         </p>
@@ -147,14 +147,20 @@ export function MemberManagement({
                   <Button
                     variant="outline"
                     disabled={busy}
-                    onClick={() => setAction({ type: 'promote', member })}
+                    onClick={() => {
+                      setError('')
+                      setAction({ type: 'promote', member })
+                    }}
                   >
                     Make owner
                   </Button>
                   <Button
                     variant="destructive"
                     disabled={busy}
-                    onClick={() => setAction({ type: 'remove', member })}
+                    onClick={() => {
+                      setError('')
+                      setAction({ type: 'remove', member })
+                    }}
                   >
                     Remove
                   </Button>
@@ -164,41 +170,37 @@ export function MemberManagement({
           </div>
         ))}
       </div>
-      {selectedCopy && action && (
-        <AlertDialog
-          aria-labelledby="member-action-title"
-          aria-describedby="member-action-description"
-          aria-modal="true"
-          className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <AlertDialogContent className="w-full max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle id="member-action-title">
-                {selectedCopy.title}
-              </AlertDialogTitle>
-              <AlertDialogDescription id="member-action-description">
-                {selectedCopy.description}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel
-                type="button"
-                disabled={busy}
-                onClick={() => setAction(null)}
-              >
-                Keep member
-              </AlertDialogCancel>
-              <AlertDialogAction
-                type="button"
-                disabled={busy}
-                onClick={applyAction}
-              >
-                {busy ? `${selectedCopy.confirm}…` : selectedCopy.confirm}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <AlertDialog
+        open={Boolean(selectedCopy && action)}
+        onOpenChange={(open) => {
+          if (!open) setAction(null)
+        }}
+        dismissible={!busy}
+      >
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{selectedCopy?.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedCopy?.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {error && (
+            <p className="text-destructive mt-4 text-sm" role="alert">
+              {error}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Keep member</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              disabled={busy}
+              onClick={applyAction}
+            >
+              {busy ? `${selectedCopy?.confirm}…` : selectedCopy?.confirm}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }

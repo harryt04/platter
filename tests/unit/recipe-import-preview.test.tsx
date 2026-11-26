@@ -83,7 +83,10 @@ describe('RecipeImportPreview', () => {
     return vi.waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         '/api/v1/imports/b6f9e7a7-5e44-46a3-bf5c-1d2b2cb9c2b7/save',
-        expect.objectContaining({ method: 'POST' }),
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('Corrected soup'),
+        }),
       )
       expect(push).toHaveBeenCalledWith('/recipes/recipe-1/edit')
       fetchMock.mockRestore()

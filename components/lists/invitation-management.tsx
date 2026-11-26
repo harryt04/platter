@@ -189,14 +189,16 @@ export function InvitationManagement({
         </CardContent>
       </Card>
 
-      {(error || confirmation) && (
+      {((!selectedInvitation && error) || confirmation) && (
         <p
           className={
-            error ? 'text-destructive text-sm' : 'text-success text-sm'
+            !selectedInvitation && error
+              ? 'text-destructive text-sm'
+              : 'text-success text-sm'
           }
-          role={error ? 'alert' : 'status'}
+          role={!selectedInvitation && error ? 'alert' : 'status'}
         >
-          {error || confirmation}
+          {(!selectedInvitation && error) || confirmation}
         </p>
       )}
 
@@ -248,7 +250,10 @@ export function InvitationManagement({
                       <Button
                         variant="destructive"
                         disabled={busyId !== null}
-                        onClick={() => setSelectedId(invitation.id)}
+                        onClick={() => {
+                          setError('')
+                          setSelectedId(invitation.id)
+                        }}
                       >
                         Revoke
                       </Button>
@@ -261,44 +266,44 @@ export function InvitationManagement({
         )}
       </section>
 
-      {selectedInvitation && (
-        <AlertDialog
-          aria-labelledby="revoke-invitation-title"
-          aria-describedby="revoke-invitation-description"
-          aria-modal="true"
-          className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <AlertDialogContent className="w-full max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle id="revoke-invitation-title">
-                Revoke invitation to {selectedInvitation.email}?
-              </AlertDialogTitle>
-              <AlertDialogDescription id="revoke-invitation-description">
-                This invitation link will stop working. The person will not be
-                added to “{listName}”.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel
-                type="button"
-                disabled={busyId !== null}
-                onClick={() => setSelectedId(null)}
-              >
-                Keep invitation
-              </AlertDialogCancel>
-              <AlertDialogAction
-                type="button"
-                disabled={busyId !== null}
-                onClick={revoke}
-              >
-                {busyId === selectedInvitation.id
-                  ? 'Revoking…'
-                  : 'Revoke invitation'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <AlertDialog
+        open={Boolean(selectedInvitation)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedId(null)
+        }}
+        dismissible={busyId === null}
+      >
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Revoke invitation to {selectedInvitation?.email}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This invitation link will stop working. The person will not be
+              added to “{listName}”.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {error && (
+            <p className="text-destructive mt-4 text-sm" role="alert">
+              {error}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busyId !== null}>
+              Keep invitation
+            </AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              disabled={busyId !== null}
+              onClick={revoke}
+            >
+              {busyId === selectedInvitation?.id
+                ? 'Revoking…'
+                : 'Revoke invitation'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -182,10 +182,10 @@ export function ManualGroceryItems({
                   <Input
                     id={`manual-grocery-item-${addition.id}`}
                     disabled={!editable || pendingId !== null}
-                    onChange={(event) =>
+                    onValueChange={(value) =>
                       setLines((current) => ({
                         ...current,
-                        [addition.id]: event.target.value,
+                        [addition.id]: value,
                       }))
                     }
                     value={
@@ -204,7 +204,10 @@ export function ManualGroceryItems({
                     </Button>
                     <Button
                       id={`manual-grocery-remove-${addition.id}`}
-                      onClick={() => setConfirmId(addition.id)}
+                      onClick={() => {
+                        setError(null)
+                        setConfirmId(addition.id)
+                      }}
                       type="button"
                       variant="destructive"
                     >
@@ -217,45 +220,49 @@ export function ManualGroceryItems({
           </div>
         )}
         <p aria-live="polite" className="text-muted-foreground text-sm">
-          {error ?? message}
+          {confirmId ? message : (error ?? message)}
         </p>
       </CardContent>
-      {confirmId && (
-        <AlertDialog
-          aria-labelledby="remove-manual-grocery-title"
-          aria-describedby="remove-manual-grocery-description"
-          aria-modal="true"
-          className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <AlertDialogContent className="w-full max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle id="remove-manual-grocery-title">
-                Remove this manual grocery item?
-              </AlertDialogTitle>
-              <AlertDialogDescription id="remove-manual-grocery-description">
-                This removes the item from the shared {listName} shopping run.
-                Recipe ingredients and recipe versions stay unchanged.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel
-                disabled={pendingId !== null}
-                onClick={() => setConfirmId(null)}
-                type="button"
-              >
-                Keep item
-              </AlertDialogCancel>
-              <AlertDialogAction
-                disabled={pendingId !== null}
-                onClick={() => remove(confirmId)}
-                type="button"
-              >
-                {pendingId === confirmId ? 'Removing…' : 'Remove item'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <AlertDialog
+        open={confirmId !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmId(null)
+        }}
+        dismissible={pendingId === null}
+      >
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Remove this manual grocery item?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the item from the shared {listName} shopping run.
+              Recipe ingredients and recipe versions stay unchanged.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {error && (
+            <p className="text-destructive mt-4 text-sm" role="alert">
+              {error}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pendingId !== null}>
+              Keep item
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={pendingId !== null}
+              onClick={() => {
+                if (confirmId) void remove(confirmId)
+              }}
+              type="button"
+            >
+              {pendingId !== null && pendingId === confirmId
+                ? 'Removing…'
+                : 'Remove item'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }

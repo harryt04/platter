@@ -1,5 +1,6 @@
 'use client'
 
+import { SelectField } from '@/components/ui/select'
 import * as React from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
@@ -53,19 +54,12 @@ export function PublicRecipeFinder({
           >
             <div className="space-y-2">
               <Label htmlFor="public-recipe-search-field">Search by</Label>
-              <select
-                aria-label="Search by"
-                className="bg-background focus:ring-ring min-h-11 w-full rounded-[var(--radius-control)] border px-3 text-sm outline-none focus:ring-2"
+              <SelectField
                 defaultValue={field}
                 id="public-recipe-search-field"
                 name="field"
-              >
-                {searchFields.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                items={searchFields}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="public-recipe-search-query">Search value</Label>

@@ -154,6 +154,10 @@ describe('AlreadyHaveButton', () => {
     await waitFor(() =>
       expect(offline.queueBrowserMutation).toHaveBeenCalledTimes(2),
     )
+    await screen.findByRole('button', {
+      name: 'Mark rice already have',
+      pressed: false,
+    })
     expect(offline.queueBrowserMutation.mock.calls[1]?.[0]).toMatchObject({
       kind: 'grocery.already-have.undo',
       payload: { itemId: 'grocery:rice', alreadyHave: false },

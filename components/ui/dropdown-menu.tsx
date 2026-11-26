@@ -25,6 +25,8 @@ export function DropdownMenuContent({
       container={typeof document === 'undefined' ? null : document.body}
       className={cn('bg-popover rounded-md border p-1 shadow-lg', className)}
       {...props}
+      data-agent-hidden
+      data-agent-secret
     />
   )
 }

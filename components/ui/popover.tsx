@@ -5,6 +5,7 @@ import * as PopoverParts from '@ui-sdk/react/popover'
 import { cn } from '@/lib/utils'
 
 export const Popover = PopoverParts.Popover
+export const PopoverTitle = PopoverParts.PopoverTitle
 export function PopoverTrigger({ children }: { children: React.ReactNode }) {
   if (isValidElement(children))
     return <PopoverParts.PopoverTrigger render={children} />
@@ -22,6 +23,8 @@ export function PopoverContent({
       container={typeof document === 'undefined' ? null : document.body}
       className={cn('bg-popover rounded-md border p-4 shadow-lg', className)}
       {...props}
+      data-agent-hidden
+      data-agent-secret
     />
   )
 }

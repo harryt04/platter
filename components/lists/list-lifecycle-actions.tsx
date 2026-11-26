@@ -120,46 +120,44 @@ export function ListLifecycleActions({
           Delete list
         </Button>
       </div>
-      {error && (
+      {!selectedCopy && error && (
         <p className="text-destructive mt-3 text-sm" role="alert">
           {error}
         </p>
       )}
-      {selectedCopy && (
-        <AlertDialog
-          aria-labelledby="list-lifecycle-title"
-          aria-describedby="list-lifecycle-description"
-          aria-modal="true"
-          className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <AlertDialogContent className="w-full max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle id="list-lifecycle-title">
-                {selectedCopy.title} “{listName}”?
-              </AlertDialogTitle>
-              <AlertDialogDescription id="list-lifecycle-description">
-                {selectedCopy.description}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel
-                type="button"
-                disabled={busy}
-                onClick={() => setAction(null)}
-              >
-                Keep list
-              </AlertDialogCancel>
-              <AlertDialogAction
-                type="button"
-                disabled={busy}
-                onClick={applyAction}
-              >
-                {busy ? `${selectedCopy.confirm}…` : selectedCopy.confirm}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <AlertDialog
+        open={Boolean(selectedCopy)}
+        onOpenChange={(open) => {
+          if (!open) setAction(null)
+        }}
+        dismissible={!busy}
+      >
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {selectedCopy?.title} “{listName}”?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedCopy?.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {error && (
+            <p className="text-destructive mt-4 text-sm" role="alert">
+              {error}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Keep list</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              disabled={busy}
+              onClick={applyAction}
+            >
+              {busy ? `${selectedCopy?.confirm}…` : selectedCopy?.confirm}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }

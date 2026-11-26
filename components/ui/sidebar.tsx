@@ -98,7 +98,6 @@ export function Sidebar({
     >
       <DialogBackdrop className="bg-foreground/20 fixed inset-0" />
       <DialogContent
-        keepMounted
         className="inset-y-0 right-auto left-0 m-0 h-dvh w-72 max-w-full rounded-none border-0 p-0"
         finalFocus={() => triggerRef.current}
       >

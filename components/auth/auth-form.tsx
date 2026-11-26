@@ -97,12 +97,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           {mode === 'sign-up' && (
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                required
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
+              <Input id="name" required value={name} onValueChange={setName} />
             </div>
           )}
           {mode !== 'reset-password' && (
@@ -113,7 +108,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
                 type="email"
                 required
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onValueChange={setEmail}
               />
             </div>
           )}
@@ -124,7 +119,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
                 id="token"
                 required
                 value={token}
-                onChange={(event) => setToken(event.target.value)}
+                onValueChange={setToken}
               />
             </div>
           )}
@@ -139,7 +134,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
                 minLength={8}
                 required
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onValueChange={setPassword}
               />
             </div>
           )}

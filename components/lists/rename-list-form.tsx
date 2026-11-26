@@ -75,7 +75,7 @@ export function RenameListForm({
               id="list-name"
               name="name"
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onValueChange={setName}
               maxLength={100}
               required
             />

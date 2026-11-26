@@ -210,7 +210,7 @@ export function RecipeImportForm({
               <Input
                 disabled={pending || !online || !importsEnabled}
                 id="recipe-import-url"
-                onChange={(event) => setSourceUrl(event.target.value)}
+                onValueChange={setSourceUrl}
                 placeholder="https://example.com/recipe"
                 required
                 type="url"

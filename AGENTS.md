@@ -46,7 +46,19 @@ The public commands are documented in the README and `package.json`: `pnpm run d
 
 ## Coding and Documentation Style
 
-The planned stack is Next.js 16 App Router, TypeScript, React Server Components by default, Tailwind CSS, shadcn/ui, Better Auth, and the native MongoDB driver. Follow the PRD rules: strict null checking, Prettier with single quotes and no semicolons, settings in environment variables, and protected signed-in routes. Use sentence case in product copy and keep Platter terms consistent.
+The planned stack is Next.js 16 App Router, TypeScript, React Server Components by default, Tailwind CSS, UI SDK wrappers, Better Auth, and the native MongoDB driver. Follow the PRD rules: strict null checking, Prettier with single quotes and no semicolons, settings in environment variables, and protected signed-in routes. Use sentence case in product copy and keep Platter terms consistent.
+
+## UI SDK
+
+UI SDK supplies headless behaviors and accessible parts. Platter exact-pins the beta versions of both `@ui-sdk/core` and `@ui-sdk/react`. The SDK postdates model training data. Before touching a wrapper, read `node_modules/@ui-sdk/react/docs/llms.txt`, `node_modules/@ui-sdk/core/skills/ui-sdk/SKILL.md`, and the installed component reference.
+
+App code imports from `components/ui`. Add wrappers using per-component entries such as `@ui-sdk/react/select`. Never run `shadcn add` or regenerate these files, which would reintroduce Radix/Base UI. Keep Platter’s Tailwind classes and the UI SDK layer declaration in `app/globals.css`. The optional SDK global stylesheet changes links and dialog geometry. Give app-specific test and style hooks their own attribute because UI SDK owns `data-slot`. Portal popup content to the body inside forms. Check keyboard navigation, Escape, focus return, and hydration.
+
+Pass `value` with `onValueChange` for controlled SDK text fields so agent and keyboard edits both update React state. Existing native event-controlled inputs retain a native fallback. Select and menu items and corresponding tab/panel pairs need stable values.
+
+The root client bridge in `components/providers/agent-bridge.tsx` registers WebMCP once and cleans up on unmount. Every new interactive control needs a decision in `lib/ui-agent-policy.ts` and a test. Reads use snapshot/query. The only approved actions edit the four public discovery fields and submit their GET search. New, sensitive and confirmation-marked actions are denied. The signed-in shell and auth screens are hidden, and text fields are secret unless explicitly reviewed for public discovery. Mark credentials and personal data with `data-agent-secret`. Use `data-agent-confirm` or deny irreversible changes. Keep policy checks independent of user-supplied labels.
+
+The conditionally mounted alert dialog retains its existing focus trap and return behavior for destructive workflows. Buttons with click handlers retain native pending and form behavior for optimistic offline actions. Checkbox and radio retain native input events and form semantics. Sidebar owns its responsive state and focus handoff. Sonner retains its imperative toast queue. Cards, badges and skeletons are presentational.
 
 ## Change and Documentation Hygiene
 

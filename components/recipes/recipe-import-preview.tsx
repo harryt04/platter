@@ -225,7 +225,7 @@ export function RecipeImportPreview({
             <Label htmlFor="import-preview-title">Recipe title</Label>
             <Input
               id="import-preview-title"
-              onChange={(event) => setTitle(event.target.value)}
+              onValueChange={setTitle}
               required
               value={title}
             />
@@ -236,7 +236,7 @@ export function RecipeImportPreview({
               id="import-preview-yield"
               inputMode="numeric"
               min="1"
-              onChange={(event) => setTypicalPeopleFed(event.target.value)}
+              onValueChange={setTypicalPeopleFed}
               step="1"
               type="number"
               value={typicalPeopleFed}
@@ -249,7 +249,7 @@ export function RecipeImportPreview({
                 <Label htmlFor="import-preview-source-name">Source name</Label>
                 <Input
                   id="import-preview-source-name"
-                  onChange={(event) => setSourceName(event.target.value)}
+                  onValueChange={setSourceName}
                   value={sourceName}
                 />
               </div>
@@ -259,7 +259,7 @@ export function RecipeImportPreview({
                 </Label>
                 <Input
                   id="import-preview-source-author"
-                  onChange={(event) => setSourceAuthor(event.target.value)}
+                  onValueChange={setSourceAuthor}
                   value={sourceAuthor}
                 />
               </div>
@@ -268,7 +268,7 @@ export function RecipeImportPreview({
               <Label htmlFor="import-preview-source-url">Source URL</Label>
               <Input
                 id="import-preview-source-url"
-                onChange={(event) => setSourceUrl(event.target.value)}
+                onValueChange={setSourceUrl}
                 type="url"
                 value={sourceUrl}
               />
@@ -277,7 +277,7 @@ export function RecipeImportPreview({
               <Label htmlFor="import-preview-attribution">Attribution</Label>
               <Textarea
                 id="import-preview-attribution"
-                onChange={(event) => setAttribution(event.target.value)}
+                onValueChange={setAttribution}
                 value={attribution}
               />
             </div>
@@ -298,7 +298,7 @@ export function RecipeImportPreview({
                   <Input
                     id={id}
                     min="0"
-                    onChange={(event) => setValue(event.target.value)}
+                    onValueChange={setValue}
                     step="1"
                     type="number"
                     value={value}
@@ -312,7 +312,7 @@ export function RecipeImportPreview({
               <Label htmlFor="import-preview-cuisine">Cuisine</Label>
               <Input
                 id="import-preview-cuisine"
-                onChange={(event) => setCuisine(event.target.value)}
+                onValueChange={setCuisine}
                 value={cuisine}
               />
             </div>
@@ -320,7 +320,7 @@ export function RecipeImportPreview({
               <Label htmlFor="import-preview-meal-type">Meal type</Label>
               <Input
                 id="import-preview-meal-type"
-                onChange={(event) => setMealType(event.target.value)}
+                onValueChange={setMealType}
                 value={mealType}
               />
             </div>
@@ -330,7 +330,7 @@ export function RecipeImportPreview({
               <Label htmlFor="import-preview-tags">Tags</Label>
               <Input
                 id="import-preview-tags"
-                onChange={(event) => setTags(event.target.value)}
+                onValueChange={setTags}
                 value={tags}
               />
             </div>
@@ -340,7 +340,7 @@ export function RecipeImportPreview({
               </Label>
               <Input
                 id="import-preview-dietary-labels"
-                onChange={(event) => setDietaryLabels(event.target.value)}
+                onValueChange={setDietaryLabels}
                 value={dietaryLabels}
               />
             </div>

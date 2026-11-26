@@ -1,3 +1,9 @@
+'use client'
+
+import {
+  Avatar as AvatarRoot,
+  AvatarFallback as Fallback,
+} from '@ui-sdk/react/avatar'
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 export function Avatar({
@@ -5,7 +11,8 @@ export function Avatar({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
+    <AvatarRoot
+      render={<div />}
       className={cn(
         'bg-muted flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-sm font-medium',
         className,
@@ -15,5 +22,5 @@ export function Avatar({
   )
 }
 export function AvatarFallback({ children }: { children: React.ReactNode }) {
-  return <>{children}</>
+  return <Fallback>{children}</Fallback>
 }

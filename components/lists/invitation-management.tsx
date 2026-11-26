@@ -176,7 +176,7 @@ export function InvitationManagement({
                 name="email"
                 type="email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onValueChange={setEmail}
                 placeholder="friend@example.com"
                 maxLength={320}
                 required

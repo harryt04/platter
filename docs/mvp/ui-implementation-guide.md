@@ -5,7 +5,7 @@ Read [DESIGN.md](../../DESIGN.md) and [Copy and Content Guidelines](copy-and-con
 ## Delivery loop
 
 1. Identify the user task, its current state, and the one primary action for the screen.
-2. Start with a shadcn/ui primitive or the official sidebar composition; add product-specific structure only around it.
+2. Start with a Platter wrapper from `components/ui` or the existing sidebar composition; add product-specific structure only around it.
 3. Use design tokens and semantic Tailwind/shadcn variables. Do not introduce an ad hoc hex color, font, radius, or spacing value for a one-off screen.
 4. Build all states: default, focus, hover where useful, disabled, loading, empty, validation/error, and dark mode.
 5. Verify at a narrow mobile width and desktop width, with keyboard navigation and both resolved themes.
@@ -15,7 +15,7 @@ Completion means the UI uses the system, communicates state without color alone,
 
 ## Required stack decisions
 
-- Use Tailwind CSS and installed shadcn/ui components.
+- Use Tailwind CSS and the local UI wrappers described in `AGENTS.md`.
 - Build the application shell with shadcn’s `SidebarProvider`, `Sidebar`, `SidebarHeader`, `SidebarContent`, `SidebarGroup`, `SidebarMenu`, `SidebarFooter`, `SidebarRail`, `SidebarInset`, and `SidebarTrigger`.
 - Use shadcn’s mobile sidebar behavior instead of implementing a separate mobile nav.
 - Keep design tokens in the global theme layer; map them to shadcn semantic variables and `--sidebar-*` variables.

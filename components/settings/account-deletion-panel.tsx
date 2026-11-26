@@ -118,7 +118,7 @@ export function AccountDeletionPanel({
                   autoFocus
                   id="delete-account-email"
                   value={confirmation}
-                  onChange={(event) => setConfirmation(event.target.value)}
+                  onValueChange={setConfirmation}
                   autoComplete="email"
                 />
               </div>
@@ -130,7 +130,7 @@ export function AccountDeletionPanel({
                   id="delete-account-password"
                   type="password"
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  onValueChange={setPassword}
                   autoComplete="current-password"
                 />
               </div>

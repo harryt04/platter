@@ -1,3 +1,6 @@
+'use client'
+
+import { Separator as SeparatorPart } from '@ui-sdk/react/separator'
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
@@ -9,9 +12,8 @@ export function Separator({
   orientation?: 'horizontal' | 'vertical'
 }) {
   return (
-    <div
-      role="separator"
-      aria-orientation={orientation}
+    <SeparatorPart
+      orientation={orientation}
       className={cn(
         'bg-border shrink-0',
         orientation === 'horizontal' ? 'h-px w-full' : 'h-full w-px',

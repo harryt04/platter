@@ -357,7 +357,7 @@ export function DraftEditor({
               id="recipe-title"
               name="title"
               value={title}
-              onChange={(event) => setTitle(event.target.value)}
+              onValueChange={setTitle}
               placeholder="Sunday tomato soup"
               maxLength={200}
               required
@@ -379,7 +379,7 @@ export function DraftEditor({
                   id="recipe-description"
                   name="description"
                   value={description}
-                  onChange={(event) => setDescription(event.target.value)}
+                  onValueChange={setDescription}
                   placeholder="A cozy weeknight soup with a bright finish."
                   maxLength={2000}
                 />
@@ -398,7 +398,7 @@ export function DraftEditor({
                   step="1"
                   inputMode="numeric"
                   value={typicalPeopleFed}
-                  onChange={(event) => setTypicalPeopleFed(event.target.value)}
+                  onValueChange={setTypicalPeopleFed}
                   placeholder="4"
                 />
                 <p className="text-muted-foreground text-xs">
@@ -478,7 +478,7 @@ export function DraftEditor({
                       id="recipe-cuisine"
                       name="cuisine"
                       value={cuisine}
-                      onChange={(event) => setCuisine(event.target.value)}
+                      onValueChange={setCuisine}
                       placeholder="Mediterranean"
                       maxLength={100}
                     />
@@ -489,7 +489,7 @@ export function DraftEditor({
                       id="recipe-meal-type"
                       name="mealType"
                       value={mealType}
-                      onChange={(event) => setMealType(event.target.value)}
+                      onValueChange={setMealType}
                       placeholder="Dinner"
                       maxLength={100}
                     />
@@ -502,7 +502,7 @@ export function DraftEditor({
                       id="recipe-tags"
                       name="tags"
                       value={tags}
-                      onChange={(event) => setTags(event.target.value)}
+                      onValueChange={setTags}
                       placeholder="weeknight, make ahead"
                       maxLength={1050}
                     />
@@ -518,7 +518,7 @@ export function DraftEditor({
                       id="recipe-dietary-labels"
                       name="dietaryLabels"
                       value={dietaryLabels}
-                      onChange={(event) => setDietaryLabels(event.target.value)}
+                      onValueChange={setDietaryLabels}
                       placeholder="vegetarian, gluten-free"
                       maxLength={1050}
                     />
@@ -536,7 +536,7 @@ export function DraftEditor({
                     id="recipe-household-notes"
                     name="householdNotes"
                     value={householdNotes}
-                    onChange={(event) => setHouseholdNotes(event.target.value)}
+                    onValueChange={setHouseholdNotes}
                     placeholder="Use less salt for the kids."
                     maxLength={2000}
                   />
@@ -615,7 +615,7 @@ export function DraftEditor({
                         id="recipe-source-name"
                         name="sourceName"
                         value={sourceName}
-                        onChange={(event) => setSourceName(event.target.value)}
+                        onValueChange={setSourceName}
                         placeholder="Neighborhood cookbook"
                         maxLength={200}
                       />
@@ -650,7 +650,7 @@ export function DraftEditor({
                       type="url"
                       inputMode="url"
                       value={sourceUrl}
-                      onChange={(event) => setSourceUrl(event.target.value)}
+                      onValueChange={setSourceUrl}
                       placeholder="https://example.com/recipe"
                     />
                   </div>
@@ -663,7 +663,7 @@ export function DraftEditor({
                       id="recipe-attribution"
                       name="attribution"
                       value={attribution}
-                      onChange={(event) => setAttribution(event.target.value)}
+                      onValueChange={setAttribution}
                       placeholder="Adapted with permission from the original author."
                       maxLength={1000}
                     />
@@ -691,7 +691,7 @@ export function DraftEditor({
                       type="url"
                       inputMode="url"
                       value={imageUrl}
-                      onChange={(event) => setImageUrl(event.target.value)}
+                      onValueChange={setImageUrl}
                       placeholder="https://images.example.com/soup.jpg"
                       maxLength={2048}
                     />
@@ -711,7 +711,7 @@ export function DraftEditor({
                       id="recipe-image-alt-text"
                       name="imageAltText"
                       value={imageAltText}
-                      onChange={(event) => setImageAltText(event.target.value)}
+                      onValueChange={setImageAltText}
                       placeholder="Bowl of tomato soup with herbs"
                       maxLength={300}
                     />

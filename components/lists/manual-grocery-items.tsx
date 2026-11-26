@@ -147,7 +147,7 @@ export function ManualGroceryItems({
             </label>
             <Input
               id="new-manual-grocery-item"
-              onChange={(event) => setNewLine(event.target.value)}
+              onValueChange={setNewLine}
               placeholder="For example, 2 bags spinach"
               value={newLine}
             />

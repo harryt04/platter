@@ -66,7 +66,7 @@ export function CreateListForm() {
               id="list-name"
               name="name"
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onValueChange={setName}
               placeholder="Family"
               maxLength={100}
               required

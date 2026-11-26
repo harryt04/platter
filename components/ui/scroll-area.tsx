@@ -1,3 +1,9 @@
+'use client'
+import {
+  ScrollArea as Root,
+  ScrollAreaViewport,
+  ScrollAreaContent,
+} from '@ui-sdk/react/scroll-area'
 export function ScrollArea({
   children,
   className = '',
@@ -5,5 +11,11 @@ export function ScrollArea({
   children: React.ReactNode
   className?: string
 }) {
-  return <div className={`overflow-auto ${className}`}>{children}</div>
+  return (
+    <Root className={className}>
+      <ScrollAreaViewport className="h-full overflow-auto">
+        <ScrollAreaContent>{children}</ScrollAreaContent>
+      </ScrollAreaViewport>
+    </Root>
+  )
 }

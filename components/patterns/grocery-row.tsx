@@ -1,3 +1,8 @@
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from '@/components/ui/collapsible'
 import { MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -196,26 +201,28 @@ export function GroceryRow({
               It stays separate because the ingredient parse is uncertain. No
               amount has been combined.
             </p>
-            <details className="mt-2">
-              <summary className="min-h-11 cursor-pointer pt-3 font-medium underline-offset-4 hover:underline">
+            <Collapsible className="mt-2">
+              <CollapsibleTrigger className="min-h-11 cursor-pointer pt-3 font-medium underline-offset-4 hover:underline">
                 Compare possible match
-              </summary>
-              <div
-                aria-label="Possible merge comparison"
-                className="border-warning/40 mt-2 space-y-4 border-t pt-3 text-xs"
-                role="group"
-              >
-                <p className="text-muted-foreground">
-                  Review the facts below before choosing whether these items
-                  should ever be combined. The recipes are unchanged.
-                </p>
-                <SuggestionItemDetails label="This item" item={item!} />
-                <SuggestionItemDetails
-                  label="Possible match"
-                  item={otherItem}
-                />
-              </div>
-            </details>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div
+                  aria-label="Possible merge comparison"
+                  className="border-warning/40 mt-2 space-y-4 border-t pt-3 text-xs"
+                  role="group"
+                >
+                  <p className="text-muted-foreground">
+                    Review the facts below before choosing whether these items
+                    should ever be combined. The recipes are unchanged.
+                  </p>
+                  <SuggestionItemDetails label="This item" item={item!} />
+                  <SuggestionItemDetails
+                    label="Possible match"
+                    item={otherItem}
+                  />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         )
       })}

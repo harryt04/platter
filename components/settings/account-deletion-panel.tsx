@@ -89,76 +89,73 @@ export function AccountDeletionPanel({
       >
         Delete account
       </Button>
-      {open && (
-        <AlertDialog
-          aria-labelledby="delete-account-title"
-          aria-describedby="delete-account-description"
-          aria-modal="true"
-          className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4"
+      <AlertDialog
+        open={open}
+        onOpenChange={(open) => {
+          if (!open) close()
+        }}
+        dismissible={!busy}
+      >
+        <AlertDialogContent
+          className="max-w-md"
+          initialFocus={() => document.getElementById('delete-account-email')}
         >
-          <AlertDialogContent className="w-full max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle id="delete-account-title">
-                Delete your Platter account?
-              </AlertDialogTitle>
-              <AlertDialogDescription id="delete-account-description">
-                This cannot be undone. Your private authored recipes and account
-                data will be removed. Approved public imports remain available
-                with their source attribution and rights information, without
-                your account attached. Existing list history keeps only a
-                minimal unavailable recipe reference.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="mt-5 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="delete-account-email">
-                  Type {email} to confirm
-                </Label>
-                <Input
-                  autoFocus
-                  id="delete-account-email"
-                  value={confirmation}
-                  onValueChange={setConfirmation}
-                  autoComplete="email"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="delete-account-password">
-                  Enter your password
-                </Label>
-                <Input
-                  id="delete-account-password"
-                  type="password"
-                  value={password}
-                  onValueChange={setPassword}
-                  autoComplete="current-password"
-                />
-              </div>
-              {error && (
-                <p className="text-destructive text-sm" role="alert">
-                  {error}
-                </p>
-              )}
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete your Platter account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This cannot be undone. Your private authored recipes and account
+              data will be removed. Approved public imports remain available
+              with their source attribution and rights information, without your
+              account attached. Existing list history keeps only a minimal
+              unavailable recipe reference.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="mt-5 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="delete-account-email">
+                Type {email} to confirm
+              </Label>
+              <Input
+                id="delete-account-email"
+                value={confirmation}
+                onValueChange={setConfirmation}
+                autoComplete="email"
+              />
             </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel type="button" onClick={close}>
-                Keep account
-              </AlertDialogCancel>
-              <AlertDialogAction
-                type="button"
-                disabled={
-                  busy ||
-                  confirmation.toLowerCase() !== email.toLowerCase() ||
-                  !password
-                }
-                onClick={deleteAccount}
-              >
-                {busy ? 'Deleting…' : 'Delete permanently'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+            <div className="space-y-2">
+              <Label htmlFor="delete-account-password">
+                Enter your password
+              </Label>
+              <Input
+                id="delete-account-password"
+                type="password"
+                value={password}
+                onValueChange={setPassword}
+                autoComplete="current-password"
+              />
+            </div>
+            {error && (
+              <p className="text-destructive text-sm" role="alert">
+                {error}
+              </p>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Keep account</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              disabled={
+                busy ||
+                confirmation.toLowerCase() !== email.toLowerCase() ||
+                !password
+              }
+              onClick={deleteAccount}
+            >
+              {busy ? 'Deleting…' : 'Delete permanently'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }

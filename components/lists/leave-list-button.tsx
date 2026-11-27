@@ -77,43 +77,33 @@ export function LeaveListButton({
           Leave this list
         </Button>
       )}
-      {error && (
+      {!open && error && (
         <p className="text-destructive mt-3 text-sm" role="alert">
           {error}
         </p>
       )}
-      {open && (
-        <AlertDialog
-          aria-labelledby="leave-list-title"
-          aria-describedby="leave-list-description"
-          aria-modal="true"
-          className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <AlertDialogContent className="w-full max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle id="leave-list-title">
-                Leave “{listName}”?
-              </AlertDialogTitle>
-              <AlertDialogDescription id="leave-list-description">
-                You will lose access to this list and its shared shopping run.
-                Your other lists will not be affected.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel
-                type="button"
-                disabled={busy}
-                onClick={() => setOpen(false)}
-              >
-                Keep list
-              </AlertDialogCancel>
-              <AlertDialogAction type="button" disabled={busy} onClick={leave}>
-                {busy ? 'Leaving…' : 'Leave list'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <AlertDialog open={open} onOpenChange={setOpen} dismissible={!busy}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave “{listName}”?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will lose access to this list and its shared shopping run.
+              Your other lists will not be affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {error && (
+            <p className="text-destructive mt-4 text-sm" role="alert">
+              {error}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Keep list</AlertDialogCancel>
+            <AlertDialogAction type="button" disabled={busy} onClick={leave}>
+              {busy ? 'Leaving…' : 'Leave list'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }

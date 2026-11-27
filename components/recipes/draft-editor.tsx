@@ -1,5 +1,6 @@
 'use client'
 
+import { SelectField } from '@/components/ui/select'
 import { useId, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -171,6 +172,7 @@ export function DraftEditor({
   const instructionKeyCounter = useRef(initialInstructions.length)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const saveButton = useRef<HTMLButtonElement>(null)
   const [correctionDialogOpen, setCorrectionDialogOpen] = useState(false)
 
   const ingredientCorrectionPending =
@@ -316,6 +318,7 @@ export function DraftEditor({
         throw new Error(problem.detail ?? 'We couldn’t save this draft.')
       }
       const result = (await response.json()) as { recipe: { id: string } }
+      setCorrectionDialogOpen(false)
       router.push(`/recipes/${result.recipe.id}/edit`)
       router.refresh()
     } catch (caught) {
@@ -426,9 +429,7 @@ export function DraftEditor({
                       step="1"
                       inputMode="numeric"
                       value={prepTimeMinutes}
-                      onChange={(event) =>
-                        setPrepTimeMinutes(event.target.value)
-                      }
+                      onValueChange={(value) => setPrepTimeMinutes(value)}
                       placeholder="15"
                     />
                   </div>
@@ -445,9 +446,7 @@ export function DraftEditor({
                       step="1"
                       inputMode="numeric"
                       value={cookingTimeMinutes}
-                      onChange={(event) =>
-                        setCookingTimeMinutes(event.target.value)
-                      }
+                      onValueChange={(value) => setCookingTimeMinutes(value)}
                       placeholder="30"
                     />
                   </div>
@@ -464,9 +463,7 @@ export function DraftEditor({
                       step="1"
                       inputMode="numeric"
                       value={totalTimeMinutes}
-                      onChange={(event) =>
-                        setTotalTimeMinutes(event.target.value)
-                      }
+                      onValueChange={(value) => setTotalTimeMinutes(value)}
                       placeholder="45"
                     />
                   </div>
@@ -577,8 +574,7 @@ export function DraftEditor({
                           step="any"
                           inputMode="decimal"
                           value={nutrition[field]?.toString() ?? ''}
-                          onChange={(event) => {
-                            const value = event.target.value
+                          onValueChange={(value) => {
                             setNutrition((current) => {
                               const next = { ...current }
                               if (value === '') {
@@ -631,9 +627,7 @@ export function DraftEditor({
                         id="recipe-source-author"
                         name="sourceAuthor"
                         value={sourceAuthor}
-                        onChange={(event) =>
-                          setSourceAuthor(event.target.value)
-                        }
+                        onValueChange={(value) => setSourceAuthor(value)}
                         placeholder="Alex Rivera"
                         maxLength={200}
                       />
@@ -732,9 +726,7 @@ export function DraftEditor({
                         id="recipe-image-source-name"
                         name="imageSourceName"
                         value={imageSourceName}
-                        onChange={(event) =>
-                          setImageSourceName(event.target.value)
-                        }
+                        onValueChange={(value) => setImageSourceName(value)}
                         placeholder="My kitchen"
                         maxLength={200}
                       />
@@ -750,9 +742,7 @@ export function DraftEditor({
                         id="recipe-image-creator"
                         name="imageCreator"
                         value={imageCreator}
-                        onChange={(event) =>
-                          setImageCreator(event.target.value)
-                        }
+                        onValueChange={(value) => setImageCreator(value)}
                         placeholder="Your name"
                         maxLength={200}
                       />
@@ -772,9 +762,7 @@ export function DraftEditor({
                         type="url"
                         inputMode="url"
                         value={imageSourceUrl}
-                        onChange={(event) =>
-                          setImageSourceUrl(event.target.value)
-                        }
+                        onValueChange={(value) => setImageSourceUrl(value)}
                         placeholder="https://example.com/image"
                       />
                     </div>
@@ -789,9 +777,7 @@ export function DraftEditor({
                         id="recipe-image-license"
                         name="imageLicense"
                         value={imageLicense}
-                        onChange={(event) =>
-                          setImageLicense(event.target.value)
-                        }
+                        onValueChange={(value) => setImageLicense(value)}
                         placeholder="CC BY 4.0 or personal permission"
                         maxLength={300}
                       />
@@ -801,25 +787,26 @@ export function DraftEditor({
                     <Label htmlFor="recipe-image-rights-status">
                       Image rights status
                     </Label>
-                    <select
+                    <SelectField
                       id="recipe-image-rights-status"
                       name="imageRightsStatus"
                       value={imageRightsStatus}
-                      onChange={(event) =>
-                        setImageRightsStatus(
-                          event.target
-                            .value as RecipeImageProvenance['rightsStatus'],
-                        )
-                      }
-                      className="bg-background focus:ring-ring min-h-11 w-full rounded-[var(--radius-control)] border px-3 text-sm outline-none focus:ring-2"
-                    >
-                      <option value="user-owned">I created or own it</option>
-                      <option value="licensed">Licensed for reuse</option>
-                      <option value="permission-granted">
-                        Permission granted
-                      </option>
-                      <option value="unknown">Rights are unknown</option>
-                    </select>
+                      onValueChange={(value) => {
+                        if (value !== null)
+                          setImageRightsStatus(
+                            value as RecipeImageProvenance['rightsStatus'],
+                          )
+                      }}
+                      items={[
+                        { value: 'user-owned', label: 'I created or own it' },
+                        { value: 'licensed', label: 'Licensed for reuse' },
+                        {
+                          value: 'permission-granted',
+                          label: 'Permission granted',
+                        },
+                        { value: 'unknown', label: 'Rights are unknown' },
+                      ]}
+                    />
                     <p className="text-muted-foreground text-xs">
                       This status records what is known; it is not a legal
                       determination.
@@ -885,9 +872,9 @@ export function DraftEditor({
                       <Textarea
                         id={`ingredient-line-${index}`}
                         value={ingredient.originalText}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           updateIngredient(index, {
-                            originalText: event.target.value,
+                            originalText: value,
                           })
                         }
                         placeholder="2 yellow onions, diced"
@@ -905,9 +892,9 @@ export function DraftEditor({
                         <Input
                           id={`ingredient-quantity-${index}`}
                           value={ingredient.quantity ?? ''}
-                          onChange={(event) =>
+                          onValueChange={(value) =>
                             updateIngredient(index, {
-                              quantity: event.target.value,
+                              quantity: value,
                             })
                           }
                           placeholder="2"
@@ -923,9 +910,9 @@ export function DraftEditor({
                         <Input
                           id={`ingredient-unit-${index}`}
                           value={ingredient.unit ?? ''}
-                          onChange={(event) =>
+                          onValueChange={(value) =>
                             updateIngredient(index, {
-                              unit: event.target.value,
+                              unit: value,
                             })
                           }
                           placeholder="lb, cup, or each"
@@ -939,9 +926,9 @@ export function DraftEditor({
                       <Input
                         id={`ingredient-name-${index}`}
                         value={ingredient.ingredientName}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           updateIngredient(index, {
-                            ingredientName: event.target.value,
+                            ingredientName: value,
                           })
                         }
                         placeholder="Yellow onions"
@@ -958,9 +945,9 @@ export function DraftEditor({
                       <Input
                         id={`ingredient-preparation-${index}`}
                         value={ingredient.preparationNote ?? ''}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           updateIngredient(index, {
-                            preparationNote: event.target.value,
+                            preparationNote: value,
                           })
                         }
                         placeholder="diced"
@@ -969,9 +956,9 @@ export function DraftEditor({
                     <label className="flex min-h-11 items-center gap-3 text-sm">
                       <Checkbox
                         checked={ingredient.optional}
-                        onChange={(event) =>
+                        onCheckedChange={(checked) =>
                           updateIngredient(index, {
-                            optional: event.target.checked,
+                            optional: checked,
                           })
                         }
                       />
@@ -1049,10 +1036,10 @@ export function DraftEditor({
                     <Textarea
                       id={`instruction-${index}`}
                       value={instruction}
-                      onChange={(event) =>
+                      onValueChange={(value) =>
                         setInstructions((current) =>
                           current.map((item, itemIndex) =>
-                            itemIndex === index ? event.target.value : item,
+                            itemIndex === index ? value : item,
                           ),
                         )
                       }
@@ -1078,7 +1065,7 @@ export function DraftEditor({
               </fieldset>
             </>
           )}
-          {error && (
+          {error && !correctionDialogOpen && (
             <p className="text-destructive text-sm" role="alert">
               {error}
             </p>
@@ -1090,53 +1077,44 @@ export function DraftEditor({
                 Back to my recipes
               </Link>
             </Button>
-            <Button disabled={busy} type="submit">
+            <Button ref={saveButton} disabled={busy} type="submit">
               <Save size={16} />
               {busy ? 'Saving…' : recipeId ? 'Save changes' : 'Save draft'}
             </Button>
           </div>
         </form>
       </CardContent>
-      {correctionDialogOpen && (
-        <AlertDialog
-          aria-labelledby="recipe-correction-title"
-          aria-describedby="recipe-correction-description"
-          aria-modal="true"
-          className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4"
+      <AlertDialog
+        open={correctionDialogOpen}
+        onOpenChange={setCorrectionDialogOpen}
+        dismissible={!busy}
+      >
+        <AlertDialogContent
+          className="max-w-md"
+          finalFocus={() => saveButton.current}
         >
-          <AlertDialogContent className="w-full max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle id="recipe-correction-title">
-                Apply ingredient correction?
-              </AlertDialogTitle>
-              <AlertDialogDescription id="recipe-correction-description">
-                This saves a new recipe version with your corrected ingredient
-                facts. Existing shopping runs stay pinned to their current
-                version until a member explicitly chooses the newer version, so
-                shared grocery amounts will not change unexpectedly.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel
-                disabled={busy}
-                onClick={() => setCorrectionDialogOpen(false)}
-                type="button"
-              >
-                Keep editing
-              </AlertDialogCancel>
-              <AlertDialogAction
-                disabled={busy}
-                onClick={() => {
-                  setCorrectionDialogOpen(false)
-                  void persist()
-                }}
-              >
-                {busy ? 'Saving…' : 'Save new version'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apply ingredient correction?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This saves a new recipe version with your corrected ingredient
+              facts. Existing shopping runs stay pinned to their current version
+              until a member explicitly chooses the newer version, so shared
+              grocery amounts will not change unexpectedly.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {error && (
+            <p className="text-destructive mt-3 text-sm" role="alert">
+              {error}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Keep editing</AlertDialogCancel>
+            <AlertDialogAction disabled={busy} onClick={persist}>
+              {busy ? 'Saving…' : 'Save new version'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }

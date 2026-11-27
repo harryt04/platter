@@ -72,7 +72,7 @@ demonstrate their intended shape but must not masquerade as working behavior.
 | --- | --- | --- |
 | Repository | One pnpm package with root-level `app/` | Matches the exemplar and keeps local operation simple. |
 | Runtime | Node 24, Next.js 16 App Router, matching React 19 | Preserves the planned stack while correcting version drift. |
-| Styling | Tailwind CSS 4 and shadcn/ui `new-york` with Radix primitives | Uses the maintained shadcn baseline and the documented Platter design. |
+| Styling | Tailwind CSS 4 and shadcn/ui `new-york` styling; behaviors from UI SDK (originally Radix primitives, since replaced) | Uses the maintained shadcn baseline and the documented Platter design. `AGENTS.md` describes the UI SDK wrappers. |
 | Rendering | React Server Components by default | Keeps client JavaScript limited to interactive or browser-only behavior. |
 | Database | Native MongoDB driver against an explicit database name | Avoids an ORM and preserves the PRD's document-model flexibility. |
 | Local services | Single-node MongoDB replica set and Mailpit in Docker Compose | Supports change streams, jobs, transactions where needed, and password-reset testing. |
@@ -126,6 +126,11 @@ files into this repository. Then:
    avatar, badge, button, card, checkbox, dialog, dropdown-menu, form, input,
    label, popover, radio-group, scroll-area, select, separator, sheet, sidebar,
    skeleton, sonner, tabs, textarea, and tooltip.
+
+   Superseded for interactive components: Platter's `components/ui` wrappers
+   now use UI SDK instead of Radix primitives, and its toast replaces Sonner.
+   Do not rerun `shadcn add` for them; see the `## UI SDK` section of
+   `AGENTS.md`.
 
 Use current compatible releases within the selected major versions and record
 the exact resolution in the lockfile. Do not copy package versions from the

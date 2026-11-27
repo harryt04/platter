@@ -1,4 +1,5 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ContributionDetail } from '@/components/patterns/contribution-detail'
 import { GroceryRow } from '@/components/patterns/grocery-row'
@@ -48,9 +49,12 @@ const item: GroceryItem = {
 }
 
 describe('ContributionDetail', () => {
-  it('exposes each source contribution and the calculated requirement', () => {
+  it('exposes each source contribution and the calculated requirement', async () => {
     render(<ContributionDetail item={item} />)
 
+    await userEvent.click(
+      screen.getByRole('button', { name: 'View contributions' }),
+    )
     expect(screen.getByText('View contributions')).toBeInTheDocument()
     expect(screen.getByText('Tacos')).toBeInTheDocument()
     expect(screen.getByText('Manual grocery item')).toBeInTheDocument()
@@ -61,22 +65,28 @@ describe('ContributionDetail', () => {
     expect(screen.getByText('4 cup')).toBeInTheDocument()
   })
 
-  it('keeps checklist state and contribution access visible in the row', () => {
+  it('keeps checklist state and contribution access visible in the row', async () => {
     render(<GroceryRow item={item} state="purchased" />)
 
+    await userEvent.click(
+      screen.getByRole('button', { name: 'View contributions' }),
+    )
     expect(screen.getAllByText('Purchased', { exact: true })).toHaveLength(2)
     expect(screen.getByText('View contributions')).toBeInTheDocument()
     expect(screen.getAllByText('4 cup')).toHaveLength(2)
     expect(screen.getByText('onions', { exact: true })).toBeInTheDocument()
   })
 
-  it('uses the signed-in locale for supported grocery units', () => {
+  it('uses the signed-in locale for supported grocery units', async () => {
     render(<GroceryRow item={item} locale="de-DE" />)
 
+    await userEvent.click(
+      screen.getByRole('button', { name: 'View contributions' }),
+    )
     expect(screen.getAllByText('1 l')).toHaveLength(2)
   })
 
-  it('keeps an unquantified contribution readable without inventing a total', () => {
+  it('keeps an unquantified contribution readable without inventing a total', async () => {
     render(
       <ContributionDetail
         item={{
@@ -90,10 +100,13 @@ describe('ContributionDetail', () => {
       />,
     )
 
+    await userEvent.click(
+      screen.getByRole('button', { name: 'View contribution' }),
+    )
     expect(screen.getAllByText('As needed')).toHaveLength(2)
   })
 
-  it('labels a low-confidence item with an optional comparison suggestion', () => {
+  it('labels a low-confidence item with an optional comparison suggestion', async () => {
     const first: GroceryItem = {
       id: 'grocery:recipe:first:0',
       ingredientName: 'onions',
@@ -160,6 +173,9 @@ describe('ContributionDetail', () => {
     ).toBeInTheDocument()
     expect(screen.getByText(/stays separate/)).toBeInTheDocument()
     expect(screen.getByText('Compare possible match')).toBeInTheDocument()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Compare possible match' }),
+    )
     const comparison = screen.getByLabelText('Possible merge comparison')
     expect(comparison).toBeInTheDocument()
     expect(

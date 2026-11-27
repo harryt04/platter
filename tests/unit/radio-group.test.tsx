@@ -6,25 +6,32 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 afterEach(() => cleanup())
 
 describe('RadioGroup', () => {
-  it('gives every item one native group name for keyboard navigation', async () => {
+  it('uses one form field and selects the focused item with arrow keys', async () => {
     const user = userEvent.setup()
-    render(
-      <RadioGroup defaultValue="system" aria-label="Theme preference">
-        <RadioGroupItem id="system" value="system" />
-        <RadioGroupItem id="light" value="light" />
-        <RadioGroupItem id="dark" value="dark" />
-      </RadioGroup>,
+    const { container } = render(
+      <form>
+        <RadioGroup
+          defaultValue="system"
+          name="theme"
+          aria-label="Theme preference"
+        >
+          <RadioGroupItem id="system" value="system" />
+          <RadioGroupItem id="light" value="light" />
+          <RadioGroupItem id="dark" value="dark" />
+        </RadioGroup>
+      </form>,
     )
 
     const radios = screen.getAllByRole('radio')
-    expect(
-      new Set(radios.map((radio) => radio.getAttribute('name'))).size,
-    ).toBe(1)
+    const form = container.querySelector('form')!
+    expect(new FormData(form).getAll('theme')).toEqual(['system'])
     expect(radios[0]).toBeChecked()
 
     await user.click(radios[0]!)
     await user.keyboard('{ArrowDown}')
     expect(radios[1]).toBeChecked()
+    expect(radios[1]).toHaveFocus()
+    expect(new FormData(form).getAll('theme')).toEqual(['light'])
   })
 
   it('updates the selected item through the shared change handler', async () => {

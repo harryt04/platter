@@ -41,7 +41,10 @@ describe('PurchasedButton', () => {
       />,
     )
 
-    const button = screen.getByRole('button', { name: 'Mark rice purchased' })
+    const button = screen.getByRole('button', {
+      name: 'Mark rice purchased',
+      pressed: false,
+    })
     expect(button).toHaveAttribute('aria-pressed', 'false')
     expect(button.className).toContain('min-h-11')
     fireEvent.click(button)

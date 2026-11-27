@@ -81,7 +81,10 @@ export function CompleteShoppingRunButton({
       <Button
         className="w-full sm:w-auto"
         disabled={disabled || busy}
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setError('')
+          setIsOpen(true)
+        }}
       >
         {disabled
           ? 'Shopping unavailable while archived'
@@ -92,48 +95,36 @@ export function CompleteShoppingRunButton({
           Run completed. A fresh shopping run is ready.
         </p>
       )}
-      {error && (
+      {!isOpen && error && (
         <p className="text-destructive text-sm" role="alert">
           {error}
         </p>
       )}
-      {isOpen && (
-        <AlertDialog
-          aria-labelledby="complete-run-title"
-          aria-describedby="complete-run-description"
-          aria-modal="true"
-          className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <AlertDialogContent className="w-full max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle id="complete-run-title">
-                Complete “{listName}” shopping run?
-              </AlertDialogTitle>
-              <AlertDialogDescription id="complete-run-description">
-                This closes the current shared checklist and starts one empty
-                shopping run. The recipes and people counts are kept in shopping
-                history; purchased and already-have states are not.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel
-                type="button"
-                disabled={busy}
-                onClick={() => setIsOpen(false)}
-              >
-                Keep shopping
-              </AlertDialogCancel>
-              <AlertDialogAction
-                type="button"
-                disabled={busy}
-                onClick={complete}
-              >
-                {busy ? 'Completing…' : 'Complete shopping run'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <AlertDialog open={isOpen} onOpenChange={setIsOpen} dismissible={!busy}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Complete “{listName}” shopping run?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This closes the current shared checklist and starts one empty
+              shopping run. The recipes and people counts are kept in shopping
+              history; purchased and already-have states are not.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {error && (
+            <p className="text-destructive mt-4 text-sm" role="alert">
+              {error}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Keep shopping</AlertDialogCancel>
+            <AlertDialogAction type="button" disabled={busy} onClick={complete}>
+              {busy ? 'Completing…' : 'Complete shopping run'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -64,57 +64,58 @@ export function DeleteDraftButton({
         <Trash2 size={16} />
         Delete
       </Button>
-      {open && (
-        <AlertDialog>
-          <AlertDialogContent aria-modal="true">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete “{title}”?</AlertDialogTitle>
-              <AlertDialogDescription>
-                {sharedListNames.length > 0
-                  ? `This removes the recipe from ${sharedListNames.join(', ')} for its members.`
-                  : 'This permanently removes your private recipe draft.'}{' '}
-                Any existing shopping or history reference keeps its pinned
-                immutable recipe version.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="mt-5 space-y-2">
-              <Label htmlFor={`delete-${recipeId}`}>
-                Type the recipe title to confirm
-              </Label>
-              <Input
-                id={`delete-${recipeId}`}
-                value={confirmation}
-                onValueChange={setConfirmation}
-                autoFocus
-              />
-              {error && (
-                <p className="text-destructive text-sm" role="alert">
-                  {error}
-                </p>
-              )}
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel
-                type="button"
-                onClick={() => {
-                  setOpen(false)
-                  setConfirmation('')
-                  setError('')
-                }}
-              >
-                Keep draft
-              </AlertDialogCancel>
-              <AlertDialogAction
-                type="button"
-                disabled={busy || confirmation !== title}
-                onClick={remove}
-              >
-                {busy ? 'Deleting…' : 'Delete draft'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <AlertDialog
+        open={open}
+        onOpenChange={(open) => {
+          setOpen(open)
+          if (!open) {
+            setConfirmation('')
+            setError('')
+          }
+        }}
+        dismissible={!busy}
+      >
+        <AlertDialogContent
+          className="max-w-md"
+          initialFocus={() => document.getElementById(`delete-${recipeId}`)}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete “{title}”?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {sharedListNames.length > 0
+                ? `This removes the recipe from ${sharedListNames.join(', ')} for its members.`
+                : 'This permanently removes your private recipe draft.'}{' '}
+              Any existing shopping or history reference keeps its pinned
+              immutable recipe version.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="mt-5 space-y-2">
+            <Label htmlFor={`delete-${recipeId}`}>
+              Type the recipe title to confirm
+            </Label>
+            <Input
+              id={`delete-${recipeId}`}
+              value={confirmation}
+              onValueChange={setConfirmation}
+            />
+            {error && (
+              <p className="text-destructive text-sm" role="alert">
+                {error}
+              </p>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Keep draft</AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              disabled={busy || confirmation !== title}
+              onClick={remove}
+            >
+              {busy ? 'Deleting…' : 'Delete draft'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

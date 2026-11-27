@@ -4,7 +4,12 @@ import Link from 'next/link'
 import { Bell } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTitle,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { isoDateTime } from '@/lib/contracts/ids'
 import type { NotificationSummary } from '@/lib/notifications'
 
@@ -49,26 +54,35 @@ export function NotificationBell() {
 
   return (
     <div className="relative ml-auto">
-      <Button
-        aria-expanded={open}
-        aria-label={
-          unreadCount ? `${unreadCount} unread notifications` : 'Notifications'
-        }
-        size="icon"
-        variant="ghost"
-        onClick={() => setOpen((current) => !current)}
-      >
-        <Bell size={18} />
-        {unreadCount > 0 && (
-          <span className="bg-secondary text-secondary-foreground absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
-      </Button>
-      {open && (
-        <Card className="absolute top-12 right-0 z-30 w-[min(20rem,calc(100vw-2rem))]">
-          <CardContent className="max-h-[min(28rem,70vh)] overflow-y-auto p-2">
-            <p className="px-3 py-2 text-sm font-semibold">Notifications</p>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger>
+          <Button
+            type="button"
+            className="relative"
+            aria-label={
+              unreadCount
+                ? `${unreadCount} unread notifications`
+                : 'Notifications'
+            }
+            size="icon"
+            variant="ghost"
+          >
+            <Bell size={18} />
+            {unreadCount > 0 && (
+              <span className="bg-secondary text-secondary-foreground absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="end"
+          className="bg-card w-[min(20rem,calc(100vw-2rem))] rounded-[var(--radius-card)]"
+        >
+          <div className="max-h-[min(28rem,70vh)] overflow-y-auto p-2">
+            <PopoverTitle className="px-3 py-2 text-sm font-semibold">
+              Notifications
+            </PopoverTitle>
             {notifications.length === 0 ? (
               <p className="text-muted-foreground px-3 py-4 text-sm">
                 You’re all caught up.
@@ -77,10 +91,11 @@ export function NotificationBell() {
               <div className="space-y-1">
                 {notifications.map((notification) => (
                   <Link
-                    className="hover:bg-muted w-full rounded-md px-3 py-3 text-left"
+                    className="hover:bg-muted block w-full rounded-md px-3 py-3 text-left"
                     href={notification.href}
                     key={notification.id}
                     onClick={() => {
+                      setOpen(false)
                       void markRead(notification.id)
                     }}
                   >
@@ -99,9 +114,9 @@ export function NotificationBell() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   )
 }

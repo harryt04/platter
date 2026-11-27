@@ -5,6 +5,8 @@ import * as DialogParts from '@ui-sdk/react/dialog'
 import { cn } from '@/lib/utils'
 
 export const Dialog = DialogParts.Dialog
+export const DialogBackdrop = DialogParts.DialogBackdrop
+export const DialogClose = DialogParts.DialogClose
 export function DialogTrigger({ children }: { children: React.ReactNode }) {
   if (isValidElement(children))
     return <DialogParts.DialogTrigger render={children} />
@@ -24,6 +26,8 @@ export function DialogContent({
         className,
       )}
       {...props}
+      data-agent-hidden
+      data-agent-secret
     />
   )
 }

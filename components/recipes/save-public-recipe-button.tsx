@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { Bookmark, BookmarkCheck } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Toggle } from '@/components/ui/toggle'
 
 export function SavePublicRecipeButton({
   recipeId,
@@ -36,16 +36,17 @@ export function SavePublicRecipeButton({
 
   return (
     <div className="flex flex-col items-start gap-2">
-      <Button
-        aria-pressed={saved}
+      <Toggle
+        pressed={saved}
         disabled={pending}
-        onClick={toggleSaved}
-        type="button"
+        onPressedChange={() => {
+          void toggleSaved()
+        }}
         variant="outline"
       >
         {saved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
         {saved ? 'Saved to my recipes' : 'Save to my recipes'}
-      </Button>
+      </Toggle>
       <p aria-live="polite" className="text-muted-foreground text-sm">
         {error ??
           (saved

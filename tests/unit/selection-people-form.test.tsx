@@ -44,6 +44,7 @@ describe('SelectionPeopleForm', () => {
     })
     await user.clear(people)
     await user.type(people, '6')
+    expect(people).toHaveValue(6)
     await user.click(screen.getByRole('button', { name: 'Update people' }))
 
     const patchCall = vi.mocked(fetch).mock.calls[0]

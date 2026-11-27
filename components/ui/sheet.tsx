@@ -24,6 +24,8 @@ export function SheetContent({
         className,
       )}
       {...props}
+      data-agent-hidden
+      data-agent-secret
     />
   )
 }

@@ -129,7 +129,7 @@ export function SelectionPeopleForm({
             className="w-20"
             disabled={pending || !editable}
             min={1}
-            onChange={(event) => setDesiredPeople(Number(event.target.value))}
+            onValueChange={(value) => setDesiredPeople(Number(value))}
             type="number"
             value={desiredPeople}
           />

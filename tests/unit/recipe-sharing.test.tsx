@@ -35,7 +35,10 @@ describe('RecipeSharing', () => {
       />,
     )
 
-    await user.click(screen.getByRole('checkbox', { name: 'Family' }))
+    const family = screen.getByRole('checkbox', { name: 'Family' })
+    family.focus()
+    await user.keyboard(' ')
+    expect(family).toBeChecked()
     await user.click(screen.getByRole('button', { name: 'Save sharing' }))
 
     expect(fetchMock).toHaveBeenCalledWith(

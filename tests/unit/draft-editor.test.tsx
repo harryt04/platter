@@ -1,4 +1,10 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { DraftEditor } from '@/components/recipes/draft-editor'
@@ -121,7 +127,7 @@ describe('DraftEditor', () => {
     ).toHaveValue('Personal permission')
     expect(
       screen.getByRole('combobox', { name: 'Image rights status' }),
-    ).toHaveValue('permission-granted')
+    ).toHaveTextContent('Permission granted')
     expect(screen.getByRole('textbox', { name: 'Tags' })).toHaveValue(
       'weeknight, make ahead',
     )
@@ -236,6 +242,12 @@ describe('DraftEditor', () => {
         headers: { 'content-type': 'application/json' },
       }),
     )
+    fetchMock.mockResolvedValueOnce(
+      Response.json(
+        { detail: 'The correction could not be saved.' },
+        { status: 409 },
+      ),
+    )
     vi.stubGlobal('fetch', fetchMock)
 
     render(
@@ -259,7 +271,8 @@ describe('DraftEditor', () => {
       screen.getByRole('textbox', { name: 'Ingredient name' }),
       'Red onions',
     )
-    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+    const save = screen.getByRole('button', { name: 'Save changes' })
+    await user.click(save)
 
     expect(fetchMock).not.toHaveBeenCalled()
     expect(
@@ -269,7 +282,22 @@ describe('DraftEditor', () => {
       screen.getByText(/stay pinned to their current version/i),
     ).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Save new version' }))
+    await user.keyboard('{Escape}')
+    await vi.waitFor(() => expect(save).toHaveFocus())
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+    await user.click(save)
+    const dialog = screen.getByRole('alertdialog')
+    const confirm = within(dialog).getByRole('button', {
+      name: 'Save new version',
+    })
+    await user.click(confirm)
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      'The correction could not be saved.',
+    )
+    await user.click(confirm)
+    await waitFor(() => expect(dialog).not.toBeInTheDocument())
+    expect(fetchMock).toHaveBeenCalledTimes(2)
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/v1/recipes/recipe-1',

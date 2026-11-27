@@ -37,5 +37,8 @@ it('applies agent edits to React state and redacts the other field', async () =>
       ],
     })
   })
+  expect(screen.getByRole('textbox', { name: 'Search recipes' })).toHaveValue(
+    'radishes',
+  )
   expect(screen.getByRole('status')).toHaveTextContent('radishes')
 })

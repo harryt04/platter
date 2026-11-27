@@ -25,6 +25,8 @@ export function TooltipContent({
         className,
       )}
       {...props}
+      data-agent-hidden
+      data-agent-secret
     />
   )
 }

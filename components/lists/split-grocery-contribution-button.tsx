@@ -76,59 +76,46 @@ export function SplitGroceryContributionButton({
       <Button
         aria-label={`Split ${contributionLabel} into separate grocery item`}
         disabled={!editable || pending}
-        id={`split-grocery-trigger-${contributionId}`}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setError(null)
+          setOpen(true)
+        }}
         size="sm"
         type="button"
         variant="outline"
       >
         Split into separate item
       </Button>
-      {error && (
+      {!open && error && (
         <p aria-live="polite" className="text-destructive text-xs">
           {error}
         </p>
       )}
-      {open && (
-        <AlertDialog
-          aria-labelledby={`split-grocery-title-${contributionId}`}
-          aria-describedby={`split-grocery-description-${contributionId}`}
-          aria-modal="true"
-          className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <AlertDialogContent className="w-full max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle id={`split-grocery-title-${contributionId}`}>
-                Split this contribution?
-              </AlertDialogTitle>
-              <AlertDialogDescription
-                id={`split-grocery-description-${contributionId}`}
-              >
-                {contributionLabel} will become a separate {ingredientName} item
-                in the shared shopping run. The source recipe and its
-                contribution facts stay unchanged.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel
-                disabled={pending}
-                onClick={() => {
-                  setOpen(false)
-                  document
-                    .getElementById(`split-grocery-trigger-${contributionId}`)
-                    ?.focus()
-                }}
-                type="button"
-              >
-                Keep combined
-              </AlertDialogCancel>
-              <AlertDialogAction disabled={pending} onClick={split}>
-                {pending ? 'Splitting…' : 'Split item'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <AlertDialog open={open} onOpenChange={setOpen} dismissible={!pending}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Split this contribution?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {contributionLabel} will become a separate {ingredientName} item
+              in the shared shopping run. The source recipe and its contribution
+              facts stay unchanged.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {error && (
+            <p aria-live="polite" className="text-destructive mt-4 text-xs">
+              {error}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>
+              Keep combined
+            </AlertDialogCancel>
+            <AlertDialogAction disabled={pending} onClick={split}>
+              {pending ? 'Splitting…' : 'Split item'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

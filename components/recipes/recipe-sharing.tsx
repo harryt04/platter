@@ -110,7 +110,7 @@ export function RecipeSharing({
               <Checkbox
                 checked={publishPublic}
                 disabled={busy}
-                onChange={(event) => setPublishPublic(event.target.checked)}
+                onCheckedChange={(checked) => setPublishPublic(checked)}
               />
               <span>
                 <span className="block text-sm font-medium">
@@ -144,8 +144,8 @@ export function RecipeSharing({
                         (list.status !== 'active' &&
                           !selectedListIds.includes(list.id))
                       }
-                      onChange={(event) =>
-                        toggleList(list.id, event.target.checked)
+                      onCheckedChange={(checked) =>
+                        toggleList(list.id, checked)
                       }
                     />
                     <span>

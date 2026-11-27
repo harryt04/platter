@@ -148,16 +148,18 @@ export function AppSidebar({
             </Link>
           </Button>
         </div>
-        <button
+        <Button
+          type="button"
+          variant="ghost"
           aria-label="Sign out"
-          className="text-muted-foreground hover:text-foreground mt-2 min-h-11 w-full text-left text-xs"
+          className="text-muted-foreground hover:text-foreground mt-2 min-h-11 w-full justify-start px-0 py-0 text-left text-xs"
           onClick={async () => {
             await clearOfflineSession().catch(() => undefined)
             await authClient.signOut()
           }}
         >
           {open ? 'Sign out' : '↪'}
-        </button>
+        </Button>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

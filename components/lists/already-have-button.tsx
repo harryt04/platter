@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { createMutationMetadata } from '@/lib/contracts/mutations'
-import { Button } from '@/components/ui/button'
+import { Toggle } from '@/components/ui/toggle'
 import { SyncStatus } from '@/components/states/sync-status'
 import { browserIsOffline, queueBrowserMutation } from '@/lib/offline/mutations'
 
@@ -95,16 +95,17 @@ export function AlreadyHaveButton({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button
+      <Toggle
         aria-label={
           localMarked
             ? `Undo already have for ${ingredientName}`
             : `Mark ${ingredientName} already have`
         }
-        aria-pressed={localMarked}
+        pressed={localMarked}
         disabled={!editable || pending}
-        onClick={changeState}
-        type="button"
+        onPressedChange={() => {
+          void changeState()
+        }}
         variant={localMarked ? 'secondary' : 'outline'}
       >
         {pending
@@ -112,7 +113,7 @@ export function AlreadyHaveButton({
           : localMarked
             ? 'Undo already have'
             : 'Mark already have'}
-      </Button>
+      </Toggle>
       {offlinePending && <SyncStatus state="pending" />}
       <span
         aria-live="polite"

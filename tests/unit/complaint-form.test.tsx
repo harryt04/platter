@@ -6,6 +6,7 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { ComplaintForm } from '@/components/recipes/complaint-form'
 
 beforeEach(() => {
@@ -30,6 +31,11 @@ describe('ComplaintForm', () => {
     )
     render(<ComplaintForm initialRecipeId="recipe-1" />)
 
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('combobox', { name: 'Report type' }))
+    await user.click(
+      screen.getByRole('option', { name: 'Incorrect attribution' }),
+    )
     expect(screen.getByLabelText(/public recipe id/i)).toHaveValue('recipe-1')
     fireEvent.input(screen.getByLabelText(/what should we review/i), {
       target: { value: 'This source uses my work.' },
@@ -45,7 +51,7 @@ describe('ComplaintForm', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({
-          type: 'copyright',
+          type: 'incorrect-attribution',
           recipeId: 'recipe-1',
           sourceUrl: '',
           description: 'This source uses my work.',

@@ -1,4 +1,10 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import Link from 'next/link'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -31,29 +37,53 @@ describe('Sidebar', () => {
           <Link href="/lists">Home</Link>
           <button type="button">Second control</button>
         </Sidebar>
-        <SidebarTrigger />
+        <main>
+          <SidebarTrigger />
+          <input aria-label="Draft text" defaultValue="Unsaved" />
+        </main>
       </SidebarProvider>,
     )
 
     const trigger = screen.getByRole('button', { name: 'Open navigation' })
+    const draft = screen.getByRole('textbox', { name: 'Draft text' })
     await user.click(trigger)
     const firstControl = screen.getByRole('link', { name: 'Home' })
-    const lastControl = screen.getByRole('button', { name: 'Second control' })
+    const secondControl = screen.getByRole('button', { name: 'Second control' })
+    const navigation = screen.getByRole('complementary', {
+      name: 'Primary navigation',
+    })
+    const close = within(navigation).getByRole('button', {
+      name: 'Close navigation',
+    })
+    const dialog = screen.getByRole('dialog', { name: 'Primary navigation' })
+    expect(dialog).toHaveAttribute('data-agent-hidden')
+    expect(dialog).toHaveAttribute('data-agent-secret')
 
-    expect(firstControl).toHaveFocus()
+    await waitFor(() => expect(firstControl).toHaveFocus())
     await user.tab()
-    expect(lastControl).toHaveFocus()
+    expect(secondControl).toHaveFocus()
+    await user.tab()
+    expect(close).toHaveFocus()
     await user.tab()
     expect(firstControl).toHaveFocus()
     await user.tab({ shift: true })
-    expect(lastControl).toHaveFocus()
+    expect(close).toHaveFocus()
 
     await user.keyboard('{Escape}')
-    expect(
-      screen.getByRole('button', { name: 'Open navigation' }),
-    ).toHaveFocus()
+    await waitFor(() => expect(trigger).toHaveFocus())
     expect(
       screen.getByRole('button', { name: 'Open navigation' }),
     ).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('textbox', { name: 'Draft text' })).toBe(draft)
+    expect(draft).toHaveValue('Unsaved')
+
+    await user.click(trigger)
+    await user.click(
+      within(
+        screen.getByRole('dialog', { name: 'Primary navigation' }),
+      ).getByRole('button', { name: 'Close navigation' }),
+    )
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await waitFor(() => expect(trigger).toHaveFocus())
   })
 })

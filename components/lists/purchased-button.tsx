@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { createMutationMetadata } from '@/lib/contracts/mutations'
-import { Button } from '@/components/ui/button'
+import { Toggle } from '@/components/ui/toggle'
 import { SyncStatus } from '@/components/states/sync-status'
 import { browserIsOffline, queueBrowserMutation } from '@/lib/offline/mutations'
 
@@ -91,16 +91,17 @@ export function PurchasedButton({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button
+      <Toggle
         aria-label={
           localMarked
             ? `Undo purchased for ${ingredientName}`
             : `Mark ${ingredientName} purchased`
         }
-        aria-pressed={localMarked}
+        pressed={localMarked}
         disabled={!editable || pending}
-        onClick={changeState}
-        type="button"
+        onPressedChange={() => {
+          void changeState()
+        }}
         variant={localMarked ? 'secondary' : 'outline'}
       >
         {pending
@@ -108,7 +109,7 @@ export function PurchasedButton({
           : localMarked
             ? 'Undo purchased'
             : 'Mark purchased'}
-      </Button>
+      </Toggle>
       {offlinePending && <SyncStatus state="pending" />}
       <span
         aria-live="polite"

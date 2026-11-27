@@ -1,4 +1,11 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
+
+// UI SDK Select portals its listbox to the body, so options are found from the page.
+async function chooseOption(page: Page, trigger: Locator, name: string) {
+  await trigger.click()
+  await page.getByRole('option', { name, exact: true }).click()
+  await expect(trigger).toHaveText(name)
+}
 
 async function signUp(page: import('@playwright/test').Page, suffix: string) {
   await page.goto('/sign-up')
@@ -250,9 +257,11 @@ test('completes the full recipe-to-shopping journey across desktop and mobile', 
   const firstSelectionForm = page
     .locator('form')
     .filter({ hasText: 'Add to a shopping run' })
-  await firstSelectionForm
-    .getByLabel('List')
-    .selectOption({ label: primaryListName })
+  await chooseOption(
+    page,
+    firstSelectionForm.getByLabel('List'),
+    primaryListName,
+  )
   await firstSelectionForm.getByLabel('People').fill('2')
   await firstSelectionForm
     .getByRole('button', { name: 'Add to this week' })
@@ -263,9 +272,11 @@ test('completes the full recipe-to-shopping journey across desktop and mobile', 
   const secondSelectionForm = page
     .locator('form')
     .filter({ hasText: 'Add to a shopping run' })
-  await secondSelectionForm
-    .getByLabel('List')
-    .selectOption({ label: primaryListName })
+  await chooseOption(
+    page,
+    secondSelectionForm.getByLabel('List'),
+    primaryListName,
+  )
   await secondSelectionForm.getByLabel('People').fill('6')
   await secondSelectionForm
     .getByRole('button', { name: 'Add to this week' })
@@ -717,15 +728,15 @@ test.describe('authenticated list workflow', () => {
     await expect(page).toHaveURL(/\/lists\/(?!new$)[^/]+$/)
 
     await page.goto(`/recipes/${process.env.E2E_SCALE_RECIPE_ID}`)
-    const list = page.getByLabel('List')
-    const people = page.getByLabel('People')
+    const list = page.getByLabel('List', { exact: true })
+    const people = page.getByLabel('People', { exact: true })
 
-    await list.selectOption({ label: twoPeopleList })
+    await chooseOption(page, list, twoPeopleList)
     await people.fill('2')
     await page.getByRole('button', { name: 'Add to this week' }).click()
     await expect(page.getByText(/scale 0\.5/)).toBeVisible()
 
-    await list.selectOption({ label: sixPeopleList })
+    await chooseOption(page, list, sixPeopleList)
     await people.fill('6')
     await page.getByRole('button', { name: 'Add to this week' }).click()
     await expect(page.getByText(/scale 1\.5/)).toBeVisible()

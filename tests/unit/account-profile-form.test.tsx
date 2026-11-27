@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AccountProfileForm } from '@/components/settings/account-profile-form'
 
@@ -28,7 +28,7 @@ describe('AccountProfileForm', () => {
       ),
     )
 
-    render(
+    const { container } = render(
       <AccountProfileForm
         email="jamie@example.test"
         initialLocale="en-US"
@@ -40,11 +40,16 @@ describe('AccountProfileForm', () => {
       'jamie@example.test',
     )
     expect(screen.getByLabelText('Display name')).toHaveValue('Jamie')
-    expect(screen.getByLabelText('Locale')).toHaveValue('en-US')
+    expect(screen.getByRole('combobox', { name: 'Locale' })).toHaveTextContent(
+      'English (United States)',
+    )
 
     await user.clear(screen.getByLabelText('Display name'))
     await user.type(screen.getByLabelText('Display name'), 'Jamie Lee')
-    await user.selectOptions(screen.getByLabelText('Locale'), 'de-DE')
+    await user.click(screen.getByRole('combobox', { name: 'Locale' }))
+    await user.click(
+      screen.getByRole('option', { name: 'Deutsch (Deutschland)' }),
+    )
     await user.click(screen.getByRole('button', { name: 'Save profile' }))
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
@@ -54,7 +59,7 @@ describe('AccountProfileForm', () => {
         body: JSON.stringify({ name: 'Jamie Lee', locale: 'de-DE' }),
       }),
     )
-    expect(await screen.findByRole('status')).toHaveTextContent(
+    expect(await within(container).findByRole('status')).toHaveTextContent(
       'Your profile was saved.',
     )
     expect(refresh).toHaveBeenCalled()

@@ -215,14 +215,19 @@ test.describe('shopping responsive and theme accessibility', () => {
       name: 'Primary navigation',
     })
     await expect(navigation).toBeVisible()
-    const closeTrigger = page
-      .getByRole('main')
-      .getByRole('button', { name: 'Close navigation' })
-    await expect(closeTrigger).toHaveAttribute('aria-expanded', 'true')
+    // The modal navigation makes the page behind it inert, so the trigger is
+    // checked by its stable attribute instead of by role.
+    await expect(
+      page.locator('main [aria-controls="primary-navigation"]'),
+    ).toHaveAttribute('aria-expanded', 'true')
     await expect(
       navigation.getByRole('link', { name: 'Platter home' }),
     ).toBeFocused()
 
+    await page.keyboard.press('Shift+Tab')
+    await expect(
+      navigation.getByRole('button', { name: 'Close navigation' }),
+    ).toBeFocused()
     await page.keyboard.press('Shift+Tab')
     await expect(
       navigation.getByRole('button', { name: 'Sign out' }),

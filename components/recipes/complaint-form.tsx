@@ -1,5 +1,6 @@
 'use client'
 
+import { SelectField } from '@/components/ui/select'
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -83,18 +84,14 @@ export function ComplaintForm({
             <label className="text-sm font-medium" htmlFor="complaint-type">
               Report type
             </label>
-            <select
-              className="bg-background focus:ring-ring min-h-11 w-full rounded-[var(--radius-control)] border px-3 text-sm outline-none focus:ring-2"
+            <SelectField
               id="complaint-type"
-              onChange={(event) => setType(event.target.value)}
+              items={complaintTypes}
+              onValueChange={(value) => {
+                if (value !== null) setType(value)
+              }}
               value={type}
-            >
-              {complaintTypes.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div className="space-y-2">

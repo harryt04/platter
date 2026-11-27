@@ -525,7 +525,7 @@ Use the conventions in `/Users/harry/Documents/git/scaffolding` unless a documen
 - Next.js 16 App Router and TypeScript
 - React and React Server Components by default
 - Mobile-first Tailwind CSS
-- shadcn/ui and Radix primitives
+- shadcn/ui styling on UI SDK behavior wrappers (UI SDK replaced the original Radix primitives; see `AGENTS.md`)
 - Better Auth with server-side session validation
 - MongoDB using the native driver
 - PostHog as optional analytics

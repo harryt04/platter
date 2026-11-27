@@ -66,6 +66,9 @@ describe('NotificationBell', () => {
     )
     await user.click(notificationLink)
 
+    expect(
+      screen.queryByRole('dialog', { name: 'Notifications' }),
+    ).not.toBeInTheDocument()
     expect(fetchMock).toHaveBeenLastCalledWith(
       '/api/v1/notifications/550e8400-e29b-41d4-a716-446655440000',
       { method: 'PATCH' },
@@ -75,5 +78,29 @@ describe('NotificationBell', () => {
         screen.getByRole('button', { name: 'Notifications' }),
       ).toBeInTheDocument(),
     )
+  })
+
+  it('opens from the keyboard and restores bell focus on Escape', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ notifications: [] }))),
+    )
+    const user = userEvent.setup()
+    render(<NotificationBell />)
+    const bell = screen.getByRole('button', { name: 'Notifications' })
+    await user.tab()
+    expect(bell).toHaveFocus()
+    await user.keyboard('{Enter}')
+
+    const dialog = screen.getByRole('dialog', { name: 'Notifications' })
+    expect(dialog).toHaveTextContent('You’re all caught up.')
+    expect(dialog).toHaveAttribute('data-agent-hidden')
+    expect(dialog).toHaveAttribute('data-agent-secret')
+    await waitFor(() => expect(dialog).toHaveFocus())
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await waitFor(() => expect(bell).toHaveFocus())
   })
 })

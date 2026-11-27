@@ -1,104 +1,38 @@
 'use client'
-import * as React from 'react'
+
+import type * as React from 'react'
+import * as AlertDialogParts from '@ui-sdk/react/alert-dialog'
+import { Button as ButtonPart } from '@ui-sdk/react/button'
 import { cn } from '@/lib/utils'
 
-const focusableSelector = [
-  'a[href]',
-  'area[href]',
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-].join(', ')
+export const AlertDialog = AlertDialogParts.AlertDialog
 
-function getFocusableElements(container: HTMLElement) {
-  return Array.from(
-    container.querySelectorAll<HTMLElement>(focusableSelector),
-  ).filter(
-    (element) =>
-      !element.hidden &&
-      element.getAttribute('aria-hidden') !== 'true' &&
-      element.getAttribute('tabindex') !== '-1',
-  )
-}
-
-export const AlertDialog = ({
-  children,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => {
-  const dialogRef = React.useRef<HTMLDivElement>(null)
-
-  React.useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-
-    const previouslyFocused =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null
-    const focusables = getFocusableElements(dialog)
-    if (!dialog.contains(document.activeElement)) {
-      const initialFocus = focusables[0] ?? dialog
-      initialFocus.focus()
-    }
-
-    return () => {
-      if (previouslyFocused && document.contains(previouslyFocused)) {
-        previouslyFocused.focus()
-      }
-    }
-  }, [])
-
-  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    props.onKeyDown?.(event)
-    if (event.defaultPrevented || event.key !== 'Tab') return
-
-    const dialog = dialogRef.current
-    if (!dialog) return
-    const focusables = getFocusableElements(dialog)
-    if (focusables.length === 0) {
-      event.preventDefault()
-      dialog.focus()
-      return
-    }
-
-    const first = focusables[0]
-    const last = focusables[focusables.length - 1]
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault()
-      last.focus()
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault()
-      first.focus()
-    }
-  }
-
-  return (
-    <div
-      {...props}
-      ref={dialogRef}
-      role="alertdialog"
-      aria-modal={props['aria-modal'] ?? true}
-      tabIndex={-1}
-      onKeyDown={handleKeyDown}
-    >
-      {children}
-    </div>
-  )
-}
-export const AlertDialogContent = ({
+export function AlertDialogContent({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn(
-      'bg-card rounded-[var(--radius-card)] border p-6 shadow-xl',
-      className,
-    )}
-    {...props}
-  />
-)
+}: React.ComponentProps<typeof AlertDialogParts.AlertDialogContent>) {
+  const container = typeof document === 'undefined' ? null : document.body
+
+  return (
+    <>
+      <AlertDialogParts.AlertDialogBackdrop
+        className="bg-background/80 fixed inset-0 z-50"
+        data-platter="alert-dialog-backdrop"
+      />
+      <AlertDialogParts.AlertDialogContent
+        container={container}
+        className={cn(
+          'bg-card fixed inset-0 z-50 m-auto h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto rounded-[var(--radius-card)] border p-6 shadow-xl',
+          className,
+        )}
+        {...props}
+        data-agent-hidden
+        data-agent-secret
+      />
+    </>
+  )
+}
+
 export const AlertDialogHeader = ({
   className,
   ...props
@@ -108,14 +42,20 @@ export const AlertDialogHeader = ({
 export const AlertDialogTitle = ({
   className,
   ...props
-}: React.HTMLAttributes<HTMLHeadingElement>) => (
-  <h2 className={cn('text-lg font-semibold', className)} {...props} />
+}: React.ComponentProps<typeof AlertDialogParts.AlertDialogTitle>) => (
+  <AlertDialogParts.AlertDialogTitle
+    className={cn('text-lg font-semibold', className)}
+    {...props}
+  />
 )
 export const AlertDialogDescription = ({
   className,
   ...props
-}: React.HTMLAttributes<HTMLParagraphElement>) => (
-  <p className={cn('text-muted-foreground text-sm', className)} {...props} />
+}: React.ComponentProps<typeof AlertDialogParts.AlertDialogDescription>) => (
+  <AlertDialogParts.AlertDialogDescription
+    className={cn('text-muted-foreground text-sm', className)}
+    {...props}
+  />
 )
 export const AlertDialogFooter = ({
   className,
@@ -123,19 +63,34 @@ export const AlertDialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn('mt-6 flex justify-end gap-2', className)} {...props} />
 )
-export const AlertDialogAction = (
-  props: React.ButtonHTMLAttributes<HTMLButtonElement>,
-) => (
-  <button
-    className="bg-primary text-primary-foreground min-h-11 rounded-[var(--radius-button)] px-4 py-2 text-sm font-medium"
-    {...props}
-  />
-)
-export const AlertDialogCancel = (
-  props: React.ButtonHTMLAttributes<HTMLButtonElement>,
-) => (
-  <button
-    className="min-h-11 rounded-[var(--radius-button)] border px-4 py-2 text-sm font-medium"
-    {...props}
-  />
-)
+export function AlertDialogAction({
+  className,
+  type = 'button',
+  ...props
+}: React.ComponentProps<typeof ButtonPart>) {
+  return (
+    <ButtonPart
+      className={cn(
+        'bg-primary text-primary-foreground min-h-11 rounded-[var(--radius-button)] px-4 py-2 text-sm font-medium',
+        className,
+      )}
+      type={type}
+      {...props}
+    />
+  )
+}
+
+export function AlertDialogCancel({
+  className,
+  ...props
+}: React.ComponentProps<typeof AlertDialogParts.AlertDialogClose>) {
+  return (
+    <AlertDialogParts.AlertDialogClose
+      className={cn(
+        'min-h-11 rounded-[var(--radius-button)] border px-4 py-2 text-sm font-medium',
+        className,
+      )}
+      {...props}
+    />
+  )
+}

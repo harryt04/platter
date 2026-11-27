@@ -136,3 +136,60 @@ select {
     animation-duration: 0.01ms !important;
   }
 }
+
+@layer components {
+  [data-platter-toast-region] {
+    height: var(--toast-front-height);
+  }
+
+  [data-platter-toast-region][data-expanded] {
+    height: calc(var(--toast-stack-height) + (var(--toast-count) - 1) * 12px);
+  }
+
+  [data-platter-toast] {
+    --y: calc(var(--toast-index) * -12px);
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: calc(100 - var(--toast-index));
+    overflow: hidden;
+    height: var(--toast-height);
+    translate: var(--toast-swipe-x, 0px)
+      calc(var(--y) + var(--toast-swipe-y, 0px));
+    scale: calc(1 - var(--toast-index) * 0.05);
+    transition-property: translate, scale, opacity, height;
+    transition-duration: 300ms;
+    user-select: none;
+  }
+
+  [data-platter-toast]:not([data-front], [data-expanded]) {
+    height: var(--toast-front-height);
+  }
+
+  [data-platter-toast][data-expanded] {
+    --y: calc(-1 * (var(--toast-offset) + var(--toast-index) * 12px));
+    scale: 1;
+  }
+
+  [data-platter-toast][data-starting-style],
+  [data-platter-toast][data-swiping] {
+    transition: none;
+  }
+
+  [data-platter-toast][data-starting-style][data-front] {
+    --y: 100%;
+  }
+
+  [data-platter-toast]:is(
+    [data-starting-style]:not([data-front]),
+    [data-ending-style]
+  ) {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-platter-toast] {
+      transition-property: opacity;
+    }
+  }
+}

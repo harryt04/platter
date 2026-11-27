@@ -82,50 +82,37 @@ export function RemoveSelectionButton({
       >
         Remove selection
       </Button>
-      {open && (
-        <AlertDialog
-          aria-labelledby={`remove-selection-title-${selectionId}`}
-          aria-describedby={`remove-selection-description-${selectionId}`}
-          aria-modal="true"
-          className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <AlertDialogContent className="w-full max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle id={`remove-selection-title-${selectionId}`}>
-                Remove “{recipeTitle}” from {listName}?
-              </AlertDialogTitle>
-              <AlertDialogDescription
-                id={`remove-selection-description-${selectionId}`}
-              >
-                This removes {recipeTitle}’s grocery contributions from the{' '}
-                {listName} run. Other selected recipes and manual grocery items
-                stay unchanged.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            {error && (
-              <p className="text-destructive mt-4 text-sm" role="alert">
-                {error}
-              </p>
-            )}
-            <AlertDialogFooter>
-              <AlertDialogCancel
-                disabled={pending}
-                onClick={() => setOpen(false)}
-                type="button"
-              >
-                Keep selection
-              </AlertDialogCancel>
-              <AlertDialogAction
-                disabled={pending}
-                onClick={removeSelection}
-                type="button"
-              >
-                {pending ? 'Removing…' : 'Remove selection'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <AlertDialog open={open} onOpenChange={setOpen} dismissible={!pending}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Remove “{recipeTitle}” from {listName}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes {recipeTitle}’s grocery contributions from the{' '}
+              {listName} run. Other selected recipes and manual grocery items
+              stay unchanged.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {error && (
+            <p className="text-destructive mt-4 text-sm" role="alert">
+              {error}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>
+              Keep selection
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={pending}
+              onClick={removeSelection}
+              type="button"
+            >
+              {pending ? 'Removing…' : 'Remove selection'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

@@ -59,6 +59,33 @@ describe('CompleteShoppingRunButton', () => {
     )
   })
 
+  it('shows a failed request inside the active confirmation', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ detail: 'The run has changed.' }), {
+          status: 409,
+        }),
+      ),
+    )
+    const user = userEvent.setup()
+    render(<CompleteShoppingRunButton listId="list-1" listName="Family" />)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Complete shopping run' }),
+    )
+    const dialog = within(screen.getByRole('alertdialog'))
+    await user.click(
+      dialog.getByRole('button', { name: 'Complete shopping run' }),
+    )
+
+    expect(await dialog.findByRole('alert')).toHaveTextContent(
+      'The run has changed.',
+    )
+    expect(dialog.getByRole('button', { name: 'Keep shopping' })).toBeEnabled()
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
   it('keeps archived completion unavailable', () => {
     render(
       <CompleteShoppingRunButton disabled listId="list-1" listName="Family" />,

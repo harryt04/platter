@@ -81,8 +81,8 @@ importers:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       nodemailer:
-        specifier: ^10.1.4
-        version: 10.4.0
+        specifier: ^10.6.1
+        version: 10.6.1
       posthog-js:
         specifier: ^1.429.1
         version: 1.429.1(@types/react@19.3.3)(react@19.3.1)
@@ -3335,8 +3335,8 @@ packages:
     resolution: {integrity: sha512-mIrE/Cw9y+9Au6dS5vDKDhQza9YvG6w+ZrS6X+ZzA7yFW/soAeaups4Qzn1bL6g5FVy8WtP79+0j82oPIbqRjQ==}
     engines: {node: '>=18'}
 
-  nodemailer@10.4.0:
-    resolution: {integrity: sha512-fyy6r4Q5euRJ9Qr3Cts9K7SZrfe9zmz9oLOYiAR02MEJRDRci+99y0OoYBYBgpLffOqkkjXrB/d26VfiMje/kA==}
+  nodemailer@10.6.1:
+    resolution: {integrity: sha512-d7kfFfS/tR4Aca+SBvRaQ+MXKNv7d2JiRe5TxaRcFT/kYMh4GGPnW9aKksTIEvyEbA7d/7HYWE4YPDEHxzJj/g==}
     engines: {node: '>=20.0.0'}
 
   numbered@1.1.0:
@@ -7172,7 +7172,7 @@ snapshots:
 
   node-releases@2.0.55: {}
 
-  nodemailer@10.4.0: {}
+  nodemailer@10.6.1: {}
 
   numbered@1.1.0: {}
 
